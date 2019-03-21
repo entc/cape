@@ -1,0 +1,65 @@
+#ifndef __CAPE_AIO__AIO__H
+#define __CAPE_AIO__AIO__H 1
+
+#include "sys/cape_export.h"
+#include "sys/cape_types.h"
+
+//=============================================================================
+
+struct CapeAioHandle_s; typedef struct CapeAioHandle_s* CapeAioHandle;
+
+// returns the mask which should be observed
+typedef int                (__STDCALL *fct_cape_aio_onEvent)   (void* ptr, void* handle, int hflags, unsigned long events, void* overlapped, unsigned long);
+typedef void               (__STDCALL *fct_cape_aio_onUnref)   (void* ptr, CapeAioHandle);
+
+//-----------------------------------------------------------------------------
+
+__CAPE_LIBEX   CapeAioHandle     cape_aio_handle_new            (void* handle, int hflags, void* ptr, fct_cape_aio_onEvent, fct_cape_aio_onUnref);
+
+__CAPE_LIBEX   void              cape_aio_handle_del            (CapeAioHandle*);
+
+//-----------------------------------------------------------------------------
+
+struct CapeAioContext_s; typedef struct CapeAioContext_s* CapeAioContext;
+
+//-----------------------------------------------------------------------------
+
+__CAPE_LIBEX   CapeAioContext    cape_aio_context_new           (void);             // allocate memory and initialize the object
+
+__CAPE_LIBEX   void              cape_aio_context_del           (CapeAioContext*);  // release memory
+
+__CAPE_LIBEX   int               cape_aio_context_open          (CapeAioContext);   // open the context, now wait or next can be used to gather events
+
+__CAPE_LIBEX   int               cape_aio_context_close         (CapeAioContext);   // close the context and all handles will be triggered for destruction
+
+//-----------------------------------------------------------------------------
+
+__CAPE_LIBEX   int               cape_aio_context_wait          (CapeAioContext);   // blocking the thread, until the context was closed
+
+__CAPE_LIBEX   int               cape_aio_context_next          (CapeAioContext, long timeout_in_ms);   // waits until next event or timeout occours
+
+//-----------------------------------------------------------------------------
+
+#define CAPE_AIO_NONE     0x0000
+#define CAPE_AIO_DONE     0x0001
+#define CAPE_AIO_ABORT    0x0002
+#define CAPE_AIO_WRITE    0x0004
+#define CAPE_AIO_READ     0x0008
+#define CAPE_AIO_ALIVE    0x0010
+
+//-----------------------------------------------------------------------------
+
+__CAPE_LIBEX   int               cape_aio_context_add           (CapeAioContext, CapeAioHandle);         // add handle to event queue
+
+// modify handle
+__CAPE_LIBEX   void              cape_aio_context_mod           (CapeAioContext, CapeAioHandle aioh, int hflags);                                                          
+
+//-----------------------------------------------------------------------------
+
+__CAPE_LIBEX   int               cape_aio_context_signal_map    (CapeAioContext, int signal, int);  // set signal mapping
+
+__CAPE_LIBEX   int               cape_aio_context_signal_set    (CapeAioContext);  // add handle for a signals to return a specific status
+
+//=============================================================================
+
+#endif
