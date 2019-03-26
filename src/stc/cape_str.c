@@ -65,6 +65,23 @@ void cape_str_del (CapeString* p_self)
 
 //-----------------------------------------------------------------------------
 
+int cape_str_equal (const CapeString s1, const CapeString s2)
+{
+  if (NULL == s1)
+  {
+    return FALSE;
+  }
+
+  if (NULL == s2)
+  {
+    return FALSE;
+  }
+  
+  return strcmp (s1, s2) == 0;
+}
+
+//-----------------------------------------------------------------------------
+
 CapeString cape_str_uuid (void)
 {
   CapeString self = CAPE_ALLOC(38);

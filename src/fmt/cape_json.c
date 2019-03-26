@@ -106,8 +106,7 @@ CapeUdc cape_json_from_buf (const char* buffer, number_t size, const CapeString 
   res = cape_parser_json_process (parser_json, buffer, size, err);
   if (res)
   {
-    //eclog_msg (LL_ERROR, "JSON", "reader", err->text);
-    //eclog_msg (LL_WARN, "JSON", "reader", buffer);
+    printf ("ERROR JSON PARSER: %s\n", cape_err_text(err));
   }
   else
   {

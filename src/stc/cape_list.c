@@ -574,7 +574,7 @@ void cape_list_cursor_destroy (CapeListCursor** pcursor)
 
 void cape_list_cursor_init (CapeList self, CapeListCursor* cursor, int direction)
 {
-  if (direction)
+  if (direction == CAPE_DIRECTION_FORW)
   {
     cursor->node = self->fpos;
   }

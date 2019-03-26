@@ -2,9 +2,28 @@
 #define __CAPE_STC__HPP__H 1
 
 #include <stc/cape_stream.h>
+#include <stc/cape_list.h>
 
 namespace cape
 {
+  
+  struct ListHolder
+  {
+    ListHolder (CapeList obj) : m_obj (obj) {}
+    
+    ~ListHolder () { cape_list_del (&m_obj); }
+    
+    CapeList m_obj;
+  };
+
+  struct UdcHolder
+  {
+    UdcHolder (CapeUdc obj) : m_obj (obj) {}
+    
+    ~UdcHolder () { cape_udc_del (&m_obj); }
+    
+    CapeUdc m_obj;
+  };
 
   //======================================================================
   

@@ -7,6 +7,10 @@
 
 //-----------------------------------------------------------------------------
 
+#include <stdlib.h>
+
+//-----------------------------------------------------------------------------
+
 struct CapeUdc_s
 {
   u_t type;
@@ -401,6 +405,20 @@ number_t cape_udc_n (CapeUdc self, number_t alt)
     case CAPE_UDC_NUMBER:
     {
       return (number_t)(self->data);
+    }
+    case CAPE_UDC_STRING:
+    {
+      char * pEnd;
+      long h = strtol (self->data, &pEnd, 10);
+      
+      if (pEnd)
+      {
+        return h;
+      }
+      else
+      {
+        return alt;
+      }      
     }
     default:
     {

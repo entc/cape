@@ -20,6 +20,11 @@ namespace cape
       cape_err_del (&err);
     }
     
+    const char* text ()
+    {
+      return cape_err_text (err);
+    }
+    
     CapeErr err;
     
   };

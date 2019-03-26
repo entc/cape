@@ -220,9 +220,9 @@ void cape_parser_json_pop (CapeParserJson self)
   // fetch last element
   {
     CapeListCursor cursor;
-    cape_list_cursor_init (self->stack, &cursor, CAPE_DIRECTION_FORW);
+    cape_list_cursor_init (self->stack, &cursor, CAPE_DIRECTION_PREV);
     
-    if (cape_list_cursor_next (&cursor))
+    if (cape_list_cursor_prev (&cursor))
     {
       self->keyElement = cape_list_node_data (cursor.node);
     }
@@ -577,7 +577,7 @@ int cape_parser_json_process (CapeParserJson self, const char* buffer, number_t 
           }
           default:
           {
-            return cape_err_set (err, CAPE_ERR_PARSER, "unexpected state in '{'");
+            return cape_err_set_fmt (err, CAPE_ERR_PARSER, "unexpected state [%i] in '{' : '%s'", state, c);
           }
         }
         
