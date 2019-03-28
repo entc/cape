@@ -23,7 +23,7 @@ struct CapeErr_s
 
 CapeErr cape_err_new (void)
 {
-  CapeErr self = malloc (sizeof(struct CapeErr_s));
+  CapeErr self = CAPE_NEW (struct CapeErr_s);
 
   self->text = NULL;
   self->code = CAPE_ERR_NONE;
@@ -35,12 +35,14 @@ CapeErr cape_err_new (void)
 
 void cape_err_del (CapeErr* p_self)
 {
-  CapeErr self = *p_self;
-  *p_self = NULL;
-  
-  cape_str_del (&(self->text));
-  
-  free (self);
+  if (*p_self)
+  {
+    CapeErr self = *p_self;
+    
+    cape_str_del (&(self->text));
+    
+    CAPE_DEL (p_self, struct CapeErr_s);
+  }  
 }
 
 //-----------------------------------------------------------------------------
