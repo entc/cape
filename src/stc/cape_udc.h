@@ -12,6 +12,7 @@
 #define CAPE_UDC_NUMBER       4
 #define CAPE_UDC_FLOAT        5
 #define CAPE_UDC_BOOL         6
+#define CAPE_UDC_NULL         7
 
 //=============================================================================
 
@@ -82,6 +83,8 @@ __CAPE_LIBEX   CapeUdc           cape_udc_add_n            (CapeUdc, const CapeS
 __CAPE_LIBEX   CapeUdc           cape_udc_add_f            (CapeUdc, const CapeString name, double val);
 
 __CAPE_LIBEX   CapeUdc           cape_udc_add_b            (CapeUdc, const CapeString name, int val);
+
+__CAPE_LIBEX   CapeUdc           cape_udc_add_z            (CapeUdc, const CapeString name);   // NULL value
 
 __CAPE_LIBEX   CapeUdc           cape_udc_add_node         (CapeUdc, const CapeString name);
 

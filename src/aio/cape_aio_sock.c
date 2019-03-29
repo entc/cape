@@ -268,11 +268,20 @@ void cape_aio_socket_write (CapeAioSocket self, long sockfd)
             self->mask |= CAPE_AIO_DONE;
             
             cape_err_del(&err);
+
+            cape_aio_socket_unref (self);
+            
+            return;
           }
-          
-          cape_aio_socket_unref (self);
-          
-          return;
+          else
+          {
+            // TODO: make it better
+            
+            // do a context switch
+            sleep (0);
+            
+            continue;
+          }
         }
         else if (writtenBytes == 0)
         {
@@ -290,8 +299,6 @@ void cape_aio_socket_write (CapeAioSocket self, long sockfd)
           
           if (self->send_buftos == self->send_buflen)
           {
-            //printf ("bytes written {%p} %i [%i]\n", self->send_userdata, writtenBytes, self->send_buflen);
-            
             self->mask &= ~CAPE_AIO_WRITE;
             
             self->send_buflen = 0;

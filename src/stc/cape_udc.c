@@ -520,6 +520,15 @@ CapeUdc cape_udc_add_b (CapeUdc self, const CapeString name, int val)
 
 //-----------------------------------------------------------------------------
 
+CapeUdc cape_udc_add_z (CapeUdc self, const CapeString name)
+{
+  CapeUdc h = cape_udc_new (CAPE_UDC_NULL, name);
+  
+  return cape_udc_add (self, &h);
+}
+
+//-----------------------------------------------------------------------------
+
 CapeUdc cape_udc_add_node (CapeUdc self, const CapeString name)
 {
   CapeUdc h = cape_udc_new (CAPE_UDC_NODE, name);
