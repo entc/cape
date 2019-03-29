@@ -126,7 +126,9 @@ static void __STDCALL cape_aio_context_events_onDestroy (void* ptr)
 CapeAioContext cape_aio_context_new (void)
 {
   CapeAioContext self = CAPE_NEW (struct CapeAioContext_s);
-
+  
+  memset (&(self->mutex), 0, sizeof(pthread_mutex_t));
+  
   pthread_mutex_init (&(self->mutex), NULL);
   
   self->efd = -1;

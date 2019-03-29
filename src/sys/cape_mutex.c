@@ -9,6 +9,8 @@ CapeMutex cape_mutex_new (void)
 {
   pthread_mutex_t* self = CAPE_NEW(pthread_mutex_t);
   
+  memset (self, 0, sizeof(pthread_mutex_t));
+  
   pthread_mutex_init (self, NULL);
   
   return self;

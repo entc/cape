@@ -24,6 +24,15 @@ namespace cape
     
     CapeUdc m_obj;
   };
+  
+  struct StringHolder
+  {
+    StringHolder (CapeString obj) : m_obj (obj) {}
+    
+    ~StringHolder () { cape_str_del (&m_obj); }
+    
+    CapeString m_obj;
+  };
 
   //======================================================================
   
