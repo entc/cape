@@ -24,12 +24,12 @@
 struct CapeMap_s; typedef struct CapeMap_s* CapeMap;
 struct CapeMapNode_s; typedef struct CapeMapNode_s* CapeMapNode;
 
-typedef int   (__STDCALL *fct_cape_map_cmp)      (const void* a, const void* b);
+typedef int   (__STDCALL *fct_cape_map_cmp)      (const void* a, const void* b, void* ptr);
 typedef void  (__STDCALL *fct_cape_map_destroy)  (void* key, void* val);
 
 //-----------------------------------------------------------------------------
 
-__CAPE_LIBEX   CapeMap           cape_map_new               (fct_cape_map_cmp, fct_cape_map_destroy);
+__CAPE_LIBEX   CapeMap           cape_map_new               (fct_cape_map_cmp, fct_cape_map_destroy, void* ptr_cmp);
 
 __CAPE_LIBEX   void              cape_map_del               (CapeMap*);
 
@@ -39,7 +39,7 @@ __CAPE_LIBEX   void              cape_map_clr               (CapeMap);
 
 __CAPE_LIBEX   CapeMapNode       cape_map_insert            (CapeMap, void* key, void* data);
 
-__CAPE_LIBEX   CapeMapNode       cape_map_find              (CapeMap, void* key);
+__CAPE_LIBEX   CapeMapNode       cape_map_find              (CapeMap, const void* key);
 
 __CAPE_LIBEX   void              cape_map_erase             (CapeMap, CapeMapNode);       // removes the node, calls the onDestroy callback and releases the node
 
@@ -48,6 +48,10 @@ __CAPE_LIBEX   CapeMapNode       cape_map_extract           (CapeMap, CapeMapNod
 __CAPE_LIBEX   void              cape_map_del_node          (CapeMap, CapeMapNode*);      // calls the onDestroy callback and releases the node
 
 __CAPE_LIBEX   unsigned long     cape_map_size              (CapeMap);
+
+__CAPE_LIBEX   CapeMapNode       cape_map_first             (CapeMap);
+
+__CAPE_LIBEX   CapeMapNode       cape_map_last              (CapeMap);
 
 //-----------------------------------------------------------------------------
 

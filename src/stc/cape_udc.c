@@ -49,7 +49,7 @@ CapeUdc cape_udc_new (u_t type, const CapeString name)
   {
     case CAPE_UDC_NODE:
     {
-      self->data = cape_map_new (NULL, cape_udc_node_onDel);
+      self->data = cape_map_new (NULL, cape_udc_node_onDel, NULL);
       break;
     }
     case CAPE_UDC_LIST:
