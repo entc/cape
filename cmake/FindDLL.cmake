@@ -24,11 +24,11 @@
 #-------------------------------------------------------------------------------
 
 # The following variables are set when DL is found:
-#  DL_FOUND 
-#  DL_INCLUDES
-#  DL_LIBRARIES
+#  DLL_FOUND 
+#  DLL_INCLUDES
+#  DLL_LIBRARIES
 
-if (NOT DL_FOUND)
+if (NOT DLL_FOUND)
 
 	IF (WIN32)
 	  # we can use windows onw DLo libs
@@ -39,7 +39,7 @@ if (NOT DL_FOUND)
 	  ##____________________________________________________________________________
 	  ## Check for the header files
 
-	  find_path (DL_INCLUDES
+	  find_path (DLL_INCLUDES
 		NAMES dlfcn.h
 		HINTS ${CMAKE_INSTALL_PREFIX}
 		PATH_SUFFIXES include
@@ -48,7 +48,7 @@ if (NOT DL_FOUND)
 	  ##____________________________________________________________________________
 	  ## Check for the library
 
-	  find_library (DL_LIBRARIES
+	  find_library (DLL_LIBRARIES
 		NAMES dl
 		HINTS ${CMAKE_INSTALL_PREFIX}
 		PATH_SUFFIXES lib
@@ -57,29 +57,28 @@ if (NOT DL_FOUND)
 	  ##____________________________________________________________________________
 	  ## Actions taken when all components have been found
 
-	  find_package_handle_standard_args (DL DEFAULT_MSG DL_LIBRARIES DL_INCLUDES)
+	  find_package_handle_standard_args (DLL DEFAULT_MSG DLL_LIBRARIES DLL_INCLUDES)
 		
-	  if (DL_FOUND)
-		if (NOT DL_FIND_QUIETLY)
-		  message (STATUS "Found components for DL")
-		  message (STATUS "DL_INCLUDES  = ${DL_INCLUDES}")
-		  message (STATUS "DL_LIBRARIES = ${DL_LIBRARIES}")
-		endif (NOT DL_FIND_QUIETLY)
-	  else (DL_FOUND)
-		if (DL_FIND_REQUIRED)
+	  if (DLL_FOUND)
+		if (NOT DLL_FIND_QUIETLY)
+		  message (STATUS "DLL_INCLUDES  = ${DLL_INCLUDES}")
+		  message (STATUS "DLL_LIBRARIES = ${DLL_LIBRARIES}")
+		endif (NOT DLL_FIND_QUIETLY)
+	  else (DLL_FOUND)
+		if (DLL_FIND_REQUIRED)
 		  message (FATAL_ERROR "Could not find DL!")
-		endif (DL_FIND_REQUIRED)
-	  endif (DL_FOUND)
+		endif (DLL_FIND_REQUIRED)
+	  endif (DLL_FOUND)
 
 	  ##____________________________________________________________________________
 	  ## Mark advanced variables
 
 	  mark_as_advanced (
-		DL_ROOT_DIR
-		DL_INCLUDES
-		DL_LIBRARIES
+		DLL_ROOT_DIR
+		DLL_INCLUDES
+		DLL_LIBRARIES
 		)
 
 	ENDIF(WIN32)
 
-endif (NOT DL_FOUND)
+endif (NOT DLL_FOUND)

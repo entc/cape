@@ -2,10 +2,13 @@
 
 #include "sys/cape_types.h"
 
+//-----------------------------------------------------------------------------
+
 #include <malloc.h>
 #include <sys/timerfd.h>
 #include <memory.h>
 #include <unistd.h>
+#include <bits/time.h>
 
 //-----------------------------------------------------------------------------
 

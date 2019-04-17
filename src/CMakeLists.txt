@@ -2,7 +2,8 @@ cmake_minimum_required(VERSION 2.4)
 
 SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../cmake)
 
-find_package(DL)
+find_package(DLL)
+find_package(PThread)
 
 #----------------------------------------------------------------------------------
 
@@ -79,7 +80,7 @@ SET(CAPE_FMT_HEADERS
 INCLUDE_DIRECTORIES(".")
 
 add_library             (cape SHARED ${CAPE_STC_SOURCES} ${CAPE_STC_HEADERS} ${CAPE_SYS_SOURCES} ${CAPE_SYS_HEADERS} ${CAPE_AIO_SOURCES} ${CAPE_AIO_HEADERS} ${CAPE_FMT_SOURCES} ${CAPE_FMT_HEADERS})
-target_link_libraries   (cape ${CMAKE_DL_LIBS})
+target_link_libraries   (cape ${DLL_LIBRARIES} ${PTHREAD_LIBRARIES})
 set_target_properties   (cape PROPERTIES VERSION 1.0.1 SOVERSION 1.0.1)
 
 #----------------------------------------------------------------------------------
