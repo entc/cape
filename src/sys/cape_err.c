@@ -4,7 +4,6 @@
 #include "stc/cape_str.h"
 
 // c includes
-#include <malloc.h>
 #include <errno.h>
 #include <string.h>
 #include <stdarg.h>

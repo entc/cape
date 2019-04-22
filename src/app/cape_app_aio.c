@@ -7,7 +7,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <malloc.h>
 #include <signal.h>
 #include <fcntl.h>
 
@@ -44,7 +43,7 @@ int main (int argc, char *argv[])
       
   }
 
-  res = cape_aio_context_wait (aio);
+  res = cape_aio_context_wait (aio, err);
   
   cape_aio_context_del (&aio);
 

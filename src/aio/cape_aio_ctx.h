@@ -3,6 +3,7 @@
 
 #include "sys/cape_export.h"
 #include "sys/cape_types.h"
+#include "sys/cape_err.h"
 
 //=============================================================================
 
@@ -34,9 +35,11 @@ __CAPE_LIBEX   int               cape_aio_context_close         (CapeAioContext)
 
 //-----------------------------------------------------------------------------
 
-__CAPE_LIBEX   int               cape_aio_context_wait          (CapeAioContext);   // blocking the thread, until the context was closed
+               // blocking the thread, until the context was closed
+__CAPE_LIBEX   int               cape_aio_context_wait          (CapeAioContext, CapeErr);
 
-__CAPE_LIBEX   int               cape_aio_context_next          (CapeAioContext, long timeout_in_ms);   // waits until next event or timeout occours
+               // waits until next event or timeout occours
+__CAPE_LIBEX   int               cape_aio_context_next          (CapeAioContext, long timeout_in_ms, CapeErr);
 
 //-----------------------------------------------------------------------------
 

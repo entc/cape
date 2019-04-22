@@ -1,20 +1,50 @@
 #ifndef __CAPE_SYS__EXPORT__H
 #define __CAPE_SYS__EXPORT__H 1
 
-#if defined _WIN64 || defined _WIN32
-
-#define __CAPE_LIBEX  __declspec( dllexport )
-#define __STDCALL __stdcall
-
-#else
-
+//----------------------------------------------------------------------------------
 #ifdef __cplusplus
-  #define __CAPE_LIBEX extern "C" 
+  #define __EXTERN_C    extern "C"
 #else
-  #define __CAPE_LIBEX
+  #define __EXTERN_C
 #endif
 
+//----------------------------------------------------------------------------------
+
+#if defined _WIN64 || defined _WIN32
+
+#define __WIN_OS 1
+#define __ENTC_LIBEX __EXTERN_C __declspec(dllexport)
+
+#define __STDCALL __stdcall
+
+//----------------------------------------------------------------------------------
+
+#elif defined __APPLE__
+
+#define __BSD_OS 1
+
+#define __CAPE_LIBEX __EXTERN_C
 #define __STDCALL
+
+//----------------------------------------------------------------------------------
+
+#elif defined __bsdi__ || defined __OpenBSD__ || defined __FreeBSD__ || defined __NetBSD__ || __DragonFly__
+
+#define __BSD_OS 1
+
+#define __CAPE_LIBEX __EXTERN_C
+#define __STDCALL
+
+//----------------------------------------------------------------------------------
+
+#elif __linux__
+
+#define __LINUX_OS 1
+
+#define __ENTC_LIBEX __EXTERN_C
+#define __STDCALL
+
+//----------------------------------------------------------------------------------
 
 #endif
 

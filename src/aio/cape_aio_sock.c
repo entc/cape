@@ -3,6 +3,10 @@
 // cape includes
 #include "sys/cape_types.h"
 
+#ifdef __APPLE__
+
+#elif __linux__
+
 // linux includes
 #include <memory.h>
 #include <sys/socket.h>	// basic socket definitions
@@ -12,7 +16,6 @@
 #include <errno.h>
 #include <unistd.h>
 #include <netdb.h>
-#include <malloc.h>
 
 #include <sys/epoll.h>
 
@@ -583,3 +586,5 @@ void cape_aio_accept_add (CapeAioAccept* p_self, CapeAioContext aio)
 }
 
 //-----------------------------------------------------------------------------
+
+#endif

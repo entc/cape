@@ -2,9 +2,10 @@
 
 #include "sys/cape_types.h"
 
+#ifdef __linux__
+
 //-----------------------------------------------------------------------------
 
-#include <malloc.h>
 #include <sys/timerfd.h>
 #include <memory.h>
 #include <unistd.h>
@@ -130,4 +131,6 @@ int cape_aio_timer_add (CapeAioTimer* p_self, CapeAioContext aio)
 }
 
 //-----------------------------------------------------------------------------
+
+#endif
 
