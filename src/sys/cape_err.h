@@ -22,7 +22,7 @@ struct CapeErr_s; typedef struct CapeErr_s* CapeErr;
 
 //-----------------------------------------------------------------------------
 
-__CAPE_LIBEX   CapeErr           cape_err_new           (void);            // allocate memory and initialize the object
+__CAPE_LIBEX   CapeErr           cape_err_new           (void);             // allocate memory and initialize the object
 
 __CAPE_LIBEX   void              cape_err_del           (CapeErr*);         // release memory
 

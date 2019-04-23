@@ -41,7 +41,7 @@
 
 #define __LINUX_OS 1
 
-#define __ENTC_LIBEX __EXTERN_C
+#define __CAPE_LIBEX __EXTERN_C
 #define __STDCALL
 
 //----------------------------------------------------------------------------------

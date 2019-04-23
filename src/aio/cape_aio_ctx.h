@@ -54,14 +54,12 @@ __CAPE_LIBEX   int               cape_aio_context_next          (CapeAioContext,
 
 __CAPE_LIBEX   int               cape_aio_context_add           (CapeAioContext, CapeAioHandle);         // add handle to event queue
 
-// modify handle
+               // modify handle
 __CAPE_LIBEX   void              cape_aio_context_mod           (CapeAioContext, CapeAioHandle aioh, int hflags);                                                          
 
 //-----------------------------------------------------------------------------
 
-__CAPE_LIBEX   int               cape_aio_context_signal_map    (CapeAioContext, int signal, int);  // set signal mapping
-
-// add handle for a signals to return a specific status
+               // add handle for a signals to return a specific status
 __CAPE_LIBEX   int               cape_aio_context_set_interupts (CapeAioContext, int sigint, int term, CapeErr);
 
 //=============================================================================

@@ -17,12 +17,6 @@
 
 #elif defined __BSD_OS || defined __LINUX_OS
 
-#include <pthread.h>
-#include <errno.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <signal.h>
-
 #if defined __BSD_OS
 
 #include <sys/event.h>
@@ -35,6 +29,13 @@
 #define CAPE_AIO_EPOLL_MAXEVENTS 1
 
 #endif
+
+#include <pthread.h>
+#include <errno.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <signal.h>
+#include <stdlib.h>
 
 //-----------------------------------------------------------------------------
 
@@ -95,9 +96,9 @@ struct CapeAioContext_s
   
   long sfd;             // eventfd file descriptor
   
-#endif
-  
   int smap[32];         // map for signal handling
+  
+#endif
   
   CapeList events;      // store all events into this list (used only for destruction)
   
@@ -141,8 +142,6 @@ CapeAioContext cape_aio_context_new (void)
   self->efd = -1;
   self->sfd = -1;
 
-#endif
-  
   {
     int i;
     
@@ -152,6 +151,8 @@ CapeAioContext cape_aio_context_new (void)
     }
   }
   
+#endif
+    
   self->events = cape_list_new (cape_aio_context_events_onDestroy);
   
   return self;
@@ -255,16 +256,7 @@ int cape_aio_context_close (CapeAioContext self, CapeErr err)
 
 int cape_aio_context_wait (CapeAioContext self, CapeErr err)
 {
-  int res;
-  
-  while (TRUE)
-  {
-    res = cape_aio_context_next (self, -1, err);
-    if (res)
-    {
-      return res;
-    }
-  }
+  while (cape_aio_context_next (self, -1, err) == CAPE_ERR_NONE);
   
   return CAPE_ERR_NONE;
 }
@@ -312,6 +304,33 @@ exit_and_unlock:
 
 //-----------------------------------------------------------------------------
 
+#if defined __BSD_OS
+
+#else
+
+void cape_aio_update_events (struct epoll_event* event, int hflags)
+{
+  
+  event->events = EPOLLET | EPOLLONESHOT;
+  
+  if (hflags & CAPE_AIO_READ)
+  {
+    event->events |= EPOLLIN;
+  }
+  
+  if (hflags & CAPE_AIO_WRITE)
+  {
+    event->events |= EPOLLOUT;
+  }
+  
+  if (hflags & CAPE_AIO_ALIVE)
+  {
+    event->events |= EPOLLHUP;
+  }
+}
+
+//-----------------------------------------------------------------------------
+
 int cape_aio_context_sigmask (CapeAioContext self, sigset_t* sigset)
 {
   int res, i;
@@ -330,6 +349,8 @@ int cape_aio_context_sigmask (CapeAioContext self, sigset_t* sigset)
   
   return 0;
 }
+
+#endif
 
 //-----------------------------------------------------------------------------
 
@@ -388,6 +409,32 @@ int cape_aio_context_next (CapeAioContext self, long timeout_in_ms, CapeErr err)
       {
         hflags_result = 0;
       }
+      
+      if (hflags_result & CAPE_AIO_DONE)
+      {
+        
+        
+        // remove the handle from events
+        cape_aio_remove_handle (self, hobj);
+        
+        //printf ("[%p] handle removed\n", self);
+        
+        goto exit;
+      }
+      
+      if (hflags_result & CAPE_AIO_ABORT)
+      {
+        return CAPE_ERR_CONTINUE;
+      }
+      
+      if (hflags_result == CAPE_AIO_NONE)
+      {
+        
+      }
+      else
+      {
+        
+      }
     }
     else
     {
@@ -410,11 +457,11 @@ int cape_aio_context_next (CapeAioContext self, long timeout_in_ms, CapeErr err)
       
       if (signalKind)
       {
-        //eclog_fmt (LL_TRACE, "ENTC", "signal", "signal seen [%i] -> %s", event.ident, signalKind);
+        cape_log_fmt (CAPE_LL_TRACE, "CAPE", "{aio next}", "signal seen [%i] -> %s", event.ident, signalKind);
         
-        if (event.ident > 0 && event.ident < 32)
+        if (event.ident == SIGINT || event.ident == SIGTERM)
         {
-          return self->smap[event.ident] | CAPE_AIO_READ;
+          return CAPE_ERR_CONTINUE;
         }
       }
       else
@@ -428,7 +475,7 @@ int cape_aio_context_next (CapeAioContext self, long timeout_in_ms, CapeErr err)
   
 #else
   
-  int n, res = 0;
+  int n, res;
   struct epoll_event *events;
   sigset_t sigset;
   
@@ -454,8 +501,7 @@ int cape_aio_context_next (CapeAioContext self, long timeout_in_ms, CapeErr err)
   
   if (n < 0)
   {
-    printf ("ERROR on EPOLL\n");
-    
+    res = cape_err_lastOSError (err);    
     goto exit;
   }
   
@@ -469,9 +515,9 @@ int cape_aio_context_next (CapeAioContext self, long timeout_in_ms, CapeErr err)
     {
       number_t hflags_result;
       
-      if (hobj->onEvent)
+      if (hobj->on_event)
       {
-        hflags_result = hobj->onEvent (hobj->ptr, (void*)hobj->hfd, hobj->hflags, events[i].events, NULL, 0);
+        hflags_result = hobj->on_event (hobj->ptr, (void*)hobj->hfd, hobj->hflags, events[i].events, NULL, 0);
       }
       else
       {
@@ -492,10 +538,7 @@ int cape_aio_context_next (CapeAioContext self, long timeout_in_ms, CapeErr err)
       
       if (hflags_result & CAPE_AIO_ABORT)
       {
-        //printf ("ABORT SEEN\n");
-        
-        // cape_aio_context_closeAll (self);
-        res = 1;
+        res = CAPE_ERR_CONTINUE;
       }
       
       if (hflags_result == CAPE_AIO_NONE)
@@ -515,8 +558,6 @@ int cape_aio_context_next (CapeAioContext self, long timeout_in_ms, CapeErr err)
     }
   }
   
-  goto exit;
-  
   //---------------------
 exit:
   
@@ -526,35 +567,6 @@ exit:
 
 #endif
 }
-
-//-----------------------------------------------------------------------------
-
-#if defined __BSD_OS
-
-#else
-
-void cape_aio_update_events (struct epoll_event* event, int hflags)
-{
-
-  event->events = EPOLLET | EPOLLONESHOT;
-  
-  if (hflags & CAPE_AIO_READ)
-  {
-    event->events |= EPOLLIN;
-  }
-  
-  if (hflags & CAPE_AIO_WRITE)
-  {
-    event->events |= EPOLLOUT;
-  }
-  
-  if (hflags & CAPE_AIO_ALIVE)
-  {
-    event->events |= EPOLLHUP;
-  }
-}
-
-#endif
 
 //-----------------------------------------------------------------------------
 
@@ -594,8 +606,9 @@ void cape_aio_context_mod (CapeAioContext self, CapeAioHandle aioh, int hflags)
     return;
   }
   
-  aioh->hflags = hflags;
 #endif
+  
+  aioh->hflags = hflags;
 }
 
 //-----------------------------------------------------------------------------
@@ -675,6 +688,8 @@ int cape_aio_context_add (CapeAioContext self, CapeAioHandle aioh)
   return TRUE;
 }
 
+#if defined __LINUX_OS
+
 //-----------------------------------------------------------------------------
 
 int cape_aio_context_signal_map (CapeAioContext self, int signal, int status)
@@ -688,8 +703,6 @@ int cape_aio_context_signal_map (CapeAioContext self, int signal, int status)
   
   return -1;
 }
-
-#if defined __LINUX_OS
 
 //-----------------------------------------------------------------------------
 
@@ -777,23 +790,31 @@ int cape_aio_context_set_interupts (CapeAioContext self, int sigint, int term, C
   
   if (self->sfd != -1)
   {
-    return -1;
+    return cape_err_set (err, CAPE_ERR_NO_OBJECT, "file-descriptor is not set");
   }
-  
+
   if (sigint)
   {
-    res = cape_aio_context_signal_map (aio, SIGINT, CAPE_AIO_ABORT);
+    cape_aio_context_signal_map (self, SIGINT, CAPE_AIO_ABORT);
   }
-
+  
   if (term)
   {
-    res = cape_aio_context_signal_map (aio, SIGTERM, CAPE_AIO_ABORT);
+    cape_aio_context_signal_map (self, SIGTERM, CAPE_AIO_ABORT);
   }
-
+  
   res = cape_aio_context_sigmask (self, &sigset);
+  if (res)
+  {
+    return cape_err_lastOSError (err);    
+  }
   
   // we must block the signals in order for signalfd to receive them
   res = sigprocmask (SIG_BLOCK, &sigset, NULL);
+  if (res)
+  {
+    return cape_err_lastOSError (err);    
+  }
   
   // create the signalfd
   self->sfd = signalfd(-1, &sigset, 0);
