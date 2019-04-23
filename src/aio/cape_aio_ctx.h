@@ -29,9 +29,9 @@ __CAPE_LIBEX   CapeAioContext    cape_aio_context_new           (void);         
 
 __CAPE_LIBEX   void              cape_aio_context_del           (CapeAioContext*);  // release memory
 
-__CAPE_LIBEX   int               cape_aio_context_open          (CapeAioContext);   // open the context, now wait or next can be used to gather events
+__CAPE_LIBEX   int               cape_aio_context_open          (CapeAioContext, CapeErr);   // open the context, now wait or next can be used to gather events
 
-__CAPE_LIBEX   int               cape_aio_context_close         (CapeAioContext);   // close the context and all handles will be triggered for destruction
+__CAPE_LIBEX   int               cape_aio_context_close         (CapeAioContext, CapeErr);   // close the context and all handles will be triggered for destruction
 
 //-----------------------------------------------------------------------------
 
@@ -61,7 +61,8 @@ __CAPE_LIBEX   void              cape_aio_context_mod           (CapeAioContext,
 
 __CAPE_LIBEX   int               cape_aio_context_signal_map    (CapeAioContext, int signal, int);  // set signal mapping
 
-__CAPE_LIBEX   int               cape_aio_context_signal_set    (CapeAioContext);  // add handle for a signals to return a specific status
+// add handle for a signals to return a specific status
+__CAPE_LIBEX   int               cape_aio_context_set_interupts (CapeAioContext, int sigint, int term, CapeErr);
 
 //=============================================================================
 

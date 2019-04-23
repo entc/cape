@@ -3,11 +3,8 @@
 // cape includes
 #include "sys/cape_types.h"
 
-#ifdef __APPLE__
+#if defined __BSD_OS || defined __LINUX_OS
 
-#elif __linux__
-
-// linux includes
 #include <memory.h>
 #include <sys/socket.h>	// basic socket definitions
 #include <sys/types.h>
@@ -17,7 +14,18 @@
 #include <unistd.h>
 #include <netdb.h>
 
+// includes specific event subsystem
+#if defined __BSD_OS
+
+#include <sys/event.h>
+#define CAPE_NO_SIGNALS SO_NOSIGPIPE
+
+#elif defined __LINUX_OS
+
 #include <sys/epoll.h>
+#define CAPE_NO_SIGNALS MSG_NOSIGNAL
+
+#endif
 
 //-----------------------------------------------------------------------------
 
@@ -201,7 +209,7 @@ void cape_aio_socket_read (CapeAioSocket self, long sockfd)
     
     while (TRUE)
     {
-      ssize_t readBytes = recv (sockfd, self->recv_bufdat, self->recv_buflen, MSG_NOSIGNAL);
+      ssize_t readBytes = recv (sockfd, self->recv_bufdat, self->recv_buflen, CAPE_NO_SIGNALS);
       if (readBytes < 0)
       {
         if( (errno != EWOULDBLOCK) && (errno != EINPROGRESS) && (errno != EAGAIN))
@@ -257,7 +265,7 @@ void cape_aio_socket_write (CapeAioSocket self, long sockfd)
     {
       while (self->send_bufdat)
       {
-        ssize_t writtenBytes = send (sockfd, self->send_bufdat + self->send_buftos, self->send_buflen - self->send_buftos, MSG_NOSIGNAL);
+        ssize_t writtenBytes = send (sockfd, self->send_bufdat + self->send_buftos, self->send_buflen - self->send_buftos, CAPE_NO_SIGNALS);
         if (writtenBytes < 0)
         {
           if( (errno != EWOULDBLOCK) && (errno != EINPROGRESS) && (errno != EAGAIN))
@@ -361,12 +369,20 @@ static int __STDCALL cape_aio_socket_onEvent (void* ptr, void* handle, int hflag
   }
   else
   {
-      if (events & EPOLLIN)
+#ifdef __BSD_OS
+    if (events & EVFILT_READ)
+#else
+    if (events & EPOLLIN)
+#endif
       {
           cape_aio_socket_read (self, sock);
       }
       
+#ifdef __BSD_OS
+    if (events & EVFILT_WRITE)
+#else
       if (events & EPOLLOUT)
+#endif
       {
           cape_aio_socket_write (self, sock);
       }
