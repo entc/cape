@@ -2,7 +2,11 @@
 
 // cape includes
 #include "fmt/cape_parser_json.h"
+#include "sys/cape_log.h"
 #include "stc/cape_stream.h"
+
+// c includes
+#include <wchar.h>
 
 //-----------------------------------------------------------------------------------------------------------
 
@@ -217,145 +221,125 @@ void cape_json_escape (CapeStream stream, const CapeString source)
             cape_stream_append_c (stream, *c);
           }
           else if ((*c & 0xE0) == 0xC0) 
-            //  (0xC2 <= c[0] && c[0] <= 0xDF) && (0x80 <= c[1] && c[1] <= 0xBF))
           {
-            char buffer[8];
-            // convert UTF8 into 4 hex digits 
+            char* buf = CAPE_ALLOC(10);
+            
+            // convert UTF8 into 4 hex digits
             wchar_t wc;
             
             wc = (c[0] & 0x1F) << 6;
             wc |= (c[1] & 0x3F);
             
-            #if defined _WIN64 || defined _WIN32
-            sprintf_s (buffer, 8, "\\u%.4x", wc);
-            #else
+#if defined _WIN64 || defined _WIN32
+            sprintf_s (buf, 8, "\\u%.4x", wc);
+#else
             // TODO: there might be a better way to do it
-            sprintf (buffer, "\\u%.4x", wc);
-            #endif
+            sprintf (buf, "\\u%.4x", wc);
+#endif
             
-            cape_stream_append_buf (stream, buffer, 6);
+            cape_stream_append_buf (stream, buf, 6);
             
             c += 1;
+            
+            CAPE_FREE(buf);
           }
           else if ((*c & 0xF0) == 0xE0) 
-            /* (c[0] == 0xE0 && (0xA0 <= c[1] && c[1] <= 0xBF) && (0x80 <= c[2] && c[2] <= 0xBF)) ||
-             *            (// straight 3-byte
-             *                    ((0xE1 <= c[0] && c[0] <= 0xEC) || c[0] == 0xEE || c[0] == 0xEF) &&
-             *                    (0x80 <= c[1] && c[1] <= 0xBF) &&
-             *                    (0x80 <= c[2] && c[2] <= 0xBF)
-             *                ) ||
-             *                (// excluding surrogates
-             *                    c[0] == 0xED &&
-             *                    (0x80 <= c[1] && c[1] <= 0x9F) &&
-             *                    (0x80 <= c[2] && c[2] <= 0xBF))) 
-             */
-            {
-              char buffer[8];
-              wchar_t wc;
-              
-              wc = (c[0] & 0xF) << 12;
-              wc |= (c[1] & 0x3F) << 6;
-              wc |= (c[2] & 0x3F);
-              
-              c += 2;
-              
-              #if defined _WIN64 || defined _WIN32
-              sprintf_s (buffer, 8, "\\u%.4x", wc);
-              #else
-              // TODO: there might be a better way to do it
-              sprintf (buffer, "\\u%.4x", wc);
-              #endif
-              cape_stream_append_buf (stream, buffer, 6); 
-            }
-            else if ( (*c & 0xF8) == 0xF0 )
-              /*( (// planes 1-3
-               *                    c[0] == 0xF0 &&
-               *                    (0x90 <= c[1] && c[1] <= 0xBF) &&
-               *                    (0x80 <= c[2] && c[2] <= 0xBF) &&
-               *                    (0x80 <= c[3] && c[3] <= 0xBF)
-               *                ) ||
-               *                (// planes 4-15
-               *                    (0xF1 <= c[0] && c[0] <= 0xF3) &&
-               *                    (0x80 <= c[1] && c[1] <= 0xBF) &&
-               *                    (0x80 <= c[2] && c[2] <= 0xBF) &&
-               *                    (0x80 <= c[3] && c[3] <= 0xBF)
-               *                ) ||
-               *                (// plane 16
-               *                    c[0] == 0xF4 &&
-               *                    (0x80 <= c[1] && c[1] <= 0x8F) &&
-               *                    (0x80 <= c[2] && c[2] <= 0xBF) &&
-               *                    (0x80 <= c[3] && c[3] <= 0xBF)
-               *                )
-               *          ) */
-              {
-                char buffer[8];
-                wchar_t wc;
-                
-                wc = (c[0] & 0x7) << 18;
-                wc |= (c[1] & 0x3F) << 12;
-                wc |= (c[2] & 0x3F) << 6;
-                wc |= (c[3] & 0x3F);
-                
-                c += 3;
-                
-                #if defined _WIN64 || defined _WIN32
-                sprintf_s (buffer, 8, "\\u%.4x", wc);
-                #else
-                // TODO: there might be a better way to do it
-                sprintf (buffer, "\\u%.4x", wc);
-                #endif
-                
-                cape_stream_append_buf (stream, buffer, 6); 
-              }
-              else if ( (*c & 0xFC) == 0xF8 )
-              {
-                char buffer[8];
-                wchar_t wc;
-                
-                wc = (c[0] & 0x3) << 24;
-                wc |= (c[1] & 0x3F) << 18;
-                wc |= (c[2] & 0x3F) << 12;
-                wc |= (c[3] & 0x3F) << 6;
-                wc |= (c[4] & 0x3F);
-                
-                c += 4;
-                
-                #if defined _WIN64 || defined _WIN32
-                sprintf_s (buffer, 8, "\\u%.4x", wc);
-                #else
-                // TODO: there might be a better way to do it
-                sprintf (buffer, "\\u%.4x", wc);
-                #endif
-                
-                cape_stream_append_buf (stream, buffer, 6); 
-              }
-              else if ( (*c & 0xFE) == 0xFC )
-              {
-                char buffer[8];
-                wchar_t wc;
-                
-                wc = (c[0] & 0x1) << 30;
-                wc |= (c[1] & 0x3F) << 24;
-                wc |= (c[2] & 0x3F) << 18;
-                wc |= (c[3] & 0x3F) << 12;
-                wc |= (c[4] & 0x3F) << 6;
-                wc |= (c[5] & 0x3F);
-                
-                c += 5;
-                
-                #if defined _WIN64 || defined _WIN32
-                sprintf_s (buffer, 8, "\\u%.4x", wc);
-                #else
-                // TODO: there might be a better way to do it
-                sprintf (buffer, "\\u%.4x", wc);
-                #endif
-                
-                cape_stream_append_buf (stream, buffer, 6); 
-              }
-              else
-              {
-                // not supported character
-              }
+          {
+            char* buf = CAPE_ALLOC(10);
+            wchar_t wc;
+            
+            wc = (c[0] & 0xF) << 12;
+            wc |= (c[1] & 0x3F) << 6;
+            wc |= (c[2] & 0x3F);
+            
+            c += 2;
+            
+#if defined _WIN64 || defined _WIN32
+            sprintf_s (buf, 8, "\\u%.4x", wc);
+#else
+            // TODO: there might be a better way to do it
+            sprintf (buf, "\\u%.4x", wc);
+#endif
+            cape_stream_append_buf (stream, buf, 6);
+            
+            CAPE_FREE(buf);
+          }
+          else if ( (*c & 0xF8) == 0xF0 )
+          {
+            char* buf = CAPE_ALLOC(10);
+            wchar_t wc;
+            
+            wc = (c[0] & 0x7) << 18;
+            wc |= (c[1] & 0x3F) << 12;
+            wc |= (c[2] & 0x3F) << 6;
+            wc |= (c[3] & 0x3F);
+            
+            c += 3;
+            
+#if defined _WIN64 || defined _WIN32
+            sprintf_s (buf, 8, "\\u%.4x", wc);
+#else
+            // TODO: there might be a better way to do it
+            sprintf (buf, "\\u%.4x", wc);
+#endif
+            
+            cape_stream_append_buf (stream, buf, 6);
+            
+            CAPE_FREE(buf);
+          }
+          else if ( (*c & 0xFC) == 0xF8 )
+          {
+            char* buf = CAPE_ALLOC(10);
+            wchar_t wc;
+            
+            wc = (c[0] & 0x3) << 24;
+            wc |= (c[1] & 0x3F) << 18;
+            wc |= (c[2] & 0x3F) << 12;
+            wc |= (c[3] & 0x3F) << 6;
+            wc |= (c[4] & 0x3F);
+            
+            c += 4;
+            
+#if defined _WIN64 || defined _WIN32
+            sprintf_s (buf, 8, "\\u%.4x", wc);
+#else
+            // TODO: there might be a better way to do it
+            sprintf (buf, "\\u%.4x", wc);
+#endif
+            
+            cape_stream_append_buf (stream, buf, 6);
+            
+            CAPE_FREE(buf);
+          }
+          else if ( (*c & 0xFE) == 0xFC )
+          {
+            char* buf = CAPE_ALLOC(10);
+            wchar_t wc;
+            
+            wc = (c[0] & 0x1) << 30;
+            wc |= (c[1] & 0x3F) << 24;
+            wc |= (c[2] & 0x3F) << 18;
+            wc |= (c[3] & 0x3F) << 12;
+            wc |= (c[4] & 0x3F) << 6;
+            wc |= (c[5] & 0x3F);
+            
+            c += 5;
+            
+#if defined _WIN64 || defined _WIN32
+            sprintf_s (buf, 8, "\\u%.4x", wc);
+#else
+            // TODO: there might be a better way to do it
+            sprintf (buf, "\\u%.4x", wc);
+#endif
+            
+            cape_stream_append_buf (stream, buf, 6);
+            
+            CAPE_FREE(buf);
+          }
+          else
+          {
+            // not supported character
+          }
         }
       }
     }

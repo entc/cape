@@ -1,6 +1,5 @@
 #include "cape_str.h"
 
-#include <malloc.h>
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>

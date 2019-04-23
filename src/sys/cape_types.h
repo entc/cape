@@ -1,8 +1,18 @@
 #ifndef __CAPE_TYPES__H
 #define __CAPE_TYPES__H 1
 
+#ifdef __APPLE__
+
+#include <malloc/malloc.h>
+#include <stdlib.h>
+#include <memory.h>
+
+#else
+
 #include <malloc.h>
 #include <memory.h>
+
+#endif
 
 //-----------------------------------------------------------------------------
 

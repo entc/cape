@@ -7,7 +7,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <malloc.h>
 #include <signal.h>
 #include <fcntl.h>
 
@@ -21,12 +20,17 @@ int main (int argc, char *argv[])
   
   CapeAioContext aio = cape_aio_context_new ();
   
-  res = cape_aio_context_open (aio);
+  res = cape_aio_context_open (aio, err);
+  if (res)
+  {
+    
+  }
   
-  res = cape_aio_context_signal_map (aio, SIGINT, CAPE_AIO_ABORT);
-  res = cape_aio_context_signal_map (aio, SIGTERM, CAPE_AIO_ABORT);
-  
-  res = cape_aio_context_signal_set (aio);
+  res = cape_aio_context_set_interupts (aio, TRUE, TRUE, err);
+  if (res)
+  {
+    
+  }
 
   {
     void* sock = cape_sock_reader_new ("127.0.0.1", 40011, err);
@@ -44,7 +48,7 @@ int main (int argc, char *argv[])
       
   }
 
-  res = cape_aio_context_wait (aio);
+  res = cape_aio_context_wait (aio, err);
   
   cape_aio_context_del (&aio);
 
