@@ -95,7 +95,7 @@ int cape_str_begins (const CapeString s, const CapeString begins_with)
   }
   
   {
-    int len = strlen(begins_with) - 1;
+    int len = strlen(begins_with);
     
     return strncmp (s, begins_with, len) == 0;
   }
