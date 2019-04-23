@@ -1,11 +1,16 @@
 #ifndef __CAPE_TYPES__H
 #define __CAPE_TYPES__H 1
 
-#ifdef __APPLE__
+#if defined __APPLE__
 
 #include <malloc/malloc.h>
 #include <stdlib.h>
 #include <memory.h>
+
+#elif defined __OpenBSD__
+
+#include <memory.h>
+#include <stdlib.h>
 
 #else
 

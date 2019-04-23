@@ -31,7 +31,7 @@
 if (NOT DLL_FOUND)
 
 	IF (WIN32)
-	  # we can use windows onw DLo libs
+	  
 	ELSE()
 
 	  INCLUDE(FindPackageHandleStandardArgs)
@@ -57,27 +57,23 @@ if (NOT DLL_FOUND)
 	  ##____________________________________________________________________________
 	  ## Actions taken when all components have been found
 
-	  find_package_handle_standard_args (DLL DEFAULT_MSG DLL_LIBRARIES DLL_INCLUDES)
-		
-	  if (DLL_FOUND)
-		if (NOT DLL_FIND_QUIETLY)
-		  message (STATUS "DLL_INCLUDES  = ${DLL_INCLUDES}")
-		  message (STATUS "DLL_LIBRARIES = ${DLL_LIBRARIES}")
-		endif (NOT DLL_FIND_QUIETLY)
-	  else (DLL_FOUND)
-		if (DLL_FIND_REQUIRED)
-		  message (FATAL_ERROR "Could not find DL!")
-		endif (DLL_FIND_REQUIRED)
-	  endif (DLL_FOUND)
+	  message (STATUS "DLL_INCLUDES  = ${DLL_INCLUDES}")
+	  message (STATUS "DLL_LIBRARIES = ${DLL_LIBRARIES}")
 
+	  IF (NOT DLL_LIBRARIES)
+	  
+	    UNSET(DLL_LIBRARIES CACHE)
+	  
+	  ENDIF()
+	  
 	  ##____________________________________________________________________________
 	  ## Mark advanced variables
 
-	  mark_as_advanced (
-		DLL_ROOT_DIR
-		DLL_INCLUDES
-		DLL_LIBRARIES
-		)
+	  #mark_as_advanced (
+	#	DLL_ROOT_DIR
+	#	DLL_INCLUDES
+	#	DLL_LIBRARIES
+	#	)
 
 	ENDIF(WIN32)
 

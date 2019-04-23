@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.4)
 
 SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../cmake)
 
-find_package(DLL)
+find_package(DLL QUIET)
 find_package(PThread)
 
 #----------------------------------------------------------------------------------

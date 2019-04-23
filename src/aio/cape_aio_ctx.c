@@ -192,7 +192,7 @@ void cape_aio_context_closeAll (CapeAioContext self)
   
   pthread_mutex_unlock(&(self->mutex));
   
-  printf ("close all done\n");
+  cape_log_msg (CAPE_LL_TRACE, "CAPE", "aio close", "all handles were closed");
 }
 
 //-----------------------------------------------------------------------------
@@ -377,6 +377,8 @@ int cape_aio_context_next (CapeAioContext self, long timeout_in_ms, CapeErr err)
     res = kevent (self->kq, NULL, 0, &event, 1, &tmout);
   }
   
+  cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio", "event %i", res);
+  
   if( res == -1 )
   {
     if (errno == EINTR)
@@ -457,7 +459,7 @@ int cape_aio_context_next (CapeAioContext self, long timeout_in_ms, CapeErr err)
       
       if (signalKind)
       {
-        cape_log_fmt (CAPE_LL_TRACE, "CAPE", "{aio next}", "signal seen [%i] -> %s", event.ident, signalKind);
+        cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio next", "signal seen [%i] -> %s", event.ident, signalKind);
         
         if (event.ident == SIGINT || event.ident == SIGTERM)
         {
@@ -752,6 +754,10 @@ int cape_aio_context_set_interupts (CapeAioContext self, int sigint, int term, C
 #if defined __BSD_OS
 
   int res;
+  sigset_t sigset;
+
+  // null the sigset
+  res = sigemptyset (&sigset);
   
   if (sigint)
   {
@@ -766,6 +772,15 @@ int cape_aio_context_set_interupts (CapeAioContext self, int sigint, int term, C
     {
       return cape_err_lastOSError (err);
     }
+    
+    // add this signal to the sigset
+    res = sigaddset (&sigset, SIGINT);
+    if (res < 0)
+    {
+      return cape_err_lastOSError (err);
+    }
+
+    cape_log_msg (CAPE_LL_TRACE, "CAPE", "aio", "set SIGINT interupt");
   }
 
   if (term)
@@ -781,6 +796,22 @@ int cape_aio_context_set_interupts (CapeAioContext self, int sigint, int term, C
     {
       return cape_err_lastOSError (err);
     }
+
+    // add this signal to the sigset
+    res = sigaddset (&sigset, SIGTERM);
+    if (res < 0)
+    {
+      return cape_err_lastOSError (err);
+    }
+
+    cape_log_msg (CAPE_LL_TRACE, "CAPE", "aio", "set SIGTERM interupt");
+  }
+
+  // we must block the signals in order for signals for event to receive them
+  res = sigprocmask (SIG_BLOCK, &sigset, NULL);
+  if (res)
+  {
+    return cape_err_lastOSError (err);    
   }
 
 #else

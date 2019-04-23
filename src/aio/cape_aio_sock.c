@@ -19,7 +19,11 @@
 #if defined __BSD_OS
 
 #include <sys/event.h>
+#ifdef SO_NOSIGPIPE
 #define CAPE_NO_SIGNALS SO_NOSIGPIPE
+#else
+#define CAPE_NO_SIGNALS 0
+#endif
 
 #elif defined __LINUX_OS
 
