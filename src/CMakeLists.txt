@@ -67,12 +67,14 @@ SET(CAPE_FMT_SOURCES
   fmt/cape_parser_json.c
   fmt/cape_json.c
   fmt/cape_tokenizer.c
+  fmt/cape_args.c
 )
 
 SET(CAPE_FMT_HEADERS
   fmt/cape_parser_json.h
   fmt/cape_json.h
   fmt/cape_tokenizer.h
+  fmt/cape_args.h
 )
 
 #----------------------------------------------------------------------------------

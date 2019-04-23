@@ -82,6 +82,13 @@ int cape_str_equal (const CapeString s1, const CapeString s2)
 
 //-----------------------------------------------------------------------------
 
+int cape_str_begins (const CapeString s, const CapeString begins_with)
+{
+  
+}
+
+//-----------------------------------------------------------------------------
+
 CapeString cape_str_uuid (void)
 {
   CapeString self = CAPE_ALLOC(38);

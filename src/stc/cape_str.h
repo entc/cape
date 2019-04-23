@@ -20,6 +20,8 @@ __CAPE_LIBEX   CapeString         cape_str_uuid          (void);                
 
 __CAPE_LIBEX   int                cape_str_equal         (const CapeString, const CapeString);
 
+__CAPE_LIBEX   int                cape_str_begins        (const CapeString, const CapeString);
+
 //-----------------------------------------------------------------------------
 
 __CAPE_LIBEX   CapeString         cape_str_catenate_c    (const CapeString, char c, const CapeString);

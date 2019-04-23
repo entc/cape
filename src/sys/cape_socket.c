@@ -1,5 +1,8 @@
 #include "cape_socket.h"
 
+// cape includes
+#include "sys/cape_log.h"
+
 // c includes
 #include <memory.h>
 #include <sys/socket.h>	// basic socket definitions
@@ -122,7 +125,7 @@ void* cape_sock_acceptor_new  (const char* host, long port, CapeErr err)
   // cannot fail
   listen(sock, SOMAXCONN);
   
-  printf ("listen on [%s:%li]\n", host, port);
+  cape_log_fmt (CAPE_LL_TRACE, "CAPE", "cape_socket", "listen on [%s:%li]", host, port);
   
   return (void*)sock;
   

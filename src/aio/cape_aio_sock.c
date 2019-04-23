@@ -2,6 +2,7 @@
 
 // cape includes
 #include "sys/cape_types.h"
+#include "sys/cape_log.h"
 
 // linux includes
 #include <memory.h>
