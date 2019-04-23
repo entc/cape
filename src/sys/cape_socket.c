@@ -97,7 +97,6 @@ void* cape_sock_reader_new (const char* host, long port, CapeErr err)
 void* cape_sock_acceptor_new  (const char* host, long port, CapeErr err)
 {
   struct sockaddr_in addr;
-  struct hostent* server;
   long sock = -1;
   
   cape_socket_set_host (&addr, host, port);

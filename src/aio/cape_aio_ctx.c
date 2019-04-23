@@ -4,6 +4,7 @@
 #include "sys/cape_types.h"
 #include "sys/cape_err.h"
 #include "stc/cape_list.h"
+#include "sys/cape_log.h"
 
 //*****************************************************************************
 
@@ -419,7 +420,6 @@ int cape_aio_context_next (CapeAioContext self, long timeout_in_ms, CapeErr err)
         
         //printf ("[%p] handle removed\n", self);
         
-        goto exit;
       }
       
       if (hflags_result & CAPE_AIO_ABORT)

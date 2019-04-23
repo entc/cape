@@ -157,7 +157,7 @@ void cape_aio_socket_inref (CapeAioSocket self)
 {
 #ifdef __GCC_HAVE_SYNC_COMPARE_AND_SWAP_16
 
-  int val = (__sync_add_and_fetch (&(self->refcnt), 1));
+  __sync_add_and_fetch (&(self->refcnt), 1);
   
 #else
   
@@ -215,12 +215,9 @@ void cape_aio_socket_read (CapeAioSocket self, long sockfd)
       {
         if( (errno != EWOULDBLOCK) && (errno != EINPROGRESS) && (errno != EAGAIN))
         {
-          printf ("ERROR WHILE WRITING DATA TO SOCKET\n", errno);
-          
+          cape_log_fmt (CAPE_LL_ERROR, "CAPE", "socket read", "error while writing data to the socket [%i]", errno);
           self->mask |= CAPE_AIO_DONE;
         }
-        
-        //printf ("NO DATA\n");
         
         return;
       }
@@ -275,7 +272,7 @@ void cape_aio_socket_write (CapeAioSocket self, long sockfd)
             
             cape_err_formatErrorOS (err, errno); 
             
-            printf ("ERROR WHILE WRITING DATA TO SOCKET: %s\n", cape_err_text(err));
+            cape_log_fmt (CAPE_LL_ERROR, "CAPE", "socket write", "error while writing data to the socket: %s", cape_err_text(err));
             
             self->mask |= CAPE_AIO_DONE;
             
@@ -355,9 +352,9 @@ static int __STDCALL cape_aio_socket_onEvent (void* ptr, void* handle, int hflag
       CapeErr err = cape_err_new ();
       
       cape_err_formatErrorOS (err, so_err);
-      
-      printf ("SOCKET ERROR: %s\n", cape_err_text (err));
-          
+    
+      cape_log_fmt (CAPE_LL_ERROR, "CAPE", "socket on_event", "error on socket: %s", cape_err_text(err));
+    
       cape_err_del (&err);
       
       // we still have a buffer in the queue

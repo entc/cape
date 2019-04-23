@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <ctype.h>
+#include <stdio.h>
 
 //-----------------------------------------------------------------------------
 
@@ -83,7 +84,21 @@ int cape_str_equal (const CapeString s1, const CapeString s2)
 
 int cape_str_begins (const CapeString s, const CapeString begins_with)
 {
+  if (s == NULL)
+  {
+    return FALSE;
+  }
   
+  if (begins_with == NULL)
+  {
+    return FALSE;
+  }
+  
+  {
+    int len = strlen(begins_with) - 1;
+    
+    return strncmp (s, begins_with, len) == 0;
+  }
 }
 
 //-----------------------------------------------------------------------------

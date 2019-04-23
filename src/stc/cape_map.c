@@ -2,6 +2,7 @@
 
 // cape includes
 #include "sys/cape_types.h"
+#include "sys/cape_log.h"
 
 // c includes
 #include <assert.h>
@@ -273,8 +274,7 @@ CapeMapNode cape_map_insert (CapeMap self, void* key, void* val)
       int cmp = self->cmp_fct (key, p->key, self->cmp_ptr);      
       if (cmp == 0)
       {
-        printf ("[CAPE_MAP|INSERT] key already exists\n");
-        
+        cape_log_msg (CAPE_LL_WARN, "CAPE", "map insert", "key already exists");
         return p;
       }
       
