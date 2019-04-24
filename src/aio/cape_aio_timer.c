@@ -2,14 +2,17 @@
 
 #include "sys/cape_types.h"
 
-#ifdef __linux__
+//-----------------------------------------------------------------------------
+
+#ifdef __LINUX_OS
+#include <sys/timerfd.h>
+#include <bits/time.h>
+#endif
 
 //-----------------------------------------------------------------------------
 
-#include <sys/timerfd.h>
 #include <memory.h>
 #include <unistd.h>
-#include <bits/time.h>
 
 //-----------------------------------------------------------------------------
 
@@ -46,6 +49,9 @@ CapeAioTimer cape_aio_timer_new (void* handle)
 
 int cape_aio_timer_set (CapeAioTimer self, long timeoutInMs, void* ptr, fct_cape_aio_timer_onEvent fct, CapeErr err)
 {
+  
+#ifdef __LINUX_OS
+  
   self->handle = timerfd_create (CLOCK_MONOTONIC, TFD_NONBLOCK);
   
   if (self->handle == -1)
@@ -78,6 +84,7 @@ int cape_aio_timer_set (CapeAioTimer self, long timeoutInMs, void* ptr, fct_cape
   
   self->ptr = ptr;
   self->onEvent = fct;
+#endif
   
   return CAPE_ERR_NONE;
 }
@@ -131,6 +138,3 @@ int cape_aio_timer_add (CapeAioTimer* p_self, CapeAioContext aio)
 }
 
 //-----------------------------------------------------------------------------
-
-#endif
-
