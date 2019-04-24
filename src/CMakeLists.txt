@@ -31,6 +31,7 @@ SET(CAPE_SYS_SOURCES
   sys/cape_file.c
   sys/cape_dl.c
   sys/cape_mutex.c
+  sys/cape_thread.c
   sys/cape_socket.c
   sys/cape_pipe.c
 )
@@ -41,6 +42,7 @@ SET(CAPE_SYS_HEADERS
   sys/cape_file.h
   sys/cape_dl.h
   sys/cape_mutex.h
+  sys/cape_thread.h
   sys/cape_socket.h
   sys/cape_pipe.h
 )
@@ -84,6 +86,8 @@ INCLUDE_DIRECTORIES(".")
 add_library             (cape SHARED ${CAPE_STC_SOURCES} ${CAPE_STC_HEADERS} ${CAPE_SYS_SOURCES} ${CAPE_SYS_HEADERS} ${CAPE_AIO_SOURCES} ${CAPE_AIO_HEADERS} ${CAPE_FMT_SOURCES} ${CAPE_FMT_HEADERS})
 target_link_libraries   (cape ${DLL_LIBRARIES} ${PTHREAD_LIBRARIES})
 set_target_properties   (cape PROPERTIES VERSION 1.0.1 SOVERSION 1.0.1)
+
+install (TARGETS cape DESTINATION lib)
 
 #----------------------------------------------------------------------------------
 

@@ -2,9 +2,11 @@
 
 #include "stc/cape_str.h"
 #include "sys/cape_file.h"
+#include "sys/cape_log.h"
 
-#ifdef __linux__
 //-----------------------------------------------------------------------------
+
+#if defined __LINUX_OS || defined __BSD_OS
 
 #include <dlfcn.h>
 
@@ -34,8 +36,6 @@ void cape_dl_del (CapeDl* p_self)
 
   if (self->handle)
   {
-    printf("UNLOAD LIBRARY\n");
-    
     // this somehow happen automatically
     dlclose (self->handle);
   }
@@ -49,9 +49,12 @@ int cape_dl_load (CapeDl self, const char* path, const char* name, CapeErr err)
 {
   int res;
 
-#ifdef __linux
+#if defined __LINUX_OS
   CapeString fullname = cape_str_catenate_3 ("lib", name, ".so");
+#elif defined __BSD_OS
+  CapeString fullname = cape_str_catenate_3 ("lib", name, ".dylib");
 #endif
+  
   CapeString filename = NULL;
   
   if (path)
@@ -98,7 +101,7 @@ void* cape_dl_funct (CapeDl self, const char* name, CapeErr err)
   // check if an error ocours
   if (dlerror_text)
   {
-    printf ("can't find '%s' function\n", name);
+    cape_log_fmt (CAPE_LL_ERROR, "CAPE", "dl_funct", "can't find '%s' function", name);
     
     cape_err_set (err, CAPE_ERR_OS, dlerror_text);
     return NULL;
