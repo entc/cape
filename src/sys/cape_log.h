@@ -3,6 +3,8 @@
 
 #include "sys/cape_export.h"
 
+//-----------------------------------------------------------------------------
+
 typedef enum
 {
   CAPE_LL_FATAL   = 1,
@@ -16,9 +18,19 @@ typedef enum
 
 //-----------------------------------------------------------------------------
 
-__CAPE_LIBEX void cape_log_msg (CapeLogLevel, const char* unit, const char* method, const char* msg);
+__CAPE_LIBEX   void              cape_log_msg           (CapeLogLevel, const char* unit, const char* method, const char* msg);
 
-__CAPE_LIBEX void cape_log_fmt (CapeLogLevel, const char* unit, const char* method, const char* format, ...);
+__CAPE_LIBEX   void              cape_log_fmt           (CapeLogLevel, const char* unit, const char* method, const char* format, ...);
+
+//-----------------------------------------------------------------------------
+
+struct CapeFileLog_s; typedef struct CapeFileLog_s* CapeFileLog;
+
+//-----------------------------------------------------------------------------
+
+__CAPE_LIBEX   CapeFileLog       cape_log_new           (const char* filename);
+
+__CAPE_LIBEX   void              cape_log_del           (CapeFileLog*);
 
 //-----------------------------------------------------------------------------
 

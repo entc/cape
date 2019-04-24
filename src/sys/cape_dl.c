@@ -59,7 +59,7 @@ int cape_dl_load (CapeDl self, const char* path, const char* name, CapeErr err)
   
   if (path)
   {
-    filename = cape_fs_folders_merge (path, fullname);
+    filename = cape_fs_path_merge (path, fullname);
   }
   else
   {
