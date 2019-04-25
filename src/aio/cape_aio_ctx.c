@@ -974,7 +974,7 @@ int cape_aio_context_set_interupts (CapeAioContext self, int sigint, int term, C
   CapeAioHandle aioh = cape_aio_handle_new ((void*)self->sfd, CAPE_AIO_READ, self, cape_aio_context_signal_onEvent, cape_aio_context_signal_onUnref);
   
   // add the signalfd to the event context
-  cape_aio_context_add (self, aioh);
+  cape_aio_context_add (self, aioh, 0);
   
 #endif
 
