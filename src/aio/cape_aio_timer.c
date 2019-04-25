@@ -4,9 +4,15 @@
 
 //-----------------------------------------------------------------------------
 
-#ifdef __LINUX_OS
+#if defined __BSD_OS
+
+#include <sys/event.h>
+
+#elif defined __LINUX_OS
+
 #include <sys/timerfd.h>
 #include <bits/time.h>
+
 #endif
 
 //-----------------------------------------------------------------------------
@@ -18,14 +24,21 @@
 
 struct CapeAioTimer_s
 {
-  
-  long handle;
-  
   CapeAioHandle aioh;
   
   void* ptr;
   
   fct_cape_aio_timer_onEvent onEvent;
+  
+#if defined __BSD_OS
+
+  number_t timeout;
+  
+#elif defined __LINUX_OS
+
+  number_t handle;
+  
+#endif
 };
 
 //-----------------------------------------------------------------------------
@@ -34,13 +47,20 @@ CapeAioTimer cape_aio_timer_new (void* handle)
 {
   CapeAioTimer self = CAPE_NEW(struct CapeAioTimer_s);
   
+#if defined __BSD_OS
+
+  self->timeout = 0;
+
+#elif defined __LINUX_OS
+
   self->handle = 0;
 
+#endif
+  
   self->ptr = NULL;
   self->onEvent = NULL;
   
   self->aioh = NULL;
-
   
   return self;
 }
@@ -50,7 +70,11 @@ CapeAioTimer cape_aio_timer_new (void* handle)
 int cape_aio_timer_set (CapeAioTimer self, long timeoutInMs, void* ptr, fct_cape_aio_timer_onEvent fct, CapeErr err)
 {
   
-#ifdef __LINUX_OS
+#if defined __BSD_OS
+
+  self->timeout = timeoutInMs;
+  
+#elif defined __LINUX_OS
   
   self->handle = timerfd_create (CLOCK_MONOTONIC, TFD_NONBLOCK);
   
@@ -82,9 +106,10 @@ int cape_aio_timer_set (CapeAioTimer self, long timeoutInMs, void* ptr, fct_cape
     }
   }
   
+#endif
+
   self->ptr = ptr;
   self->onEvent = fct;
-#endif
   
   return CAPE_ERR_NONE;
 }
@@ -97,15 +122,29 @@ static int __STDCALL cape_aio_timer_onEvent (void* ptr, void* handle, int hflags
   
   CapeAioTimer self = ptr;
   
-  long value;
-  read (self->handle, &value, 8);
+#if defined __LINUX_OS
+
+  {
+    long value;
+    read (self->handle, &value, 8);
+  }
+  
+#endif
   
   if (self->onEvent)
   {
     res = self->onEvent (self->ptr);
   }
   
+#if defined __LINUX_OS
+
   return res ? CAPE_AIO_READ : CAPE_AIO_DONE;
+  
+#elif defined __BSD_OS
+
+  return res ? CAPE_AIO_TIMER : CAPE_AIO_DONE;
+
+#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -114,7 +153,11 @@ static void __STDCALL cape_aio_timer_onUnref (void* ptr, CapeAioHandle aioh)
 {
   CapeAioTimer self = ptr;
   
+#if defined __LINUX_OS
+
   close (self->handle);
+
+#endif
   
   // delete the AIO handle
   cape_aio_handle_del (&(self->aioh));
@@ -130,9 +173,19 @@ int cape_aio_timer_add (CapeAioTimer* p_self, CapeAioContext aio)
   
   *p_self = NULL;
   
-  self->aioh = self->aioh = cape_aio_handle_new ((void*)self->handle, CAPE_AIO_READ, self, cape_aio_timer_onEvent, cape_aio_timer_onUnref);
+#if defined __BSD_OS
+
+  self->aioh = cape_aio_handle_new (self, CAPE_AIO_TIMER, self, cape_aio_timer_onEvent, cape_aio_timer_onUnref);
+
+  cape_aio_context_add (aio, self->aioh, self->timeout);
+
+#else
   
-  cape_aio_context_add (aio, self->aioh);
+  self->aioh = cape_aio_handle_new ((void*)self->handle, CAPE_AIO_READ, self, cape_aio_timer_onEvent, cape_aio_timer_onUnref);
+  
+  cape_aio_context_add (aio, self->aioh, NULL);
+
+#endif
   
   return 0;
 }

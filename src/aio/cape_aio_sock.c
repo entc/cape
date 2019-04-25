@@ -348,6 +348,8 @@ static int __STDCALL cape_aio_socket_onEvent (void* ptr, void* handle, int hflag
     
   int so_err; socklen_t size = sizeof(int); 
 
+  printf ("ON EVENT\n");
+  
   // check for errors on the socket, eg connection was refused
   getsockopt(sock, SOL_SOCKET, SO_ERROR, &so_err, &size);
 
@@ -411,16 +413,22 @@ static void __STDCALL cape_aio_socket_onUnref (void* ptr, CapeAioHandle aioh)
 
 void cape_aio_socket_markSent (CapeAioSocket self, CapeAioContext aio)
 {
+  printf ("mark\n");
+
   if (self->mask == CAPE_AIO_NONE)
   {
     if (self->aioh)
     {
-      cape_aio_context_mod (aio, self->aioh, CAPE_AIO_WRITE | CAPE_AIO_READ);
+      printf ("mark update\n");
+      
+      cape_aio_context_mod (aio, self->aioh, CAPE_AIO_WRITE | CAPE_AIO_READ, 0);
     }
   }
   else
   {
-     self->mask |= CAPE_AIO_WRITE;     
+    printf ("mark return\n");
+
+    self->mask |= CAPE_AIO_WRITE;
   }
 }
 
@@ -433,7 +441,7 @@ void cape_aio_socket_send (CapeAioSocket self, CapeAioContext aio, const char* b
   
   self->send_buftos = 0;
   
-  //printf ("send package %p\n", userdata);
+  printf ("send package %p\n", userdata);
   
   self->send_userdata = userdata;
     
@@ -442,8 +450,7 @@ void cape_aio_socket_send (CapeAioSocket self, CapeAioContext aio, const char* b
     // correct epoll flags for this filedescriptor
     if (self->aioh)
     {
-        
-      cape_aio_context_mod (aio, self->aioh, CAPE_AIO_WRITE | CAPE_AIO_READ);
+      cape_aio_context_mod (aio, self->aioh, CAPE_AIO_WRITE | CAPE_AIO_READ, 0);
     }
     else
     {
@@ -451,7 +458,7 @@ void cape_aio_socket_send (CapeAioSocket self, CapeAioContext aio, const char* b
       self->aioh = cape_aio_handle_new (self->handle, CAPE_AIO_WRITE, self, cape_aio_socket_onEvent, cape_aio_socket_onUnref);
       
       // register handle at the AIO system
-      if (!cape_aio_context_add (aio, self->aioh))
+      if (!cape_aio_context_add (aio, self->aioh, 0))
       {
         cape_aio_socket_unref (self);
         
@@ -478,13 +485,15 @@ void cape_aio_socket_listen (CapeAioSocket* p_self, CapeAioContext aio)
 
   if (self->aioh)
   {
-    cape_aio_context_mod (aio, self->aioh, CAPE_AIO_WRITE | CAPE_AIO_READ);
+    cape_aio_context_mod (aio, self->aioh, CAPE_AIO_WRITE | CAPE_AIO_READ, 0);
   }
   else
   {
-    self->aioh = cape_aio_handle_new (self->handle, CAPE_AIO_READ | CAPE_AIO_WRITE, self, cape_aio_socket_onEvent, cape_aio_socket_onUnref);
+    printf ("create handle\n");
     
-    cape_aio_context_add (aio, self->aioh);      
+    self->aioh = cape_aio_handle_new (self->handle, CAPE_AIO_READ | CAPE_AIO_WRITE, self, cape_aio_socket_onEvent, cape_aio_socket_onUnref);
+   
+    cape_aio_context_add (aio, self->aioh, 0);
   }
 }
 
@@ -600,7 +609,7 @@ void cape_aio_accept_add (CapeAioAccept* p_self, CapeAioContext aio)
   
   self->aioh = cape_aio_handle_new (self->handle, CAPE_AIO_READ, self, cape_aio_accept_onEvent, cape_aio_accept_onUnref);
   
-  cape_aio_context_add (aio, self->aioh);
+  cape_aio_context_add (aio, self->aioh, 0);
 }
 
 //-----------------------------------------------------------------------------

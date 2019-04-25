@@ -47,7 +47,7 @@ int cape_aio_freader_add (CapeAioFileReader* p_self, CapeAioContext aio)
     
   self->hobj = cape_aio_handle_new (self->handle, CAPE_AIO_READ, self, cape_aio_freader_onEvent, cape_aio_freader_onDestroy);
   
-  cape_aio_context_add (aio, self->hobj);      
+//  cape_aio_context_add (aio, self->hobj);      
   
   return 0;
 }

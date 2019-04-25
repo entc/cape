@@ -49,13 +49,14 @@ __CAPE_LIBEX   int               cape_aio_context_next          (CapeAioContext,
 #define CAPE_AIO_WRITE    0x0004
 #define CAPE_AIO_READ     0x0008
 #define CAPE_AIO_ALIVE    0x0010
+#define CAPE_AIO_TIMER    0x0020
 
 //-----------------------------------------------------------------------------
 
-__CAPE_LIBEX   int               cape_aio_context_add           (CapeAioContext, CapeAioHandle);         // add handle to event queue
+__CAPE_LIBEX   int               cape_aio_context_add           (CapeAioContext, CapeAioHandle aioh, number_t option);         // add handle to event queue
 
                // modify handle
-__CAPE_LIBEX   void              cape_aio_context_mod           (CapeAioContext, CapeAioHandle aioh, int hflags);                                                          
+__CAPE_LIBEX   void              cape_aio_context_mod           (CapeAioContext, CapeAioHandle aioh, int hflags, number_t option);
 
 //-----------------------------------------------------------------------------
 

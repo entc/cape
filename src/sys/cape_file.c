@@ -24,6 +24,10 @@
 
 #include <unistd.h>
 #include <limits.h>
+#include <errno.h>
+#include <stdio.h>
+#include <sys/stat.h>
+
 #define CAPE_FS_FOLDER_SEP   '/'
 
 #endif

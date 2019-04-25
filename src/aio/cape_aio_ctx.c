@@ -183,6 +183,8 @@ void cape_aio_context_closeAll (CapeAioContext self)
 
 #endif
   
+  cape_log_msg (CAPE_LL_TRACE, "CAPE", "aio close", "start closing all handles");
+
   pthread_mutex_lock(&(self->mutex));
   
   if (self->events)
@@ -307,7 +309,134 @@ exit_and_unlock:
 
 #if defined __BSD_OS
 
+//-----------------------------------------------------------------------------
+
+int cape_aio_update_filter (int hflags)
+{
+  int filter = 0;
+  
+  if (hflags & CAPE_AIO_READ)
+  {
+    filter = filter | EVFILT_READ;
+    
+    //cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio", "set filter to READ");
+  }
+  
+  if (hflags & CAPE_AIO_WRITE)
+  {
+    filter = filter | EVFILT_WRITE;
+    
+    cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio", "set filter to WRITE");
+  }
+
+  if (hflags & CAPE_AIO_TIMER)
+  {
+    filter = filter | EVFILT_TIMER;
+    
+    //cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio", "set filter to TIMER");
+  }
+
+  return filter;
+}
+
+//-----------------------------------------------------------------------------
+
+int cape_aio_add_event (CapeAioContext self, CapeAioHandle aioh, number_t option)
+{
+  int res;
+  int filter = cape_aio_update_filter (aioh->hflags);
+  
+  {
+    struct kevent kev;
+    memset (&kev, 0x0, sizeof(struct kevent));
+    
+    EV_SET (&kev, (number_t)aioh->hfd, filter, EV_ADD | EV_ENABLE | EV_ONESHOT | EV_CLEAR, 0, option, aioh);
+    
+    cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio add", "add event");
+
+    res = kevent (self->kq, &kev, 1, NULL, 0, NULL);
+    if (res < 0)
+    {
+      CapeErr err = cape_err_new ();
+      
+      cape_err_lastOSError (err);
+      
+      cape_log_fmt (CAPE_LL_WARN, "CAPE", "aio add", cape_err_text(err));
+      
+      cape_err_del (&err);
+      
+      return FALSE;
+    }
+  }
+  
+  return TRUE;
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_delete_event (CapeAioContext self, CapeAioHandle aioh)
+{
+  int res;
+  int filter = cape_aio_update_filter (aioh->hflags);
+  
+  {
+    struct kevent kev;
+    memset (&kev, 0x0, sizeof(struct kevent));
+    
+    EV_SET (&kev, (number_t)aioh->hfd, filter, EV_DELETE, 0, 0, aioh);
+  
+    cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio add", "delete event");
+
+    res = kevent (self->kq, &kev, 1, NULL, 0, NULL);
+    if (res < 0)
+    {
+      CapeErr err = cape_err_new ();
+      
+      cape_err_lastOSError (err);
+      
+      cape_log_fmt (CAPE_LL_WARN, "CAPE", "aio delete", cape_err_text(err));
+
+      cape_err_del (&err);
+    }
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_update_event (CapeAioContext self, CapeAioHandle aioh)
+{
+  int res;
+  int filter = cape_aio_update_filter (aioh->hflags);
+  
+  {
+    struct kevent kev;
+    memset (&kev, 0x0, sizeof(struct kevent));
+    
+    EV_SET (&kev, (number_t)aioh->hfd, filter, EV_ADD | EV_ENABLE | EV_ONESHOT, 0, 0, aioh);
+    
+    cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio add", "update event");
+
+    res = kevent (self->kq, &kev, 1, NULL, 0, NULL);
+    if (res < 0)
+    {
+      CapeErr err = cape_err_new ();
+      
+      cape_err_lastOSError (err);
+      
+      cape_log_fmt (CAPE_LL_WARN, "CAPE", "aio update", cape_err_text(err));
+      
+      cape_err_del (&err);
+    }
+
+    cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio add", "update event done");
+  }
+}
+
+//-----------------------------------------------------------------------------
+
 #else
+
+//-----------------------------------------------------------------------------
 
 void cape_aio_update_events (struct epoll_event* event, int hflags)
 {
@@ -415,27 +544,30 @@ int cape_aio_context_next (CapeAioContext self, long timeout_in_ms, CapeErr err)
       
       if (hflags_result & CAPE_AIO_DONE)
       {
-        
-        
+        // remove the event from the kqueue
+        cape_aio_delete_event (self, hobj);
+
         // remove the handle from events
         cape_aio_remove_handle (self, hobj);
-        
-        //printf ("[%p] handle removed\n", self);
-        
-      }
-      
-      if (hflags_result & CAPE_AIO_ABORT)
-      {
-        return CAPE_ERR_CONTINUE;
-      }
-      
-      if (hflags_result == CAPE_AIO_NONE)
-      {
-        
+
+        if (hflags_result & CAPE_AIO_ABORT)
+        {
+          return CAPE_ERR_CONTINUE;
+        }
       }
       else
       {
+        if (hflags_result & CAPE_AIO_ABORT)
+        {
+          return CAPE_ERR_CONTINUE;
+        }
+
+        if (hflags_result != CAPE_AIO_NONE)
+        {
+          hobj->hflags = hflags_result;
+        }
         
+        cape_aio_update_event (self, hobj);
       }
     }
     else
@@ -572,10 +704,13 @@ exit:
 
 //-----------------------------------------------------------------------------
 
-void cape_aio_context_mod (CapeAioContext self, CapeAioHandle aioh, int hflags)
+void cape_aio_context_mod (CapeAioContext self, CapeAioHandle aioh, int hflags, number_t option)
 {
 #if defined __BSD_OS
 
+  aioh->hflags = hflags;
+
+  cape_aio_update_event (self, aioh);
 
 #else
   struct epoll_event event;
@@ -608,37 +743,23 @@ void cape_aio_context_mod (CapeAioContext self, CapeAioHandle aioh, int hflags)
     return;
   }
   
-#endif
-  
   aioh->hflags = hflags;
+
+#endif
 }
 
 //-----------------------------------------------------------------------------
 
-int cape_aio_context_add (CapeAioContext self, CapeAioHandle aioh)
+int cape_aio_context_add (CapeAioContext self, CapeAioHandle aioh, number_t option)
 {
 #if defined __BSD_OS
-  
-  int res;
-  
-  struct kevent kev;
-  memset (&kev, 0x0, sizeof(struct kevent));
 
-  EV_SET (&kev, (long)aioh->hfd, EVFILT_READ | EVFILT_WRITE, EV_ADD | EV_ENABLE | EV_ONESHOT, 0, 0, (void*)aioh);
-  
-  res = kevent (self->kq, &kev, 1, NULL, 0, NULL);
-  if (res < 0)
+  if (!cape_aio_add_event (self, aioh, option))
   {
-    CapeErr err = cape_err_new ();
-    
-    cape_err_lastOSError (err);
-    
-    printf ("can't add fd [%li] to epoll: %s\n", (long)aioh->hfd, cape_err_text (err));
-    
-    cape_err_del (&err);
-
     return FALSE;
   }
+  
+  cape_log_fmt (CAPE_LL_TRACE, "CAPE", "context add", "event added");
   
 #else
   
