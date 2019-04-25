@@ -315,13 +315,6 @@ int cape_aio_update_filter (int hflags)
 {
   int filter = 0;
   
-  if (hflags & CAPE_AIO_READ)
-  {
-    filter = filter | EVFILT_READ;
-    
-    //cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio", "set filter to READ");
-  }
-  
   if (hflags & CAPE_AIO_WRITE)
   {
     filter = filter | EVFILT_WRITE;
@@ -329,6 +322,13 @@ int cape_aio_update_filter (int hflags)
     cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio", "set filter to WRITE");
   }
 
+  if (hflags & CAPE_AIO_READ)
+  {
+    filter = filter | EVFILT_READ;
+    
+    cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio", "set filter to READ");
+  }
+  
   if (hflags & CAPE_AIO_TIMER)
   {
     filter = filter | EVFILT_TIMER;
@@ -350,7 +350,7 @@ int cape_aio_add_event (CapeAioContext self, CapeAioHandle aioh, number_t option
     struct kevent kev;
     memset (&kev, 0x0, sizeof(struct kevent));
     
-    EV_SET (&kev, (number_t)aioh->hfd, filter, EV_ADD | EV_ENABLE | EV_ONESHOT | EV_CLEAR, 0, option, aioh);
+    EV_SET (&kev, (number_t)aioh->hfd, filter, EV_ADD | EV_ENABLE | EV_ONESHOT | EV_CLEAR | EV_ERROR, 0, option, aioh);
     
     cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio add", "add event");
 
@@ -412,7 +412,7 @@ void cape_aio_update_event (CapeAioContext self, CapeAioHandle aioh)
     struct kevent kev;
     memset (&kev, 0x0, sizeof(struct kevent));
     
-    EV_SET (&kev, (number_t)aioh->hfd, filter, EV_ADD | EV_ENABLE | EV_ONESHOT, 0, 0, aioh);
+    EV_SET (&kev, (number_t)aioh->hfd, filter, EV_ADD | EV_ENABLE | EV_DISPATCH, 0, 0, aioh);
     
     cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio add", "update event");
 
