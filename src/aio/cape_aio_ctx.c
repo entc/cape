@@ -311,50 +311,57 @@ exit_and_unlock:
 
 //-----------------------------------------------------------------------------
 
-int cape_aio_update_filter (int hflags)
+int cape_aio_set_kevent (CapeAioContext self, CapeAioHandle aioh, int hflags, int flags, int option)
 {
-  int filter = 0;
+  int filter_cnt = 0;
   
   if (hflags & CAPE_AIO_READ)
   {
-    filter = filter | EVFILT_READ;
-    
-    //cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio", "set filter to READ");
+    filter_cnt++;
   }
-  
+    
   if (hflags & CAPE_AIO_WRITE)
   {
-    filter = filter | EVFILT_WRITE;
-    
-    cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio", "set filter to WRITE");
+    filter_cnt++;
   }
 
   if (hflags & CAPE_AIO_TIMER)
   {
-    filter = filter | EVFILT_TIMER;
-    
-    //cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio", "set filter to TIMER");
+    filter_cnt++;
   }
 
-  return filter;
-}
-
-//-----------------------------------------------------------------------------
-
-int cape_aio_add_event (CapeAioContext self, CapeAioHandle aioh, number_t option)
-{
-  int res;
-  int filter = cape_aio_update_filter (aioh->hflags);
-  
+  if (filter_cnt)
   {
-    struct kevent kev;
-    memset (&kev, 0x0, sizeof(struct kevent));
+    int res;
+    int i = 0;
     
-    EV_SET (&kev, (number_t)aioh->hfd, filter, EV_ADD | EV_ENABLE | EV_ONESHOT | EV_CLEAR, 0, option, aioh);
+    struct kevent* kevs = CAPE_ALLOC(sizeof(struct kevent) * filter_cnt);
+    memset (kevs, 0x0, sizeof(struct kevent) * filter_cnt);
     
-    cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio add", "add event");
+    if (hflags & CAPE_AIO_READ)
+    {
+      EV_SET (&(kevs[i]), (number_t)aioh->hfd, EVFILT_READ, flags, 0, option, aioh);
+      i++;
 
-    res = kevent (self->kq, &kev, 1, NULL, 0, NULL);
+      cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio", "set filter to READ");
+    }
+      
+    if (hflags & CAPE_AIO_WRITE)
+    {
+      EV_SET (&(kevs[i]), (number_t)aioh->hfd, EVFILT_WRITE, flags, 0, option, aioh);
+      i++;
+
+      cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio", "set filter to WRITE");
+    }
+
+    if (hflags & CAPE_AIO_TIMER)
+    {
+      EV_SET (&(kevs[i]), (number_t)aioh->hfd, EVFILT_TIMER, flags, 0, option, aioh);
+
+      cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio", "set filter to TIMER");
+    }
+
+    res = kevent (self->kq, kevs, filter_cnt, NULL, 0, NULL);
     if (res < 0)
     {
       CapeErr err = cape_err_new ();
@@ -367,69 +374,32 @@ int cape_aio_add_event (CapeAioContext self, CapeAioHandle aioh, number_t option
       
       return FALSE;
     }
+        
+    CAPE_FREE(kevs);
   }
-  
+
   return TRUE;
+}
+
+//-----------------------------------------------------------------------------
+
+int cape_aio_add_event (CapeAioContext self, CapeAioHandle aioh, number_t option)
+{
+  return cape_aio_set_kevent (self, aioh, aioh->hflags, EV_ADD | EV_ENABLE | EV_ONESHOT, option);
 }
 
 //-----------------------------------------------------------------------------
 
 void cape_aio_delete_event (CapeAioContext self, CapeAioHandle aioh)
 {
-  int res;
-  int filter = cape_aio_update_filter (aioh->hflags);
-  
-  {
-    struct kevent kev;
-    memset (&kev, 0x0, sizeof(struct kevent));
-    
-    EV_SET (&kev, (number_t)aioh->hfd, filter, EV_DELETE, 0, 0, aioh);
-  
-    cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio add", "delete event");
-
-    res = kevent (self->kq, &kev, 1, NULL, 0, NULL);
-    if (res < 0)
-    {
-      CapeErr err = cape_err_new ();
-      
-      cape_err_lastOSError (err);
-      
-      cape_log_fmt (CAPE_LL_WARN, "CAPE", "aio delete", cape_err_text(err));
-
-      cape_err_del (&err);
-    }
-  }
+  cape_aio_set_kevent (self, aioh, aioh->hflags, EV_DELETE, 0);
 }
 
 //-----------------------------------------------------------------------------
 
 void cape_aio_update_event (CapeAioContext self, CapeAioHandle aioh)
 {
-  int res;
-  int filter = cape_aio_update_filter (aioh->hflags);
-  
-  {
-    struct kevent kev;
-    memset (&kev, 0x0, sizeof(struct kevent));
-    
-    EV_SET (&kev, (number_t)aioh->hfd, filter, EV_ADD | EV_ENABLE | EV_ONESHOT, 0, 0, aioh);
-    
-    cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio add", "update event");
-
-    res = kevent (self->kq, &kev, 1, NULL, 0, NULL);
-    if (res < 0)
-    {
-      CapeErr err = cape_err_new ();
-      
-      cape_err_lastOSError (err);
-      
-      cape_log_fmt (CAPE_LL_WARN, "CAPE", "aio update", cape_err_text(err));
-      
-      cape_err_del (&err);
-    }
-
-    cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio add", "update event done");
-  }
+  cape_aio_set_kevent (self, aioh, aioh->hflags, EV_ADD | EV_ENABLE | EV_ONESHOT, 0);
 }
 
 //-----------------------------------------------------------------------------

@@ -485,13 +485,13 @@ void cape_aio_socket_listen (CapeAioSocket* p_self, CapeAioContext aio)
 
   if (self->aioh)
   {
-    cape_aio_context_mod (aio, self->aioh, CAPE_AIO_WRITE | CAPE_AIO_READ, 0);
+    cape_aio_context_mod (aio, self->aioh, CAPE_AIO_READ, 0);
   }
   else
   {
     printf ("create handle\n");
     
-    self->aioh = cape_aio_handle_new (self->handle, CAPE_AIO_READ | CAPE_AIO_WRITE, self, cape_aio_socket_onEvent, cape_aio_socket_onUnref);
+    self->aioh = cape_aio_handle_new (self->handle, CAPE_AIO_READ, self, cape_aio_socket_onEvent, cape_aio_socket_onUnref);
    
     cape_aio_context_add (aio, self->aioh, 0);
   }

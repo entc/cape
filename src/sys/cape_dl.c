@@ -67,7 +67,12 @@ int cape_dl_load (CapeDl self, const char* path, const char* name, CapeErr err)
   }
 
   // try to aquire a handle loading the shared library
+#if defined RTLD_NODELETE  
   self->handle = dlopen (filename, RTLD_NOW | RTLD_NODELETE);
+#else
+  self->handle = dlopen (filename, RTLD_NOW);
+#endif
+  
   if (self->handle == NULL)
   {
     res = cape_err_set (err, CAPE_ERR_OS, dlerror());
