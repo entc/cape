@@ -63,8 +63,8 @@ unsigned long cape_err_code (CapeErr self)
 
 int cape_err_set (CapeErr self, unsigned long code, const char* error_message)
 {
-  self->code = code;
-  self->text = cape_str_cp (error_message);
+  self->code = code;  
+  cape_str_replace_cp (&(self->text), error_message);
   
   return code;
 }

@@ -4,6 +4,7 @@
 #include "sys/cape_export.h"
 #include "sys/cape_types.h"
 #include "stc/cape_udc.h"
+#include "sys/cape_err.h"
 
 //-----------------------------------------------------------------------------
 
@@ -12,6 +13,10 @@ __CAPE_LIBEX   CapeUdc           cape_json_from_s           (const CapeString, c
 __CAPE_LIBEX   CapeUdc           cape_json_from_buf         (const char* buffer, number_t size, const CapeString name);
 
 __CAPE_LIBEX   CapeString        cape_json_to_s             (const CapeUdc source);
+
+//-----------------------------------------------------------------------------
+
+__CAPE_LIBEX   CapeUdc           cape_json_from_file        (const CapeString file, const CapeString name, CapeErr err);
 
 //-----------------------------------------------------------------------------
 

@@ -4,6 +4,7 @@
 #include "fmt/cape_parser_json.h"
 #include "sys/cape_log.h"
 #include "stc/cape_stream.h"
+#include "sys/cape_file.h"
 
 // c includes
 #include <wchar.h>
@@ -445,6 +446,71 @@ CapeString cape_json_to_s (const CapeUdc source)
   cape_json_fill (stream, source);
   
   return cape_stream_to_str (&stream);
+}
+
+//-----------------------------------------------------------------------------
+
+CapeUdc cape_json_from_file (const CapeString file, const CapeString name, CapeErr err)
+{
+  int res;
+  CapeUdc ret = NULL;
+  
+  CapeParserJson parser_json = NULL;
+  CapeFileHandle fh = NULL;
+  
+  number_t bytes_read = 0;
+  char buffer [1024];
+
+  // allocate mem
+  fh = cape_fh_new (NULL, file);
+  
+  // try to open the file
+  res = cape_fh_open (fh, O_RDONLY, err);
+  if (res)
+  {
+    cape_err_set_fmt (err, cape_err_code (err), "can't open '%s': %s", file, cape_err_text (err));
+    
+    goto exit_and_cleanup;
+  }
+  
+  // create a new parser for the json format
+  parser_json = cape_parser_json_new (NULL, cape_json_onItem, cape_json_onObjCreate, cape_json_onObjDestroy);
+    
+  // read all data
+  for (bytes_read = cape_fh_read_buf (fh, buffer, 1024); bytes_read; bytes_read = cape_fh_read_buf (fh, buffer, 1024))
+  {
+    // try to parse the current buffer
+    res = cape_parser_json_process (parser_json, buffer, bytes_read, err);
+    if (res)
+    {
+      printf ("ERROR JSON PARSER: %s\n", cape_err_text(err));
+      
+      goto exit_and_cleanup;
+    }
+  }
+  
+  ret = cape_parser_json_object (parser_json);
+  
+  if (ret)
+  {
+    // set name
+    cape_udc_set_name (ret, name);
+  }
+  else
+  {
+    //eclog_msg (LL_WARN, "JSON", "reader", "returned NULL object as node");
+  }
+  
+exit_and_cleanup:  
+  
+  if (parser_json)
+  {
+    cape_parser_json_del (&parser_json); 
+  }
+  
+  cape_fh_del (&fh);
+  
+  return ret;  
 }
 
 //-----------------------------------------------------------------------------

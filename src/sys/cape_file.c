@@ -306,6 +306,19 @@ void* cape_fh_fd (CapeFileHandle self)
 
 //-----------------------------------------------------------------------------
 
+number_t cape_fh_read_buf (CapeFileHandle self, char* bufdat, number_t buflen)
+{
+  int res = read (self->fd, bufdat, buflen);
+  if (res < 0)
+  {
+    return 0;
+  }
+  
+  return res;
+}
+
+//-----------------------------------------------------------------------------
+
 const void* cape_fs_stdout (void)
 {
   return stdout;

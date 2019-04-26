@@ -33,13 +33,15 @@ struct CapeFileHandle_s; typedef struct CapeFileHandle_s* CapeFileHandle;
 
 //-----------------------------------------------------------------------------
 
-__CAPE_LIBEX   CapeFileHandle     cape_fh_new     (const CapeString path, const CapeString file);
+__CAPE_LIBEX   CapeFileHandle     cape_fh_new            (const CapeString path, const CapeString file);
 
-__CAPE_LIBEX   void               cape_fh_del     (CapeFileHandle*);
+__CAPE_LIBEX   void               cape_fh_del            (CapeFileHandle*);
 
-__CAPE_LIBEX   int                cape_fh_open    (CapeFileHandle, int flags, CapeErr);
+__CAPE_LIBEX   int                cape_fh_open           (CapeFileHandle, int flags, CapeErr);
 
-__CAPE_LIBEX   void*              cape_fh_fd      (CapeFileHandle);
+__CAPE_LIBEX   void*              cape_fh_fd             (CapeFileHandle);
+
+__CAPE_LIBEX   number_t           cape_fh_read_buf       (CapeFileHandle, char* bufdat, number_t buflen);
 
 //-----------------------------------------------------------------------------
 
