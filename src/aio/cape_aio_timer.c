@@ -183,7 +183,7 @@ int cape_aio_timer_add (CapeAioTimer* p_self, CapeAioContext aio)
   
   self->aioh = cape_aio_handle_new ((void*)self->handle, CAPE_AIO_READ, self, cape_aio_timer_onEvent, cape_aio_timer_onUnref);
   
-  cape_aio_context_add (aio, self->aioh, NULL);
+  cape_aio_context_add (aio, self->aioh, 0);
 
 #endif
   
