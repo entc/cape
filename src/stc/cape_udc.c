@@ -638,13 +638,76 @@ CapeUdc cape_udc_get_list (CapeUdc self, const CapeString name)
 
 //-----------------------------------------------------------------------------
 
+CapeUdc cape_udc_get_first (CapeUdc self)
+{
+  switch (self->type)
+  {
+    case CAPE_UDC_LIST:
+    {
+      CapeListNode n = cape_list_node_begin (self->data);
+      
+      if (n)
+      {
+        return cape_list_node_data (n);
+      }
+      else
+      {
+        return NULL;
+      }
+    }
+    case CAPE_UDC_NODE:
+    {
+      CapeMapNode n = cape_map_first (self->data);
+
+      if (n)
+      {
+        return cape_map_node_value (n);
+      }
+      else
+      {
+        return NULL;
+      }
+    }
+    default:
+    {
+      return NULL;
+    }
+  }
+}
+
+//-----------------------------------------------------------------------------
+
 CapeString cape_udc_ext_s (CapeUdc self, const CapeString name)
 {
   switch (self->type)
   {
     case CAPE_UDC_NODE:
     {
-      
+      CapeMapNode n = cape_map_find (self->data, (void*)name);
+      if (n)
+      {
+        CapeUdc h = cape_map_node_value (n);
+
+        if (h->type == CAPE_UDC_STRING)
+        {
+          CapeString ret;
+          
+          // remove the UDC (h) from the map
+          n = cape_map_extract (self->data, n);
+
+          // get the content
+          ret = h->data;
+          h->data = NULL;
+
+          // clean up
+          cape_udc_del (&h);
+          cape_map_node_del (&n);
+          
+          return ret;
+        }
+      }
+
+      return NULL;
     }
     default:
     {

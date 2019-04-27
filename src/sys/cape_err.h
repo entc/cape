@@ -5,16 +5,28 @@
 
 //=============================================================================
 
-#define CAPE_ERR_NONE           0x0000
-#define CAPE_ERR_OS             0x0001
-#define CAPE_ERR_LIB            0x0002
-#define CAPE_ERR_3RDPARTY_LIB   0x0004
-#define CAPE_ERR_NO_OBJECT      0x0005
-#define CAPE_ERR_RUNTIME        0x0006
-#define CAPE_ERR_CONTINUE       0x0007
-#define CAPE_ERR_PARSER         0x0008
-#define CAPE_ERR_NOT_FOUND      0x0009
-#define CAPE_ERR_MISSING_PARAM  0x000A
+#define CAPE_ERR_NONE                0
+#define CAPE_ERR_CONTINUE            1
+
+#define CAPE_ERR_NOT_FOUND           2
+#define CAPE_ERR_NOT_SUPPORTED       3
+#define CAPE_ERR_RUNTIME             4
+#define CAPE_ERR_EOF                 5
+#define CAPE_ERR_OS                  6
+
+#define CAPE_ERR_LIB                 7
+#define CAPE_ERR_3RDPARTY_LIB        8
+
+#define CAPE_ERR_NO_OBJECT           9
+#define CAPE_ERR_NO_ROLE            10
+#define CAPE_ERR_NO_AUTH            11
+
+#define CAPE_ERR_PARSER             12
+#define CAPE_ERR_MISSING_PARAM      13
+#define CAPE_ERR_PROCESS_ABORT      14
+#define CAPE_ERR_PROCESS_FAILED     15
+#define CAPE_ERR_WRONG_STATE        16
+#define CAPE_ERR_WRONG_VALUE        17
 
 //=============================================================================
 

@@ -104,6 +104,8 @@ __CAPE_LIBEX   CapeUdc           cape_udc_get_node         (CapeUdc, const CapeS
 
 __CAPE_LIBEX   CapeUdc           cape_udc_get_list         (CapeUdc, const CapeString name);
 
+__CAPE_LIBEX   CapeUdc           cape_udc_get_first        (CapeUdc);
+
 //-----------------------------------------------------------------------------
 
 __CAPE_LIBEX   CapeString        cape_udc_ext_s            (CapeUdc, const CapeString name);
