@@ -39,10 +39,18 @@ void cape_err_del (CapeErr* p_self)
   {
     CapeErr self = *p_self;
     
-    cape_str_del (&(self->text));
+    cape_err_clr (self);
     
     CAPE_DEL (p_self, struct CapeErr_s);
   }  
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_err_clr (CapeErr self)
+{
+  cape_str_del (&(self->text));
+  self->code = CAPE_ERR_NONE;
 }
 
 //-----------------------------------------------------------------------------

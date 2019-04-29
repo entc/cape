@@ -40,6 +40,8 @@ __CAPE_LIBEX   void              cape_err_del           (CapeErr*);         // r
 
 //-----------------------------------------------------------------------------
 
+__CAPE_LIBEX   void              cape_err_clr           (CapeErr);
+
 __CAPE_LIBEX   int               cape_err_set           (CapeErr, unsigned long errCode, const char* error_message);
 
 __CAPE_LIBEX   int               cape_err_set_fmt       (CapeErr, unsigned long errCode, const char* error_message, ...);
