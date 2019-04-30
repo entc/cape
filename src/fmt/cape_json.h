@@ -18,6 +18,8 @@ __CAPE_LIBEX   CapeString        cape_json_to_s             (const CapeUdc sourc
 
 __CAPE_LIBEX   CapeUdc           cape_json_from_file        (const CapeString file, const CapeString name, CapeErr err);
 
+__CAPE_LIBEX   int               cape_json_to_file          (const CapeString file, const CapeUdc source, CapeErr err);
+
 //-----------------------------------------------------------------------------
 
 #endif

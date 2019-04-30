@@ -514,3 +514,47 @@ exit_and_cleanup:
 }
 
 //-----------------------------------------------------------------------------
+
+int cape_json_to_file (const CapeString file, const CapeUdc source, CapeErr err)
+{
+  int res;  
+  CapeFileHandle fh = NULL;
+  
+  // allocate mem
+  fh = cape_fh_new (NULL, file);
+  
+  // try to open the file
+  res = cape_fh_open (fh, O_CREAT | O_TRUNC | O_WRONLY, err);
+  if (res)
+  {
+    cape_err_set_fmt (err, cape_err_code (err), "can't open '%s': %s", file, cape_err_text (err));
+    goto exit_and_cleanup;
+  }
+
+  {
+    CapeStream stream = cape_stream_new ();
+  
+    cape_json_fill (stream, source);
+  
+    const char* buf = cape_stream_data (stream);
+    number_t bytes_to_write = cape_stream_size (stream);
+    number_t bytes_cn_write = 0;
+    
+    while (bytes_cn_write < bytes_to_write)
+    {
+      bytes_cn_write += cape_fh_write_buf (fh, buf + bytes_cn_write, bytes_to_write - bytes_cn_write);
+    }
+    
+    cape_stream_del (&stream);
+  }
+    
+  res = CAPE_ERR_NONE;
+  
+exit_and_cleanup:  
+  
+  cape_fh_del (&fh);
+  
+  return res;
+}
+
+//-----------------------------------------------------------------------------

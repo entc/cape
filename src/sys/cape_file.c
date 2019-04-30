@@ -63,7 +63,7 @@ int cape_fs_is_relative (const char* filepath)
 
 //-----------------------------------------------------------------------------
 
-CapeString cape_fs_path_current (void)
+CapeString cape_fs_path_current (const char* filepath)
 {
 #ifdef __WINDOWS_OS
   
@@ -79,17 +79,26 @@ CapeString cape_fs_path_current (void)
     return NULL;
   }
   
-  return ret;
-  
 #elif defined __LINUX_OS || defined __BSD_OS
 
   char* ret = CAPE_ALLOC (PATH_MAX + 1);
   
   getcwd (ret, PATH_MAX);
   
-  return ret;
-
 #endif
+
+  if (filepath)
+  {
+    CapeString h = cape_fs_path_merge (ret, filepath);
+    
+    CAPE_FREE(ret);
+    
+    return h;
+  }
+  else
+  {
+    return ret;
+  }  
 }
 
 //-----------------------------------------------------------------------------
@@ -98,17 +107,12 @@ CapeString cape_fs_path_absolute (const char* filepath)
 {
   if (filepath == NULL)
   {
-    return cape_fs_path_current ();
+    return cape_fs_path_current (NULL);
   }
   
   if (cape_fs_is_relative (filepath))
   {
-    CapeString h = cape_fs_path_current ();
-    CapeString r = cape_fs_path_merge (h, filepath);
-    
-    cape_str_del (&h);
-    
-    return r;
+    return cape_fs_path_current (filepath);
   }
   else
   {
@@ -122,7 +126,7 @@ CapeString cape_fs_path_resolve (const char* filepath, CapeErr err)
 {
   if (filepath == NULL)
   {
-    return cape_fs_path_current ();
+    return cape_fs_path_current (NULL);
   }
   
 #ifdef __WINDOWS_OS
@@ -201,7 +205,7 @@ const CapeString cape_fs_split (const char* filepath, CapeString* p_path)
     
     if (p_path)
     {
-      *p_path = cape_fs_path_current ();
+      *p_path = cape_fs_path_current (NULL);
     }
   }
 
@@ -315,6 +319,13 @@ number_t cape_fh_read_buf (CapeFileHandle self, char* bufdat, number_t buflen)
   }
   
   return res;
+}
+
+//-----------------------------------------------------------------------------
+
+number_t cape_fh_write_buf (CapeFileHandle self, const char* bufdat, number_t buflen)
+{
+  return write (self->fd, bufdat, buflen);
 }
 
 //-----------------------------------------------------------------------------

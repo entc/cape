@@ -11,7 +11,7 @@
 
 __CAPE_LIBEX   CapeString         cape_fs_path_merge     (const char* path1, const char* path2);
 
-__CAPE_LIBEX   CapeString         cape_fs_path_current   (void);
+__CAPE_LIBEX   CapeString         cape_fs_path_current   (const char* filepath);
 
 __CAPE_LIBEX   CapeString         cape_fs_path_absolute  (const char* filepath);
 
@@ -42,6 +42,8 @@ __CAPE_LIBEX   int                cape_fh_open           (CapeFileHandle, int fl
 __CAPE_LIBEX   void*              cape_fh_fd             (CapeFileHandle);
 
 __CAPE_LIBEX   number_t           cape_fh_read_buf       (CapeFileHandle, char* bufdat, number_t buflen);
+
+__CAPE_LIBEX   number_t           cape_fh_write_buf      (CapeFileHandle, const char* bufdat, number_t buflen);
 
 //-----------------------------------------------------------------------------
 

@@ -117,7 +117,194 @@ void cape_udc_del (CapeUdc* p_self)
 
 CapeUdc cape_udc_cp (const CapeUdc self)
 {
+  // copy the base type
+  CapeUdc clone = cape_udc_new (self->type, self->name);
   
+  switch (self->type)
+  {
+    case CAPE_UDC_NODE:
+    {
+      // TODO
+      
+      break;
+    }
+    case CAPE_UDC_LIST:
+    {
+      // TODO
+      
+      break;
+    }
+    case CAPE_UDC_STRING:
+    {
+      clone->data = cape_str_cp (self->data);
+      break;
+    }
+    case CAPE_UDC_NUMBER:
+    {
+      clone->data = self->data;
+      break;
+    }
+    case CAPE_UDC_BOOL:
+    {
+      clone->data = self->data;
+      break;
+    }
+    case CAPE_UDC_FLOAT:
+    {
+      *(double*)(clone->data) = *(double*)(self->data);
+      break;
+    }
+  }
+  
+  return clone;
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_udc_merge_mv__item__node (CapeUdc origin, CapeUdc other)
+{
+  if (origin->type == other->type)
+  {
+    CapeUdcCursor* cursor = cape_udc_cursor_new (other, CAPE_DIRECTION_FORW);
+    
+    while (cape_udc_cursor_next (cursor))
+    {
+      CapeUdc h1 = cape_udc_cursor_ext (other, cursor);
+      CapeUdc h2 = cape_udc_get (origin, h1->name);
+      
+      if (h2)
+      {
+        // we found this node in our self node
+        cape_udc_merge_mv (h2, &h1);
+      }
+      else
+      {
+        cape_udc_add (origin, &h1);
+      }
+    }
+    
+    cape_udc_cursor_del (&cursor);
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_udc_merge_mv__item__list (CapeUdc origin, CapeUdc other)
+{
+  if (origin->type == other->type)
+  {
+    CapeUdcCursor* cursor = cape_udc_cursor_new (other, CAPE_DIRECTION_FORW);
+    
+    while (cape_udc_cursor_next (cursor))
+    {
+      CapeUdc h1 = cape_udc_cursor_ext (other, cursor);
+        
+      cape_udc_add (origin, &h1);
+    }
+    
+    cape_udc_cursor_del (&cursor);
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_udc_merge_mv__item (CapeUdc origin, CapeUdc other)
+{
+  switch (origin->type)
+  {
+    case CAPE_UDC_NODE:
+    {
+      cape_udc_merge_mv__item__node (origin, other);
+      break;
+    }
+    case CAPE_UDC_LIST:
+    {
+      cape_udc_merge_mv__item__list (origin, other);
+      break;
+    }
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_udc_merge_mv (CapeUdc self, CapeUdc* p_udc)
+{
+  if (*p_udc)
+  {
+    cape_udc_merge_mv__item (self, *p_udc);
+    
+    cape_udc_del (p_udc);
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_udc_merge_cp__item__node (CapeUdc origin, const CapeUdc other)
+{
+  if (origin->type == other->type)
+  {
+    CapeUdcCursor* cursor = cape_udc_cursor_new (other, CAPE_DIRECTION_FORW);
+    
+    while (cape_udc_cursor_next (cursor))
+    {
+      CapeUdc h1 = cursor->item;
+      CapeUdc h2 = cape_udc_get (origin, h1->name);
+      
+      if (h2)
+      {
+        // we found this node in our self node
+        cape_udc_merge_cp (h2, h1);
+      }
+      else
+      {
+        // create a copy
+        CapeUdc h = cape_udc_cp (h1);
+        
+        // append
+        cape_udc_add (origin, &h);
+      }
+    }
+    
+    cape_udc_cursor_del (&cursor);
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_udc_merge_cp__item__list (CapeUdc origin, const CapeUdc other)
+{
+  if (origin->type == other->type)
+  {
+    CapeUdcCursor* cursor = cape_udc_cursor_new (other, CAPE_DIRECTION_FORW);
+    
+    while (cape_udc_cursor_next (cursor))
+    {
+      CapeUdc h1 = cape_udc_cp (cursor->item);
+      
+      cape_udc_add (origin, &h1);
+    }
+    
+    cape_udc_cursor_del (&cursor);
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_udc_merge_cp (CapeUdc self, const CapeUdc udc)
+{
+  switch (self->type)
+  {
+    case CAPE_UDC_NODE:
+    {
+      cape_udc_merge_cp__item__node (self, udc);
+      break;
+    }
+    case CAPE_UDC_LIST:
+    {
+      cape_udc_merge_cp__item__list (self, udc);
+      break;
+    }
+  }
 }
 
 //-----------------------------------------------------------------------------
