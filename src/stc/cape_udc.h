@@ -40,6 +40,10 @@ __CAPE_LIBEX   void              cape_udc_set_name         (const CapeUdc, const
 
 __CAPE_LIBEX   CapeUdc           cape_udc_cp               (const CapeUdc);
 
+__CAPE_LIBEX   CapeUdc           cape_udc_mv               (CapeUdc*);
+
+__CAPE_LIBEX   void              cape_udc_replace          (CapeUdc*, CapeUdc* replace_with);
+
 __CAPE_LIBEX   void              cape_udc_merge_mv         (CapeUdc, CapeUdc*);
 
 __CAPE_LIBEX   void              cape_udc_merge_cp         (CapeUdc, const CapeUdc);
