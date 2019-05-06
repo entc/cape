@@ -138,44 +138,71 @@ static void* __STDCALL cape_udc_cp__list_on_clone (void* ptr)
 
 CapeUdc cape_udc_cp (const CapeUdc self)
 {
-  // copy the base type
-  CapeUdc clone = cape_udc_new (self->type, self->name);
+  CapeUdc clone = NULL;
   
-  switch (self->type)
+  if (self)
   {
-    case CAPE_UDC_NODE:
+    // copy the base type
+    clone = cape_udc_new (self->type, self->name);
+    
+    switch (self->type)
     {
-      clone->data = cape_map_clone (self->data, cape_udc_cp__map_on_clone_key, cape_udc_cp__map_on_clone_val);
-      break;
-    }
-    case CAPE_UDC_LIST:
-    {
-      clone->data = cape_list_clone (self->data, cape_udc_cp__list_on_clone);
-      break;
-    }
-    case CAPE_UDC_STRING:
-    {
-      clone->data = cape_str_cp (self->data);
-      break;
-    }
-    case CAPE_UDC_NUMBER:
-    {
-      clone->data = self->data;
-      break;
-    }
-    case CAPE_UDC_BOOL:
-    {
-      clone->data = self->data;
-      break;
-    }
-    case CAPE_UDC_FLOAT:
-    {
-      *(double*)(clone->data) = *(double*)(self->data);
-      break;
+      case CAPE_UDC_NODE:
+      {
+        clone->data = cape_map_clone (self->data, cape_udc_cp__map_on_clone_key, cape_udc_cp__map_on_clone_val);
+        break;
+      }
+      case CAPE_UDC_LIST:
+      {
+        clone->data = cape_list_clone (self->data, cape_udc_cp__list_on_clone);
+        break;
+      }
+      case CAPE_UDC_STRING:
+      {
+        clone->data = cape_str_cp (self->data);
+        break;
+      }
+      case CAPE_UDC_NUMBER:
+      {
+        clone->data = self->data;
+        break;
+      }
+      case CAPE_UDC_BOOL:
+      {
+        clone->data = self->data;
+        break;
+      }
+      case CAPE_UDC_FLOAT:
+      {
+        *(double*)(clone->data) = *(double*)(self->data);
+        break;
+      }
     }
   }
-  
+
   return clone;
+}
+
+//-----------------------------------------------------------------------------
+
+CapeUdc cape_udc_mv (CapeUdc* p_origin)
+{
+  CapeUdc ret = *p_origin;
+  
+  *p_origin = NULL;
+  
+  return ret;
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_udc_replace (CapeUdc* p_self, CapeUdc* p_replace_with)
+{
+  // remove if exists
+  cape_udc_del (p_self);
+  
+  // set
+  *p_self = cape_udc_mv (p_replace_with);
 }
 
 //-----------------------------------------------------------------------------
@@ -435,9 +462,16 @@ void cape_udc_set_name (const CapeUdc self, const CapeString name)
 
 CapeUdc cape_udc_add_name (CapeUdc self, CapeUdc* p_item, const CapeString name)
 {
-  cape_udc_set_name (*p_item, name);
-  
-  return cape_udc_add (self, p_item);
+  if (*p_item)
+  {
+    cape_udc_set_name (*p_item, name);
+    
+    return cape_udc_add (self, p_item);
+  }
+  else
+  {
+    return NULL;
+  }
 }
 
 //-----------------------------------------------------------------------------
