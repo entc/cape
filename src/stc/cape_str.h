@@ -8,13 +8,15 @@
 
 #define CapeString char*
 
-__CAPE_LIBEX   CapeString         cape_str_cp            (const CapeString);                          // allocate memory and initialize the object
+__CAPE_LIBEX   CapeString         cape_str_cp            (const CapeString);                            // allocate memory and initialize the object
 
-__CAPE_LIBEX   void               cape_str_del           (CapeString*);                               // release memory
+__CAPE_LIBEX   void               cape_str_del           (CapeString*);                                 // release memory
 
-__CAPE_LIBEX   CapeString         cape_str_sub           (const CapeString, number_t len);            // copy a part of the substring
+__CAPE_LIBEX   CapeString         cape_str_sub           (const CapeString, number_t len);              // copy a part of the substring
 
-__CAPE_LIBEX   CapeString         cape_str_uuid          (void);                                      // create an UUID and copy it into the string
+__CAPE_LIBEX   CapeString         cape_str_uuid          (void);                                        // create an UUID and copy it into the string
+
+__CAPE_LIBEX   CapeString         cape_str_fmt           (const CapeString format, ...);                // format to string
 
 //-----------------------------------------------------------------------------
 

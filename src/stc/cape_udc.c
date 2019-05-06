@@ -115,6 +115,27 @@ void cape_udc_del (CapeUdc* p_self)
 
 //-----------------------------------------------------------------------------
 
+static void* __STDCALL cape_udc_cp__map_on_clone_key (void* ptr)
+{
+  return cape_str_cp (ptr);  
+}
+
+//-----------------------------------------------------------------------------
+
+static void* __STDCALL cape_udc_cp__map_on_clone_val (void* ptr)
+{
+  return cape_udc_cp (ptr);
+}
+
+//-----------------------------------------------------------------------------
+
+static void* __STDCALL cape_udc_cp__list_on_clone (void* ptr)
+{
+  return cape_udc_cp (ptr);
+}
+
+//-----------------------------------------------------------------------------
+
 CapeUdc cape_udc_cp (const CapeUdc self)
 {
   // copy the base type
@@ -124,14 +145,12 @@ CapeUdc cape_udc_cp (const CapeUdc self)
   {
     case CAPE_UDC_NODE:
     {
-      // TODO
-      
+      clone->data = cape_map_clone (self->data, cape_udc_cp__map_on_clone_key, cape_udc_cp__map_on_clone_val);
       break;
     }
     case CAPE_UDC_LIST:
     {
-      // TODO
-      
+      clone->data = cape_list_clone (self->data, cape_udc_cp__list_on_clone);
       break;
     }
     case CAPE_UDC_STRING:

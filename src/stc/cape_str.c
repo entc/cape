@@ -5,6 +5,7 @@
 #include <time.h>
 #include <ctype.h>
 #include <stdio.h>
+#include <stdarg.h>
 
 //-----------------------------------------------------------------------------
 
@@ -115,6 +116,57 @@ CapeString cape_str_uuid (void)
           rand() & 0xffff, rand() & 0xffff, rand() & 0xffff);        // Generates a 96-bit Hex number
   
   return self;
+}
+
+//-----------------------------------------------------------------------------
+
+CapeString cape_str_fmt (const CapeString format, ...)
+{
+  CapeString ret = NULL;
+  
+  // variables
+  va_list valist;
+  va_start (valist, format);
+  
+#ifdef _MSC_VER
+  
+  {
+    int len = _vscprintf (format, valist) + 1;
+
+    ret = CAPE_NEW (len);
+    
+    len = vsprintf_s (ret, len, format, valist);
+    
+    self->pos += len;
+  }
+  
+#elif _GCC
+  
+  {
+    char* strp;
+    
+    int bytesWritten = vasprintf (&strp, format, valist);
+    if ((bytesWritten > 0) && strp)
+    {
+      ret = strp;
+    }
+  }
+  
+#elif __BORLANDC__
+  
+  {
+    int len = 1024;
+    
+    ret = CAPE_NEW (len);
+    
+    len = vsnprintf (ret, len, format, valist);    
+  }
+  
+#endif
+  
+  va_end(valist);
+  
+  return ret;
 }
 
 //-----------------------------------------------------------------------------
