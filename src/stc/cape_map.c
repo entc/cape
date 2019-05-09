@@ -927,7 +927,7 @@ CapeMap cape_map_clone (CapeMap self, fct_cape_map_onClone onCloneKey, fct_cape_
   while (cape_map_cursor_next (&cursor))
   {
     // trivial copying of the node
-    cape_map_insert (self, onCloneKey (cursor.node->key), onCloneVal (cursor.node->val));
+    cape_map_insert (clone, onCloneKey (cursor.node->key), onCloneVal (cursor.node->val));
   }
   
   return clone;
