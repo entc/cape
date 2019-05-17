@@ -48,11 +48,19 @@ if (NOT DLL_FOUND)
 	  ##____________________________________________________________________________
 	  ## Check for the library
 
-	  find_library (DLL_LIBRARIES
+	  find_library (DLL_LIBRARY_01
 		NAMES dl
 		HINTS ${CMAKE_INSTALL_PREFIX}
 		PATH_SUFFIXES lib
 		)
+
+    # Correct Symlinks
+    if(IS_SYMLINK ${DLL_LIBRARY_01})
+      get_filename_component(TMP ${DLL_LIBRARY_01} REALPATH)
+      list (APPEND DLL_LIBRARIES ${TMP})
+    else()
+      list (APPEND DLL_LIBRARIES ${DLL_LIBRARY_01})
+    endif()
 
 	  ##____________________________________________________________________________
 	  ## Actions taken when all components have been found
