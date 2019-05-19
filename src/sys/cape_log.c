@@ -132,7 +132,7 @@ int cape_log_get_file (CapeFileLog self, const char* filepath, CapeErr err)
   
   if (path)
   {
-    res = cape_path_create (path, err);
+    res = cape_fs_path_create (path, err);
 
     // finally merge the path
     self->fh = cape_fh_new (path, log_file);

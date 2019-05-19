@@ -1,6 +1,8 @@
 #include "cape_file.h"
 #include "cape_log.h"
 
+#include "stc/cape_list.h"
+
 //-----------------------------------------------------------------------------
 
 #ifdef __WINDOWS_OS
@@ -27,6 +29,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <sys/stat.h>
+#include <dirent.h>
 
 #define CAPE_FS_FOLDER_SEP   '/'
 
@@ -214,7 +217,7 @@ const CapeString cape_fs_split (const char* filepath, CapeString* p_path)
 
 //-----------------------------------------------------------------------------
 
-int cape_path_create (const char* path, CapeErr err)
+int cape_fs_path_create (const char* path, CapeErr err)
 {
 #ifdef __WINDOWS_OS
   
@@ -237,6 +240,112 @@ int cape_path_create (const char* path, CapeErr err)
   return CAPE_ERR_NONE;
   
 #endif  
+}
+
+//-----------------------------------------------------------------------------
+
+static void __STDCALL cape_fs_path_size__on_del (void* ptr)
+{
+  CapeString h = ptr; cape_str_del (&h);
+}
+
+//-----------------------------------------------------------------------------
+
+number_t cape_fs_path_size__process_path (DIR* dir, CapeList folders, const char* path, CapeErr err)
+{
+  number_t total_size = 0;
+  struct dirent* dentry;
+  
+  for (dentry = readdir (dir); dentry; dentry = readdir (dir))
+  {
+    if (dentry->d_type == DT_DIR)
+    {
+      // excluse special folders
+      if (cape_str_equal (dentry->d_name, ".") || cape_str_equal (dentry->d_name, ".."))
+      {
+        continue;
+      }
+      
+      // construct new path and adds to the folders list
+      {
+        CapeString h = cape_fs_path_merge (path, dentry->d_name);
+
+        cape_list_push_back (folders, h);
+      }
+    }
+    else if (dentry->d_type == DT_REG)
+    {
+      CapeString file = cape_fs_path_merge (path, dentry->d_name);
+      
+      struct stat st;
+      if (stat (file, &st) != 0)
+      {
+        cape_str_del (&file);
+        
+        cape_err_lastOSError (err);
+        return 0;
+      }
+      else
+      {
+        total_size += st.st_size;
+        
+        cape_str_del (&file);
+      }
+    }
+  }
+  
+  return total_size;
+}
+
+//-----------------------------------------------------------------------------
+
+number_t cape_fs_path_size (const char* path, CapeErr err)
+{
+  number_t total_size = 0;
+  CapeList folders = cape_list_new (cape_fs_path_size__on_del);
+
+  {
+    DIR* dir = opendir (path);
+    
+    if (dir == NULL)
+    {
+      cape_err_lastOSError (err);
+      goto exit_and_cleanup;
+    }
+    
+    total_size += cape_fs_path_size__process_path (dir, folders, path, err);
+    
+    closedir (dir);
+  }
+  
+  if (cape_err_code (err))
+  {
+    total_size = 0;
+    goto exit_and_cleanup;
+  }
+  
+  // iterate through all
+  {
+    CapeListCursor cursor; cape_list_cursor_init (folders, &cursor, CAPE_DIRECTION_FORW);
+    
+    while (cape_list_cursor_next(&cursor))
+    {
+      CapeString sub_path = cape_list_node_data (cursor.node);
+      
+      total_size += cape_fs_path_size (sub_path, err);
+      
+      if (cape_err_code (err))
+      {
+        total_size = 0;
+        goto exit_and_cleanup;
+      }
+    }
+  }
+  
+exit_and_cleanup:
+  
+  cape_list_del (&folders);
+  return total_size;
 }
 
 //-----------------------------------------------------------------------------

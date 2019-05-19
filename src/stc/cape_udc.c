@@ -1008,6 +1008,52 @@ CapeUdc cape_udc_ext_list (CapeUdc self, const CapeString name)
 
 //-----------------------------------------------------------------------------
 
+CapeUdc cape_udc_ext_first (CapeUdc self)
+{
+  switch (self->type)
+  {
+    case CAPE_UDC_LIST:
+    {
+      CapeListCursor cursor; cape_list_cursor_init (self->data, &cursor, CAPE_DIRECTION_FORW);
+
+      if (cape_list_cursor_next (&cursor))
+      {
+        return cape_list_node_extract (self->data, cursor.node);
+      }
+      else
+      {
+        return NULL;
+      }
+    }
+    case CAPE_UDC_NODE:
+    {
+      CapeMapCursor cursor; cape_map_cursor_init (self->data, &cursor, CAPE_DIRECTION_FORW);
+      
+      if (cape_map_cursor_next (&cursor))
+      {
+        CapeMapNode n = cape_map_cursor_extract (self->data, &cursor);
+        
+        CapeUdc u = cape_map_node_value (n);
+
+        // releases the node memory
+        cape_map_node_del (&n);
+        
+        return u;
+      }
+      else
+      {
+        return NULL;
+      }
+    }
+    default:
+    {
+      return NULL;
+    }
+  }
+}
+
+//-----------------------------------------------------------------------------
+
 CapeUdcCursor* cape_udc_cursor_new (CapeUdc self, int direction)
 {
   CapeUdcCursor* cursor = CAPE_NEW(CapeUdcCursor);

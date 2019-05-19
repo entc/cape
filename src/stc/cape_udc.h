@@ -124,6 +124,8 @@ __CAPE_LIBEX   CapeUdc           cape_udc_ext_node         (CapeUdc, const CapeS
 
 __CAPE_LIBEX   CapeUdc           cape_udc_ext_list         (CapeUdc, const CapeString name);
 
+__CAPE_LIBEX   CapeUdc           cape_udc_ext_first        (CapeUdc);
+
 //-----------------------------------------------------------------------------
 
 typedef struct
