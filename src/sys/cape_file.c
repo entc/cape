@@ -19,6 +19,7 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <stdio.h>
+#include <dirent.h>
 
 #define CAPE_FS_FOLDER_SEP   '/'
 
