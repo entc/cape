@@ -257,43 +257,55 @@ number_t cape_fs_path_size__process_path (DIR* dir, CapeList folders, const char
   number_t total_size = 0;
   struct dirent* dentry;
   
+  CapeString file = NULL;
+  
   for (dentry = readdir (dir); dentry; dentry = readdir (dir))
   {
-    if (dentry->d_type == DT_DIR)
+    struct stat st;
+
+    // create the new filename
+    {
+      CapeString h = cape_fs_path_merge (path, dentry->d_name);
+
+      cape_str_replace_mv (&file, &h);
+    }
+    
+    // get detailed info about the file
+    // not all filesystems return the info with readdir
+    if (stat (file, &st) != 0)
+    {
+      total_size = 0;
+
+      // set error
+      cape_err_lastOSError (err);
+      
+      goto exit_and_cleanup;
+    }
+
+    // directory
+    if (S_ISDIR (st.st_mode))
     {
       // excluse special folders
       if (cape_str_equal (dentry->d_name, ".") || cape_str_equal (dentry->d_name, ".."))
       {
         continue;
       }
-      
-      // construct new path and adds to the folders list
-      {
-        CapeString h = cape_fs_path_merge (path, dentry->d_name);
 
-        cape_list_push_back (folders, h);
-      }
-    }
-    else if (dentry->d_type == DT_REG)
-    {
-      CapeString file = cape_fs_path_merge (path, dentry->d_name);
+      cape_list_push_back (folders, file);
       
-      struct stat st;
-      if (stat (file, &st) != 0)
-      {
-        cape_str_del (&file);
-        
-        cape_err_lastOSError (err);
-        return 0;
-      }
-      else
-      {
-        total_size += st.st_size;
-        
-        cape_str_del (&file);
-      }
+      continue;
+    }
+
+    // regular file
+    if (S_ISREG (st.st_mode))
+    {
+      total_size += st.st_size;
     }
   }
+  
+exit_and_cleanup:
+  
+  cape_str_del (&file);
   
   return total_size;
 }
