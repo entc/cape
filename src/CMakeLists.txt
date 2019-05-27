@@ -26,6 +26,7 @@ SET(CAPE_STC_HEADERS
 #----------------------------------------------------------------------------------
 
 SET(CAPE_SYS_SOURCES
+  sys/cape_init.c
   sys/cape_err.c
   sys/cape_log.c
   sys/cape_file.c
