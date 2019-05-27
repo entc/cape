@@ -1,9 +1,20 @@
+// c includes
+#ifdef __GNUC__
+#define _GNU_SOURCE 1
+#include <features.h>
+#endif
+
 #include "cape_str.h"
+
+// cape includes
+#include "sys/cape_err.h"
+#include "sys/cape_log.h"
 
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
 #include <ctype.h>
+
 #include <stdio.h>
 #include <stdarg.h>
 
@@ -140,13 +151,28 @@ CapeString cape_str_fmt (const CapeString format, ...)
     self->pos += len;
   }
   
-#elif _GCC
+#elif __GNUC__
   
   {
     char* strp;
     
     int bytesWritten = vasprintf (&strp, format, valist);
-    if ((bytesWritten > 0) && strp)
+    
+    if (bytesWritten == -1)
+    {
+      CapeErr err = cape_err_new ();
+      
+      cape_err_lastOSError (err);
+      
+      cape_log_fmt (CAPE_LL_ERROR, "CAPE", "str_fmt", "can't format string: %s", cape_err_text(err));
+      
+      cape_err_del (&err);
+    }
+    else if (bytesWritten == 0)
+    {
+      cape_log_fmt (CAPE_LL_WARN, "CAPE", "str_fmt", "format of string returned 0");      
+    }
+    else if (bytesWritten > 0)
     {
       ret = strp;
     }

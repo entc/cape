@@ -6,3 +6,5 @@ INCLUDE_DIRECTORIES("..")
 add_executable          (ut_json_parser ut_json_parser.c)
 target_link_libraries   (ut_json_parser cape)
 
+add_executable          (ut_stc_string ut_stc_string.c)
+target_link_libraries   (ut_stc_string cape)
