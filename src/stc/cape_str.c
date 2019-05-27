@@ -1,7 +1,6 @@
 // c includes
 #ifdef __GNUC__
 #define _GNU_SOURCE 1
-#include <features.h>
 #endif
 
 #include "cape_str.h"

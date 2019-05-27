@@ -299,8 +299,6 @@ number_t cape_fs_path_size__process_path (DIR* dir, CapeList folders, const char
     }
   }
   
-  exit_and_cleanup:
-  
   cape_str_del (&file);
   
   return total_size;
@@ -310,7 +308,7 @@ number_t cape_fs_path_size__process_path (DIR* dir, CapeList folders, const char
 
 off_t cape_fs_path_size (const char* path, CapeErr err)
 {
-  #ifdef TRUE
+#ifdef TRUE
   
   off_t total_size = 0;
   
@@ -336,9 +334,13 @@ off_t cape_fs_path_size (const char* path, CapeErr err)
     }
   }
   
+  // cleanup
+  fts_close (tree);
+  cape_str_del (&(fts_path[0]));
+  
   return total_size;
   
-  #else 
+#else
   
   number_t total_size = 0;
   CapeList folders = cape_list_new (cape_fs_path_size__on_del);
@@ -386,7 +388,7 @@ off_t cape_fs_path_size (const char* path, CapeErr err)
   cape_list_del (&folders);
   return total_size;
   
-  #endif
+#endif
 }
 
 //-----------------------------------------------------------------------------
