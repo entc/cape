@@ -270,6 +270,12 @@ number_t cape_fs_path_size__process_path (DIR* dir, CapeList folders, const char
       cape_str_replace_mv (&file, &h);
     }
     
+    // excluse special folders
+    if (cape_str_equal (dentry->d_name, ".") || cape_str_equal (dentry->d_name, ".."))
+    {
+      continue;
+    }
+
     // get detailed info about the file
     // not all filesystems return the info with readdir
     if (stat (file, &st) != 0)
@@ -285,12 +291,6 @@ number_t cape_fs_path_size__process_path (DIR* dir, CapeList folders, const char
     // directory
     if (S_ISDIR (st.st_mode))
     {
-      // excluse special folders
-      if (cape_str_equal (dentry->d_name, ".") || cape_str_equal (dentry->d_name, ".."))
-      {
-        continue;
-      }
-
       cape_list_push_back (folders, file);
       
       continue;
