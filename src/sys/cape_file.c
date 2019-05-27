@@ -20,6 +20,7 @@
 #include <sys/stat.h>
 #include <stdio.h>
 #include <dirent.h>
+#include <fts.h>
 
 #define CAPE_FS_FOLDER_SEP   '/'
 
@@ -31,6 +32,7 @@
 #include <stdio.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <fts.h>
 
 #define CAPE_FS_FOLDER_SEP   '/'
 
@@ -262,11 +264,11 @@ number_t cape_fs_path_size__process_path (DIR* dir, CapeList folders, const char
   for (dentry = readdir (dir); dentry; dentry = readdir (dir))
   {
     struct stat st;
-
+    
     // create the new filename
     {
       CapeString h = cape_fs_path_merge (path, dentry->d_name);
-
+      
       cape_str_replace_mv (&file, &h);
     }
     
@@ -275,35 +277,29 @@ number_t cape_fs_path_size__process_path (DIR* dir, CapeList folders, const char
     {
       continue;
     }
-
+    
     // get detailed info about the file
     // not all filesystems return the info with readdir
-    if (stat (file, &st) != 0)
+    if (stat (file, &st) == 0)
     {
-      total_size = 0;
-
-      // set error
-      cape_err_lastOSError (err);
+      // directory
+      if (S_ISDIR (st.st_mode))
+      {
+        cape_list_push_back (folders, file);
+        file = NULL;
+        
+        continue;
+      }
       
-      goto exit_and_cleanup;
-    }
-
-    // directory
-    if (S_ISDIR (st.st_mode))
-    {
-      cape_list_push_back (folders, file);
-      
-      continue;
-    }
-
-    // regular file
-    if (S_ISREG (st.st_mode))
-    {
-      total_size += st.st_size;
+      // regular file
+      if (S_ISREG (st.st_mode))
+      {
+        total_size += st.st_size;
+      }
     }
   }
   
-exit_and_cleanup:
+  exit_and_cleanup:
   
   cape_str_del (&file);
   
@@ -312,11 +308,41 @@ exit_and_cleanup:
 
 //-----------------------------------------------------------------------------
 
-number_t cape_fs_path_size (const char* path, CapeErr err)
+off_t cape_fs_path_size (const char* path, CapeErr err)
 {
+  #ifdef TRUE
+  
+  off_t total_size = 0;
+  
+  FTSENT *node;
+  FTS* tree;
+  
+  char * fts_path[2] = {cape_str_cp(path), NULL};
+  
+  tree = fts_open (fts_path, FTS_PHYSICAL, NULL);
+  
+  if (NULL == tree)
+  {
+    cape_err_lastOSError (err);
+    return 0;
+  }
+  
+  
+  while ((node = fts_read(tree)))
+  {
+    if (node->fts_info & FTS_F)
+    {
+      total_size += node->fts_statp->st_size;
+    }
+  }
+  
+  return total_size;
+  
+  #else 
+  
   number_t total_size = 0;
   CapeList folders = cape_list_new (cape_fs_path_size__on_del);
-
+  
   {
     DIR* dir = opendir (path);
     
@@ -355,10 +381,12 @@ number_t cape_fs_path_size (const char* path, CapeErr err)
     }
   }
   
-exit_and_cleanup:
+  exit_and_cleanup:
   
   cape_list_del (&folders);
   return total_size;
+  
+  #endif
 }
 
 //-----------------------------------------------------------------------------

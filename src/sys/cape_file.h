@@ -27,7 +27,7 @@ __CAPE_LIBEX   const CapeString   cape_fs_split          (const char* filepath, 
 
 __CAPE_LIBEX   int                cape_fs_path_create    (const char* path, CapeErr);
 
-__CAPE_LIBEX   number_t           cape_fs_path_size      (const char* path, CapeErr);
+__CAPE_LIBEX   off_t              cape_fs_path_size      (const char* path, CapeErr);
 
 //=============================================================================
 
