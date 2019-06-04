@@ -10,7 +10,11 @@ struct CapeAioFileReader_s; typedef struct CapeAioFileReader_s* CapeAioFileReade
 
 //-----------------------------------------------------------------------------
 
-__CAPE_LIBEX   CapeAioFileReader  cape_aio_freader_new           (void* handle);
+typedef void       (__STDCALL *fct_cape_aio_file__on_read)       (void* ptr, CapeAioFileReader freader, const char* bufdat, number_t buflen);
+
+//-----------------------------------------------------------------------------
+
+__CAPE_LIBEX   CapeAioFileReader  cape_aio_freader_new           (void* handle, void* ptr, fct_cape_aio_file__on_read);
 
 __CAPE_LIBEX   int                cape_aio_freader_add           (CapeAioFileReader*, CapeAioContext);
 

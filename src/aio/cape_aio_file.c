@@ -1,5 +1,17 @@
 #include "cape_aio_file.h"
 
+#if defined __BSD_OS || defined __LINUX_OS
+
+#include <memory.h>
+#include <sys/types.h>
+#include <sys/fcntl.h>
+#include <errno.h>
+#include <unistd.h>
+
+
+
+#endif
+
 //-----------------------------------------------------------------------------
 
 struct CapeAioFileReader_s
@@ -7,34 +19,75 @@ struct CapeAioFileReader_s
   
     void* handle;
     
-    void* hobj;
+    CapeAioHandle aioh;
     
+    char* bufdat;
     
+    ssize_t buflen;
+    
+    void* ptr;
+    
+    fct_cape_aio_file__on_read on_read;
 };
 
 //-----------------------------------------------------------------------------
 
-CapeAioFileReader cape_aio_freader_new (void* handle)
+CapeAioFileReader cape_aio_freader_new (void* handle, void* ptr, fct_cape_aio_file__on_read on_read)
 {
-  CapeAioFileReader self = malloc(sizeof(struct CapeAioFileReader_s));
+  CapeAioFileReader self = CAPE_NEW(struct CapeAioFileReader_s);
   
   self->handle = handle;
+  self->aioh = NULL;
+  
+  self->bufdat = CAPE_ALLOC(1024);
+  self->buflen = 1024;
+  
+  self->ptr = ptr;
+  self->on_read = on_read;
   
   return self;
 }
 
 //-----------------------------------------------------------------------------
 
+void cape_aio_freader_del (CapeAioFileReader* p_self)
+{
+  CapeAioFileReader self = *p_self;
+  
+  // delete the AIO handle
+  cape_aio_handle_del (&(self->aioh));
+  
+  CAPE_FREE(self->bufdat);
+  
+  CAPE_DEL(p_self, struct CapeAioFileReader_s);
+}
+
+//-----------------------------------------------------------------------------
+
 static int __STDCALL cape_aio_freader_onEvent (void* ptr, void* handle, int hflags, unsigned long events, void* overlapped, unsigned long param1)
 {
+  CapeAioFileReader self = ptr;
   
-}
+  ssize_t bytes_read = read ((number_t)self->handle, self->bufdat, self->buflen);
+
+  if (bytes_read > 0)
+  {
+    if (self->on_read)
+    {
+      self->on_read (self->ptr, self, self->bufdat, bytes_read);
+    }
+  }
+  
+  return hflags;
+} 
 
 //-----------------------------------------------------------------------------
 
 static void __STDCALL cape_aio_freader_onDestroy (void* ptr, CapeAioHandle aioh)
 {
-    
+  CapeAioFileReader self = ptr;
+  
+  cape_aio_freader_del (&self);
 }
 
 //-----------------------------------------------------------------------------
@@ -45,11 +98,9 @@ int cape_aio_freader_add (CapeAioFileReader* p_self, CapeAioContext aio)
   
   *p_self = NULL;
     
-  self->hobj = cape_aio_handle_new (self->handle, CAPE_AIO_READ, self, cape_aio_freader_onEvent, cape_aio_freader_onDestroy);
+  self->aioh = cape_aio_handle_new (self->handle, CAPE_AIO_READ, self, cape_aio_freader_onEvent, cape_aio_freader_onDestroy);
   
-//  cape_aio_context_add (aio, self->hobj);      
-  
-  return 0;
+  return cape_aio_context_add (aio, self->aioh, 0);   
 }
 
 //-----------------------------------------------------------------------------

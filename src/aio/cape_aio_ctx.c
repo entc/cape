@@ -735,8 +735,7 @@ int cape_aio_context_add (CapeAioContext self, CapeAioHandle aioh, number_t opti
   
   if (self->efd < 0)
   {
-    cape_aio_handle_unref (aioh);
-    
+    cape_aio_handle_unref (aioh);    
     return FALSE;
   }
   
