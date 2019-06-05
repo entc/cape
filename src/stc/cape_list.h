@@ -34,6 +34,8 @@ __CAPE_LIBEX   int               cape_list_empty            (CapeList);
 
 __CAPE_LIBEX   int               cape_list_hasContent       (CapeList);
 
+__CAPE_LIBEX   void*             cape_list_position         (CapeList, int position);
+
 //-----------------------------------------------------------------------------
 
 __CAPE_LIBEX   void              cape_list_node_replace     (CapeList, CapeListNode, void* data);

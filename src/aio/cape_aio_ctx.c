@@ -250,6 +250,9 @@ int cape_aio_context_close (CapeAioContext self, CapeErr err)
   
   //printf ("send internal SIGTERM\n");
   
+  
+  //close (self->efd);
+  
   kill (getpid(), SIGTERM);
   
   return CAPE_ERR_NONE;
@@ -642,6 +645,8 @@ int cape_aio_context_next (CapeAioContext self, long timeout_in_ms, CapeErr err)
       
       if (hflags_result & CAPE_AIO_ABORT)
       {
+        //printf ("SET ABORT\n");
+        
         res = CAPE_ERR_CONTINUE;
       }
       
@@ -913,6 +918,8 @@ int cape_aio_context_set_interupts (CapeAioContext self, int sigint, int term, C
   {
     return cape_err_set (err, CAPE_ERR_NO_OBJECT, "file-descriptor is not set");
   }
+
+  cape_aio_context_signal_map (self, SIGUSR1, CAPE_AIO_ABORT);
 
   if (sigint)
   {

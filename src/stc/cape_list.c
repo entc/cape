@@ -155,6 +155,27 @@ int cape_list_hasContent (CapeList self)
 
 //-----------------------------------------------------------------------------
 
+void* cape_list_position (CapeList self, int position)
+{
+  void* ret = NULL;
+  
+  CapeListCursor* cursor = cape_list_cursor_create (self, CAPE_DIRECTION_FORW);
+  
+  while (cape_list_cursor_next (cursor) && (ret == NULL))
+  {
+    if (cursor->position == position)
+    {
+      ret = cape_list_node_data (cursor->node);
+    }
+  }
+  
+  cape_list_cursor_destroy (&cursor);
+  
+  return ret;
+}
+
+//-----------------------------------------------------------------------------
+
 void* cape_list_node_data (CapeListNode node)
 {
   return node->data;

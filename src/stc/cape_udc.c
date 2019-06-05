@@ -143,7 +143,12 @@ CapeUdc cape_udc_cp (const CapeUdc self)
   if (self)
   {
     // copy the base type
-    clone = cape_udc_new (self->type, self->name);
+    clone = CAPE_NEW (struct CapeUdc_s);
+    
+    clone->type = self->type;
+    clone->data = NULL;
+    
+    clone->name = cape_str_cp (self->name);
     
     switch (self->type)
     {

@@ -565,7 +565,6 @@ static int __STDCALL cape_aio_accept_onEvent (void* ptr, void* handle, int hflag
   
   remoteAddr = inet_ntoa(((struct sockaddr_in*)&addr)->sin_addr);
   
-  /*
   // set the socket to none blocking
   {
     int flags = fcntl(sock, F_GETFL, 0);
@@ -581,7 +580,6 @@ static int __STDCALL cape_aio_accept_onEvent (void* ptr, void* handle, int hflag
       
     }
   }
-   */
   
   if (self->onConnect)
   {
