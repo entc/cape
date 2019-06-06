@@ -250,11 +250,11 @@ void cape_stream_append_n (CapeStream self, number_t val)
   
 #ifdef _MSC_VER
   
-  self->pos += _snprintf_s (self->pos, 24, _TRUNCATE, "%lu", val);
+  self->pos += _snprintf_s (self->pos, 24, _TRUNCATE, "%li", val);
   
 #else
   
-  self->pos += snprintf(self->pos, 24, "%lu", val);
+  self->pos += snprintf(self->pos, 24, "%li", val);
   
 #endif
 }
