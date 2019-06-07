@@ -4,6 +4,9 @@
 #include "sys/cape_export.h"
 #include "sys/cape_types.h"
 
+// included for va_list
+#include <stdarg.h>
+
 //=============================================================================
 
 #define CapeString char*

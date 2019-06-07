@@ -400,9 +400,9 @@ void cape_aio_delete_event (CapeAioContext self, CapeAioHandle aioh)
 
 //-----------------------------------------------------------------------------
 
-void cape_aio_update_event (CapeAioContext self, CapeAioHandle aioh)
+void cape_aio_update_event (CapeAioContext self, CapeAioHandle aioh, number_t option)
 {
-  cape_aio_set_kevent (self, aioh, aioh->hflags, EV_ADD | EV_ENABLE | EV_ONESHOT, 0);
+  cape_aio_set_kevent (self, aioh, aioh->hflags, EV_ADD | EV_ENABLE | EV_ONESHOT, option);
 }
 
 //-----------------------------------------------------------------------------
@@ -540,7 +540,9 @@ int cape_aio_context_next (CapeAioContext self, long timeout_in_ms, CapeErr err)
           hobj->hflags = hflags_result;
         }
         
-        cape_aio_update_event (self, hobj);
+        printf ("reset event %i\n", event.data);
+        
+        cape_aio_update_event (self, hobj, event.data);
       }
     }
     else
@@ -685,7 +687,7 @@ void cape_aio_context_mod (CapeAioContext self, CapeAioHandle aioh, int hflags, 
 
   aioh->hflags = hflags;
 
-  cape_aio_update_event (self, aioh);
+  cape_aio_update_event (self, aioh, option);
 
 #else
   struct epoll_event event;
