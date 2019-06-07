@@ -18,6 +18,8 @@ __CAPE_LIBEX   CapeString         cape_str_uuid          (void);                
 
 __CAPE_LIBEX   CapeString         cape_str_fmt           (const CapeString format, ...);                // format to string
 
+__CAPE_LIBEX   CapeString         cape_str_flp           (const CapeString format, va_list);            // format to string
+
 //-----------------------------------------------------------------------------
 
 __CAPE_LIBEX   int                cape_str_equal         (const CapeString, const CapeString);          // case sensitive

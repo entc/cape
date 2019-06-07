@@ -145,19 +145,15 @@ CapeString cape_str_uuid (void)
 
 //-----------------------------------------------------------------------------
 
-CapeString cape_str_fmt (const CapeString format, ...)
+CapeString cape_str_flp (const CapeString format, va_list valist)
 {
   CapeString ret = NULL;
   
-  // variables
-  va_list valist;
-  va_start (valist, format);
-  
-#ifdef _MSC_VER
+  #ifdef _MSC_VER
   
   {
     int len = _vscprintf (format, valist) + 1;
-
+    
     ret = CAPE_NEW (len);
     
     len = vsprintf_s (ret, len, format, valist);
@@ -165,7 +161,7 @@ CapeString cape_str_fmt (const CapeString format, ...)
     self->pos += len;
   }
   
-#elif __GNUC__
+  #elif __GNUC__
   
   {
     char* strp;
@@ -192,7 +188,7 @@ CapeString cape_str_fmt (const CapeString format, ...)
     }
   }
   
-#elif __BORLANDC__
+  #elif __BORLANDC__
   
   {
     int len = 1024;
@@ -202,11 +198,25 @@ CapeString cape_str_fmt (const CapeString format, ...)
     len = vsnprintf (ret, len, format, valist);    
   }
   
-#endif
-  
-  va_end(valist);
+  #endif
   
   return ret;
+}
+
+//-----------------------------------------------------------------------------
+
+CapeString cape_str_fmt (const CapeString format, ...)
+{
+  CapeString ret = NULL;
+  
+  va_list ptr;  
+  va_start(ptr, format);
+  
+  ret = cape_str_flp (format, ptr);
+  
+  va_end(ptr); 
+  
+  return ret;  
 }
 
 //-----------------------------------------------------------------------------
