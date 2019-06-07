@@ -78,17 +78,32 @@ void cape_str_del (CapeString* p_self)
 
 int cape_str_equal (const CapeString s1, const CapeString s2)
 {
-  if (NULL == s1)
+  if ((NULL == s1) || (NULL == s2))
   {
     return FALSE;
   }
 
-  if (NULL == s2)
+  return strcmp (s1, s2) == 0;
+}
+
+//-----------------------------------------------------------------------------
+
+int cape_str_compare (const CapeString s1, const CapeString s2)
+{
+  if ((NULL == s1) || (NULL == s2))
   {
     return FALSE;
   }
   
-  return strcmp (s1, s2) == 0;
+#ifdef _MSC_VER
+  
+  return _stricmp (s1, s2) == 0;
+  
+#elif __GNUC__  
+
+  return strcasecmp (s1, s2) == 0;
+
+#endif
 }
 
 //-----------------------------------------------------------------------------

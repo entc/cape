@@ -49,6 +49,22 @@ __CAPE_LIBEX   number_t           cape_fh_write_buf      (CapeFileHandle, const 
 
 //-----------------------------------------------------------------------------
 
+struct CapeDirCursor_s; typedef struct CapeDirCursor_s* CapeDirCursor;
+
+//-----------------------------------------------------------------------------
+
+__CAPE_LIBEX   CapeDirCursor      cape_dc_new            (const CapeString path, CapeErr err);    // returns NULL in case of error
+
+__CAPE_LIBEX   void               cape_dc_del            (CapeDirCursor*);
+
+__CAPE_LIBEX   int                cape_dc_next           (CapeDirCursor);
+
+__CAPE_LIBEX   const CapeString   cape_dc_name           (CapeDirCursor);
+
+__CAPE_LIBEX   off_t              cape_dc_size           (CapeDirCursor);
+
+//-----------------------------------------------------------------------------
+
 __CAPE_LIBEX   const void*        cape_fs_stdout         (void);
 
 __CAPE_LIBEX   void               cape_fs_write_msg      (const void* handle, const char* buf, number_t len);

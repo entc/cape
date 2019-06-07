@@ -20,7 +20,9 @@ __CAPE_LIBEX   CapeString         cape_str_fmt           (const CapeString forma
 
 //-----------------------------------------------------------------------------
 
-__CAPE_LIBEX   int                cape_str_equal         (const CapeString, const CapeString);
+__CAPE_LIBEX   int                cape_str_equal         (const CapeString, const CapeString);          // case sensitive
+
+__CAPE_LIBEX   int                cape_str_compare       (const CapeString, const CapeString);          // no case sensitive
 
 __CAPE_LIBEX   int                cape_str_begins        (const CapeString, const CapeString);
 

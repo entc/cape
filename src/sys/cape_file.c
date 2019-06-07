@@ -325,7 +325,6 @@ off_t cape_fs_path_size (const char* path, CapeErr err)
     return 0;
   }
   
-  
   while ((node = fts_read(tree)))
   {
     if (node->fts_info & FTS_F)
@@ -478,6 +477,91 @@ number_t cape_fh_read_buf (CapeFileHandle self, char* bufdat, number_t buflen)
 number_t cape_fh_write_buf (CapeFileHandle self, const char* bufdat, number_t buflen)
 {
   return write (self->fd, bufdat, buflen);
+}
+
+//-----------------------------------------------------------------------------
+
+struct CapeDirCursor_s
+{
+  FTS* tree;
+  
+  FTSENT* node;
+  
+  char* fts_path[2];
+};
+
+//-----------------------------------------------------------------------------
+
+CapeDirCursor cape_dc_new (const CapeString path, CapeErr err)
+{
+  CapeDirCursor self = CAPE_NEW(struct CapeDirCursor_s);
+  
+  self->fts_path[0] = cape_str_cp (path);
+  self->fts_path[1] = NULL;
+  
+  self->tree = fts_open (self->fts_path, FTS_PHYSICAL | FTS_XDEV, NULL);
+  self->node = NULL;
+  
+  if (self->tree == NULL)
+  {
+    cape_err_lastOSError (err);
+    
+    cape_dc_del (&self);
+  }
+  
+  return self;
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_dc_del (CapeDirCursor* p_self)
+{
+  CapeDirCursor self = *p_self;
+  
+  cape_str_del (&(self->fts_path[0]));
+  
+  fts_close (self->tree);
+  
+  CAPE_DEL(p_self, struct CapeDirCursor_s);
+}
+
+//-----------------------------------------------------------------------------
+
+int  cape_dc_next (CapeDirCursor self)
+{
+  self->node = fts_read (self->tree);
+  
+  return (self->node != NULL);
+}
+
+//-----------------------------------------------------------------------------
+
+const CapeString cape_dc_name (CapeDirCursor self)
+{
+  if (self->node)
+  {
+    if (self->node->fts_info)
+    {
+      return self->node->fts_name;
+    }
+  }
+  
+  return NULL;
+}
+
+//-----------------------------------------------------------------------------
+
+off_t cape_dc_size (CapeDirCursor self)
+{
+  if (self->node)
+  {
+    if (self->node->fts_info & FTS_F)
+    {
+      return self->node->fts_statp->st_size;
+    }
+  }
+  
+  return 0;
 }
 
 //-----------------------------------------------------------------------------
