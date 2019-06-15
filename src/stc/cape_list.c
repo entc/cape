@@ -61,13 +61,16 @@ void cape_list_clr (CapeList self)
 
 //-----------------------------------------------------------------------------
 
-void cape_list_del (CapeList* pself)
+void cape_list_del (CapeList* p_self)
 {
-  CapeList self = *pself;
-  
-  cape_list_clr (self);
-  
-  CAPE_DEL(pself, struct CapeList_s);
+  if (*p_self)
+  {
+    CapeList self = *p_self;
+    
+    cape_list_clr (self);	
+    
+    CAPE_DEL(p_self, struct CapeList_s);
+  }
 }
 
 //-----------------------------------------------------------------------------

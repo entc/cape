@@ -540,8 +540,6 @@ int cape_aio_context_next (CapeAioContext self, long timeout_in_ms, CapeErr err)
           hobj->hflags = hflags_result;
         }
         
-        printf ("reset event %i\n", event.data);
-        
         cape_aio_update_event (self, hobj, event.data);
       }
     }
