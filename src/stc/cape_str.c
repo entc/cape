@@ -75,6 +75,70 @@ void cape_str_del (CapeString* p_self)
 
 //-----------------------------------------------------------------------------
 
+number_t cape_str_character__len (unsigned char c)
+{
+  if (0x20 <= c && c <= 0x7E)
+  {
+    // ascii
+    return 1;
+  }
+  else if ((c & 0xE0) == 0xC0)
+  {
+    // +1
+    return 2;
+  }
+  else if ((c & 0xF0) == 0xE0)
+  {
+    // +2
+    return 3;
+  }
+  else if ((c & 0xF8) == 0xF0)
+  {
+    // +3
+    return 4;
+  }
+  else if ((c & 0xFC) == 0xF8)
+  {
+    // +4
+    return 5;
+  }
+  else if ((c & 0xFE) == 0xFC)
+  {
+    // +5
+    return 6;
+  }
+  else
+  {
+    // not supported character
+    return 1;
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+number_t cape_str_len (const CapeString s)
+{
+  number_t len = 0;
+  const char* s_pos = s;
+
+  while (*s_pos)
+  {
+    len++;
+    s_pos += cape_str_character__len (*s_pos);
+  }
+  
+  return len;
+}
+
+//-----------------------------------------------------------------------------
+
+number_t cape_str_size (const CapeString s)
+{
+  return strlen (s);
+}
+
+//-----------------------------------------------------------------------------
+
 int cape_str_equal (const CapeString s1, const CapeString s2)
 {
   if ((NULL == s1) || (NULL == s2))

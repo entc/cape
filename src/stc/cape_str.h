@@ -23,6 +23,10 @@ __CAPE_LIBEX   CapeString         cape_str_fmt           (const CapeString forma
 
 __CAPE_LIBEX   CapeString         cape_str_flp           (const CapeString format, va_list);            // format to string
 
+__CAPE_LIBEX   number_t           cape_str_len           (const CapeString);                            // string length in characters
+
+__CAPE_LIBEX   number_t           cape_str_size          (const CapeString);                            // string length in bytes
+
 //-----------------------------------------------------------------------------
 
 __CAPE_LIBEX   int                cape_str_equal         (const CapeString, const CapeString);          // case sensitive
