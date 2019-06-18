@@ -25,6 +25,8 @@ struct CapeUdc_s
 
 static void __STDCALL cape_udc_node_onDel (void* key, void* val)
 {
+  // don't delete the key, because it is already stored in name
+  
   CapeUdc h = val; cape_udc_del (&h);
 }
 
@@ -117,7 +119,7 @@ void cape_udc_del (CapeUdc* p_self)
 
 static void* __STDCALL cape_udc_cp__map_on_clone_key (void* ptr)
 {
-  return cape_str_cp (ptr);  
+  return ptr;  // we don't need copy, because the value is stored into the name member
 }
 
 //-----------------------------------------------------------------------------

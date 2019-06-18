@@ -4,7 +4,7 @@
 int main (int argc, char *argv[])
 {
   {
-    CapeUdc t1 = cape_json_from_buf ("{\"D\":[{\"id\":\"1\",\"name\":\"config\"},{\"id\":\"2\",\"name\":\"test\"}]}", 59, NULL);
+    CapeUdc t1 = cape_json_from_buf ("{\"D\":[{\"id\":\"1\",\"name\":\"config\"},{\"id\":\"2\",\"name\":\"test\"}]}", 59);
     
     if (t1)
     {
@@ -27,7 +27,7 @@ int main (int argc, char *argv[])
     
     printf ("S1: %s\n", s1);
     
-    CapeUdc h2 = cape_json_from_s (s1, NULL);
+    CapeUdc h2 = cape_json_from_s (s1);
     
     CapeString s2 = cape_json_to_s (h1);
     

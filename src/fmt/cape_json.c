@@ -97,7 +97,7 @@ static void __STDCALL cape_json_onObjDestroy (void* ptr, void* obj)
 
 //-----------------------------------------------------------------------------
 
-CapeUdc cape_json_from_buf (const char* buffer, number_t size, const CapeString name)
+CapeUdc cape_json_from_buf (const char* buffer, number_t size)
 {
   CapeUdc ret = NULL;
   int res;
@@ -120,7 +120,7 @@ CapeUdc cape_json_from_buf (const char* buffer, number_t size, const CapeString 
     if (ret)
     {
       // set name
-      cape_udc_set_name (ret, name);
+      // cape_udc_set_name (ret, name);
     }
     else
     {
@@ -138,11 +138,11 @@ CapeUdc cape_json_from_buf (const char* buffer, number_t size, const CapeString 
 
 //-----------------------------------------------------------------------------
 
-CapeUdc cape_json_from_s (const CapeString source, const CapeString name)
+CapeUdc cape_json_from_s (const CapeString source)
 {
   if (source)
   {
-    return cape_json_from_buf (source, strlen(source), name);
+    return cape_json_from_buf (source, strlen(source));
   }
   else
   {
@@ -450,7 +450,7 @@ CapeString cape_json_to_s (const CapeUdc source)
 
 //-----------------------------------------------------------------------------
 
-CapeUdc cape_json_from_file (const CapeString file, const CapeString name, CapeErr err)
+CapeUdc cape_json_from_file (const CapeString file, CapeErr err)
 {
   int res;
   CapeUdc ret = NULL;
@@ -494,7 +494,7 @@ CapeUdc cape_json_from_file (const CapeString file, const CapeString name, CapeE
   if (ret)
   {
     // set name
-    cape_udc_set_name (ret, name);
+    //cape_udc_set_name (ret, name);
   }
   else
   {

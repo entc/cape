@@ -34,8 +34,6 @@ __CAPE_LIBEX   void*             cape_udc_data             (const CapeUdc);   //
 
 __CAPE_LIBEX   number_t          cape_udc_size             (const CapeUdc);
 
-__CAPE_LIBEX   void              cape_udc_set_name         (const CapeUdc, const CapeString name);
-
 //-----------------------------------------------------------------------------
 
 __CAPE_LIBEX   CapeUdc           cape_udc_cp               (const CapeUdc);
