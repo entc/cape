@@ -11,6 +11,8 @@
 
 __CAPE_LIBEX   CapeString         cape_fs_path_merge     (const char* path1, const char* path2);
 
+__CAPE_LIBEX   CapeString         cape_fs_path_merge_3   (const char* path1, const char* path2, const char* path3);
+
 __CAPE_LIBEX   CapeString         cape_fs_path_current   (const char* filepath);
 
 __CAPE_LIBEX   CapeString         cape_fs_path_absolute  (const char* filepath);

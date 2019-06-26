@@ -42,7 +42,20 @@
 
 CapeString cape_fs_path_merge (const char* path1, const char* path2)
 {
+  // use the platform dependant separator
   return cape_str_catenate_c (path1, CAPE_FS_FOLDER_SEP, path2);
+}
+
+//-----------------------------------------------------------------------------
+
+CapeString cape_fs_path_merge_3 (const char* path1, const char* path2, const char* path3)
+{
+  CapeString h1 = cape_fs_path_merge (path1, path2);
+  CapeString h2 = cape_fs_path_merge (h1, path3);
+  
+  cape_str_del (&h1);
+  
+  return h2;
 }
 
 //-----------------------------------------------------------------------------

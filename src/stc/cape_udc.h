@@ -6,6 +6,7 @@
 
 //-----------------------------------------------------------------------------
 
+#define CAPE_UDC_UNDEFINED    0
 #define CAPE_UDC_NODE         1
 #define CAPE_UDC_LIST         2
 #define CAPE_UDC_STRING       3
