@@ -237,6 +237,19 @@ int cape_fs_path_create (const char* path, CapeErr err)
 {
 #ifdef __WINDOWS_OS
   
+  if (CreateDirectory (path, NULL) == 0)
+  {
+    // get current system error code
+    DWORD error_code = GetLastError();
+    
+    if (error_code != ERROR_ALREADY_EXISTS)  // ignore this error
+    {
+      return cape_err_formatErrorOS (err, error_code);;
+    }
+  }
+  
+  return CAPE_ERR_NONE;
+
 #elif defined __LINUX_OS || defined __BSD_OS
 
   int res = mkdir (path, 0770);

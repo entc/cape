@@ -8,15 +8,7 @@
 
 //*****************************************************************************
 
-#if defined __MS_IOCP
-
-#include <windows.h>
-
-
-
-//*****************************************************************************
-
-#elif defined __BSD_OS || defined __LINUX_OS
+#if defined __BSD_OS || defined __LINUX_OS
 
 #if defined __BSD_OS
 
@@ -42,7 +34,6 @@
 
 struct CapeAioHandle_s
 {
-  
   void* hfd;
   
   void* ptr;
@@ -52,7 +43,6 @@ struct CapeAioHandle_s
   fct_cape_aio_onUnref on_unref;
   
   fct_cape_aio_onEvent on_event;
-  
 };
 
 //-----------------------------------------------------------------------------
@@ -227,7 +217,7 @@ int cape_aio_context_open (CapeAioContext self, CapeErr err)
 
 #else
   
-  // create a new epol
+  // create a new epoll
   self->efd = epoll_create1 (0);
   
   // check if the open was successful
@@ -955,6 +945,261 @@ int cape_aio_context_set_interupts (CapeAioContext self, int sigint, int term, C
 #endif
 
   return CAPE_ERR_NONE;
+}
+
+//*****************************************************************************
+
+#elif defined __MS_IOCP
+
+#include <windows.h>
+
+//-----------------------------------------------------------------------------
+
+struct CapeAioHandle_s
+{
+  // Windows header for an OVERLAPPED structure
+  
+  ULONG_PTR Internal;
+  ULONG_PTR InternalHigh;
+  union {
+    struct {
+      DWORD Offset;
+      DWORD OffsetHigh;
+    };
+    
+    PVOID Pointer;
+  };
+  
+  // user defined part
+  
+  HANDLE hfd;
+  
+  void* ptr;
+  
+  int hflags;
+
+  fct_cape_aio_onUnref on_unref;
+  
+  fct_cape_aio_onEvent on_event;
+};
+
+//-----------------------------------------------------------------------------
+
+CapeAioHandle cape_aio_handle_new (void* handle, int hflags, void* ptr, fct_cape_aio_onEvent on_event, fct_cape_aio_onUnref on_unref)
+{
+  CapeAioHandle self = CAPE_NEW (struct CapeAioHandle_s);
+  
+  self->hfd = handle;
+  self->ptr = ptr;
+  
+  self->on_event = on_event;
+  self->on_unref = on_unref;
+  
+  self->hflags = hflags;
+  
+  return self;
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_handle_del (CapeAioHandle* p_self)
+{
+  if (*p_self)
+  {
+    CAPE_DEL (p_self, struct CapeAioHandle_s);
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+struct CapeAioContext_s
+{
+  HANDLE port;
+  
+  CapeList events;      // store all events into this list (used only for destruction)
+};
+
+//-----------------------------------------------------------------------------
+
+CapeAioContext cape_aio_context_new (void)
+{
+  CapeAioContext self = CAPE_NEW (struct CapeAioContext_s);
+  
+  self->port = NULL;
+  self->events = cape_list_new (cape_aio_context_events_onDestroy);
+  
+  return self;
+}
+
+//-----------------------------------------------------------------------------
+
+int cape_aio_context_open (CapeAioContext self, CapeErr err)
+{
+  // initialize windows io completion port
+  self->port = CreateIoCompletionPort (INVALID_HANDLE_VALUE, NULL, 0, 0);
+  if (self->port  == NULL)
+  {
+    return cape_err_lastOSError (err);
+  }
+
+  return CAPE_ERR_NONE;
+}
+
+//-----------------------------------------------------------------------------
+
+int cape_aio_context_wait (CapeAioContext self, CapeErr err)
+{
+  while (cape_aio_context_next (self, -1, err) == CAPE_ERR_NONE);
+  
+  return CAPE_ERR_NONE;
+}
+
+//-----------------------------------------------------------------------------
+
+int cape_aio_context_next__overlapped (OVERLAPPED* ovl, int repeat, unsigned long bytes)
+{
+  int hflags_result;
+  
+  if (ovl)
+  {
+    // we can cast into the user defined struct
+    CapeAioHandle hobj = ovl;
+
+    if (hobj->on_event)
+    {
+      hflags_result = hobj->on_event (hobj->ptr, (void*)hobj->hfd, hobj->hflags, 0, ovl, bytes);
+    }
+    else
+    {
+      hflags_result = 0;
+    }
+  }
+  
+  if (hflags_result & CAPE_AIO_DONE)
+  {
+    // remove the handle from events
+    cape_aio_remove_handle (self, hobj);
+    
+    return FALSE;
+  }
+  
+  if (hflags_result & CAPE_AIO_ABORT)
+  {
+    return TRUE;
+  }
+  
+  return FALSE;
+}
+
+//-----------------------------------------------------------------------------
+
+int cape_aio_context_next (CapeAioContext self, long timeout_in_ms, CapeErr err)
+{
+  DWORD numOfBytes;
+  ULONG_PTR ptr;
+  OVERLAPPED* ovl;
+  BOOL iores;
+
+  // wait for any event on the completion port
+  iores = GetQueuedCompletionStatus (self->port, &numOfBytes, &ptr, &ovl, timeout);
+  if (iores)
+  {
+    if (cape_aio_context_next__overlapped (ovl, TRUE, numOfBytes))
+    {
+      return cape_err_set (err, CAPE_ERR_NONE_CONTINUE, "wait abborted");
+    }
+    else
+    {
+      return CAPE_ERR_NONE;
+    }
+  }
+  else
+  {
+    if (ovl == NULL)  // timeout
+    {
+      //onTimeout ();
+    }
+    else
+    {
+      DWORD lastError = GetLastError ();
+      
+      /*
+      {
+        EcErr err = ecerr_create ();
+        
+        ecerr_formatErrorOS (err, ENTC_LVL_ERROR, lastError);
+        
+        eclog_fmt (LL_WARN, "ENTC", "wait", "error on io completion port: %s", err->text);
+        
+        ecerr_destroy (&err);
+      }
+       */
+      
+      if (cape_aio_context_next__overlapped (ovl, FALSE, numOfBytes))
+      {
+        return cape_err_set (err, CAPE_ERR_NONE_CONTINUE, "wait abborted");
+      }
+      
+      switch (lastError)
+      {
+        case ERROR_HANDLE_EOF:
+        {
+          return CAPE_ERR_NONE;
+        }
+        case 735: // ERROR_ABANDONED_WAIT_0
+        {
+          return cape_err_set (err, CAPE_ERR_OS_ERROR, "wait abborted");
+        }
+        case ERROR_OPERATION_ABORTED: // ABORT
+        {
+          return cape_err_set (err, CAPE_ERR_OS_ERROR, "wait abborted");
+        }
+        default:
+        {
+          //onTimeout ();
+        }
+      }
+    }
+    
+    return CAPE_ERR_NONE;
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+int cape_aio_context_add (CapeAioContext self, CapeAioHandle aioh, number_t option)
+{
+  // add the handle to the overlapping completion port
+  HANDLE cportHandle = CreateIoCompletionPort (aioh->hfd, self->port, 0, 0);
+  
+  // cportHandle must return a value
+  if (cportHandle == NULL)
+  {
+    CapeErr err = cape_err_new ();
+    
+    cape_err_lastOSError (err);
+    
+    printf ("can't add fd [%li] to completion port: %s\n", (long)aioh->hfd, cape_err_text (err));
+    
+    cape_err_del (&err);
+
+    return FALSE;
+  }
+  
+  pthread_mutex_lock (&(self->mutex));
+  
+  cape_list_push_back (self->events, aioh);
+  
+  pthread_mutex_unlock (&(self->mutex));
+  
+  return TRUE;
+}
+
+//-----------------------------------------------------------------------------
+
+int cape_aio_context_set_interupts (CapeAioContext self, int sigint, int term, CapeErr err)
+{
+  
 }
 
 //-----------------------------------------------------------------------------

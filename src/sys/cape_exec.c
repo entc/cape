@@ -10,6 +10,10 @@
 #include "stc/cape_stream.h"
 #include "stc/cape_list.h"
 
+//-----------------------------------------------------------------------------
+
+#if defined __LINUX_OS || defined __BSD_OS
+
 // c includes
 #include <stdio.h>
 #include <stdlib.h>
@@ -317,5 +321,96 @@ const CapeString cape_exec_get_stderr (CapeExec self)
 {
   return cape_stream_get (self->stderr_stream);
 }
+
+//-----------------------------------------------------------------------------
+
+#elif defined __WINDOWS_OS
+
+#include <windows.h>
+
+#define BUFSIZE 4096
+
+typedef struct
+{
+  HANDLE hr;
+  HANDLE hw;
+  
+  //OVERLAPPED stOverlapped;
+  
+  char buffer[BUFSIZE];
+  
+  DWORD dwState;
+  
+  CapeStream stream;
+  
+  //int initial;
+  
+} CapePipe;
+
+//-----------------------------------------------------------------------------
+
+struct CapeExec_s
+{
+  CapeList arguments;
+
+  CapePipe errPipe;
+  CapePipe outPipe;
+};
+
+//-----------------------------------------------------------------------------
+
+CapeExec cape_exec_new (void)
+{
+  CapeExec self = CAPE_NEW (struct CapeExec_s);
+  
+  self->arguments = cape_list_new (cape_exec__arguments__on_del);
+  
+  self->errPipe.hr = NULL;
+  self->errPipe.hw = NULL;
+  self->outPipe.hr = NULL;
+  self->outPipe.hw = NULL;
+  
+  self->outPipe.stream = cape_stream_new ();
+  self->errPipe.stream = cape_stream_new ();
+
+  return self;
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_exec_append_s (CapeExec self, const char* parameter)
+{
+  CapeString h = cape_str_cp (parameter);
+  
+  cape_log_fmt (CAPE_LL_TRACE, "CAPE", "exec - param", "append parameter: %s", h);
+  
+  cape_list_push_back (self->arguments, h);
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_exec_append_fmt (CapeExec self, const char* format, ...)
+{
+  CapeString parameter = NULL;
+  
+  va_list ptr;
+  va_start(ptr, format);
+  
+  parameter = cape_str_flp (format, ptr);
+  
+  va_end(ptr);
+  
+  if (parameter)
+  {
+    cape_log_fmt (CAPE_LL_TRACE, "CAPE", "exec - param", "append parameter: %s", parameter);
+    
+    cape_list_push_back (self->arguments, parameter);
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+
+#endif
 
 //-----------------------------------------------------------------------------

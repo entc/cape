@@ -1,6 +1,10 @@
 #include "cape_mutex.h"
 #include "sys/cape_types.h"
 
+//-----------------------------------------------------------------------------
+
+#if defined __LINUX_OS || defined __BSD_OS
+
 #include <pthread.h>
 
 //-----------------------------------------------------------------------------
@@ -42,3 +46,47 @@ void cape_mutex_unlock (CapeMutex self)
 }
 
 //-----------------------------------------------------------------------------
+
+#elif defined _WIN64 || defined _WIN32
+
+#include <windows.h>
+
+//-----------------------------------------------------------------------------
+
+CapeMutex cape_mutex_new (void)
+{
+  CRITICAL_SECTION* self = CAPE_NEW (CRITICAL_SECTION);
+  
+  InitializeCriticalSection (self, NULL);
+  
+  return self;
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_mutex_del (CapeMutex* p_self)
+{
+  CRITICAL_SECTION* self = *p_self;
+  
+  DeleteCriticalSection (self);
+  
+  CAPE_DEL (p_self, CRITICAL_SECTION);
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_mutex_lock (CapeMutex self)
+{
+  EnterCriticalSection (self);
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_mutex_unlock (CapeMutex self)
+{
+  LeaveCriticalSection (self);
+}
+
+//-----------------------------------------------------------------------------
+
+#endif
