@@ -1,5 +1,8 @@
 #include "cape_thread.h"
+
+// cape includes
 #include "sys/cape_types.h"
+#include "sys/cape_log.h"
 
 //-----------------------------------------------------------------------------
 
@@ -169,7 +172,7 @@ void cape_thread_del (CapeThread* pself)
 
 //-----------------------------------------------------------------------------------
 
-void cape_thread_start (CapeThread self, cape_thread_callback_fct fct, void* ptr)
+void cape_thread_start (CapeThread self, cape_thread_worker_fct fct, void* ptr)
 {
   if (self->th == NULL)
   {
@@ -201,13 +204,13 @@ void cape_thread_cancel (CapeThread self)
   {
     if (TerminateThread(self->th, 0) == 0)
     {
-      EcErr err = ecerr_create ();
+      CapeErr err = cape_err_new ();
       
-      ecerr_lastErrorOS (err, ENTC_LVL_ERROR);
+      cape_err_lastOSError (err);
       
-      eclog_fmt (LL_ERROR, "ENTC", "thread", "can't cancel thread: %s", err->text);
+      cape_log_fmt (CAPE_LL_ERROR, "CAPE", "thread", "can't cancel thread: %s", cape_err_text (err));
       
-      ecerr_destroy (&err);
+      cape_err_del (&err);
     }
   }
 }

@@ -3,8 +3,13 @@
 // cape includes
 #include "stc/cape_str.h"
 
-// c includes
+#ifdef __WINDOWS_OS
+#include <windows.h>
+#else
 #include <errno.h>
+#endif
+
+// c includes
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -16,7 +21,6 @@ struct CapeErr_s
     char* text;
     
     unsigned long code;
-    
 };
 
 //-----------------------------------------------------------------------------
@@ -93,8 +97,8 @@ int cape_err_set_fmt (CapeErr self, unsigned long code, const char* error_messag
   
   va_start(ptr, error_message);
   
-#ifdef _WIN32
-  vsnprintf_s (buffer, 1001, 1000, text, ptr);
+#ifdef __WINDOWS_OS
+  vsnprintf_s (buffer, 1001, 1000, error_message, ptr);
 #else
   vsnprintf (buffer, 1000, error_message, ptr);
 #endif
@@ -110,14 +114,40 @@ int cape_err_set_fmt (CapeErr self, unsigned long code, const char* error_messag
 
 int cape_err_formatErrorOS (CapeErr self, unsigned long errCode)
 {
+#ifdef __WINDOWS_OS
+
+  if (errCode)
+  {
+    LPTSTR buffer = NULL;
+    DWORD res = FormatMessageA (FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, errCode, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&buffer, 0, NULL);
+    
+    if (buffer)
+    {
+      if (res > 0)
+      {
+        cape_err_set (self, CAPE_ERR_OS, buffer);
+      }
+      // release buffer
+      LocalFree (buffer);
+    }
+  }
+
+  return CAPE_ERR_OS;
+
+#else
   return cape_err_set (self, CAPE_ERR_OS, strerror(errCode));
+#endif
 }
 
 //-----------------------------------------------------------------------------
 
 int cape_err_lastOSError (CapeErr self)
 {
+#ifdef __WINDOWS_OS
+  return cape_err_formatErrorOS (self, GetLastError ());
+#else
   return cape_err_formatErrorOS (self, errno);
+#endif
 }
 
 //-----------------------------------------------------------------------------

@@ -217,11 +217,9 @@ CapeString cape_str_flp (const CapeString format, va_list valist)
   {
     int len = _vscprintf (format, valist) + 1;
     
-    ret = CAPE_NEW (len);
+    ret = CAPE_ALLOC (len);
     
     len = vsprintf_s (ret, len, format, valist);
-    
-    self->pos += len;
   }
   
   #elif __GNUC__

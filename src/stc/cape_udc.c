@@ -519,9 +519,10 @@ CapeUdc cape_udc_ext (CapeUdc self, const CapeString name)
       
       if (n)
       {
+        CapeUdc h;
+
         n = cape_map_extract (self->data, n);  
-        
-        CapeUdc h = cape_map_node_value (n);
+        h = cape_map_node_value (n);
         
         cape_map_node_del (&n);
         

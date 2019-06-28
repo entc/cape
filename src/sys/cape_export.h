@@ -12,8 +12,8 @@
 
 #if defined _WIN64 || defined _WIN32
 
-#define __WIN_OS 1
-#define __ENTC_LIBEX __EXTERN_C __declspec(dllexport)
+#define __WINDOWS_OS 1
+#define __CAPE_LIBEX __EXTERN_C __declspec(dllexport)
 
 #define __STDCALL __stdcall
 

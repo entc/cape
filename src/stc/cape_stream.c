@@ -113,10 +113,12 @@ CapeString cape_stream_to_str (CapeStream* pself)
 
 number_t cape_stream_to_n (CapeStream self)
 {
+  number_t ret;
+
   // prepare and add termination
   *(self->pos) = '\0';
   
-  number_t ret = strtol (self->buffer, NULL, 10);
+  ret = strtol (self->buffer, NULL, 10);
     
   cape_stream_clr (self);
   

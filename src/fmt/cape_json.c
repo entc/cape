@@ -8,6 +8,7 @@
 
 // c includes
 #include <wchar.h>
+#include <stdio.h>
 
 //-----------------------------------------------------------------------------------------------------------
 
@@ -111,7 +112,7 @@ CapeUdc cape_json_from_buf (const char* buffer, number_t size)
   res = cape_parser_json_process (parser_json, buffer, size, err);
   if (res)
   {
-    printf ("ERROR JSON PARSER: %s\n", cape_err_text(err));
+    //printf ("ERROR JSON PARSER: %s\n", cape_err_text(err));
   }
   else
   {
@@ -142,7 +143,7 @@ CapeUdc cape_json_from_s (const CapeString source)
 {
   if (source)
   {
-    return cape_json_from_buf (source, strlen(source));
+    return cape_json_from_buf (source, cape_str_size (source));
   }
   else
   {
@@ -532,13 +533,17 @@ int cape_json_to_file (const CapeString file, const CapeUdc source, CapeErr err)
   }
 
   {
+    number_t bytes_to_write;
+    number_t bytes_cn_write;
+    const char* buf;
     CapeStream stream = cape_stream_new ();
   
     cape_json_fill (stream, source);
   
-    const char* buf = cape_stream_data (stream);
-    number_t bytes_to_write = cape_stream_size (stream);
-    number_t bytes_cn_write = 0;
+    buf = cape_stream_data (stream);
+
+    bytes_to_write = cape_stream_size (stream);
+    bytes_cn_write = 0;
     
     while (bytes_cn_write < bytes_to_write)
     {

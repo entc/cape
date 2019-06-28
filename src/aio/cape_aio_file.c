@@ -23,7 +23,7 @@ struct CapeAioFileReader_s
     
     char* bufdat;
     
-    ssize_t buflen;
+    number_t buflen;
     
     void* ptr;
     
@@ -68,7 +68,7 @@ static int __STDCALL cape_aio_freader_onEvent (void* ptr, void* handle, int hfla
 {
   CapeAioFileReader self = ptr;
   
-  ssize_t bytes_read = read ((number_t)self->handle, self->bufdat, self->buflen);
+  number_t bytes_read = read ((number_t)self->handle, self->bufdat, self->buflen);
 
   if (bytes_read > 0)
   {

@@ -359,6 +359,13 @@ struct CapeExec_s
 
 //-----------------------------------------------------------------------------
 
+static void __STDCALL cape_exec__arguments__on_del (void* ptr)
+{
+  CapeString h = ptr; cape_str_del (&h);
+}
+
+//-----------------------------------------------------------------------------
+
 CapeExec cape_exec_new (void)
 {
   CapeExec self = CAPE_NEW (struct CapeExec_s);

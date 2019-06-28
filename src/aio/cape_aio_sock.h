@@ -29,7 +29,7 @@ __CAPE_LIBEX   void              cape_aio_socket_markSent      (CapeAioSocket, C
 
 typedef void       (__STDCALL *fct_cape_aio_socket_onSent)     (void* ptr, CapeAioSocket socket, void* userdata);
 
-typedef void       (__STDCALL *fct_cape_aio_socket_onRecv)     (void* ptr, CapeAioSocket socket, const char* bufdat, ssize_t buflen);
+typedef void       (__STDCALL *fct_cape_aio_socket_onRecv)     (void* ptr, CapeAioSocket socket, const char* bufdat, number_t buflen);
 
 typedef void       (__STDCALL *fct_cape_aio_socket_onDone)     (void* ptr, void* userdata);
 
