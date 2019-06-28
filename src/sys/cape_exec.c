@@ -388,6 +388,28 @@ CapeExec cape_exec_new (void)
 
 //-----------------------------------------------------------------------------
 
+void cape_exec_del (CapeExec* p_self)
+{
+  if (*p_self)
+  {
+    CapeExec self = *p_self;
+    
+    cape_stream_del (&(self->outPipe.stream));
+    cape_stream_del (&(self->errPipe.stream));
+    
+    CloseHandle (self->outPipe.hr);
+    CloseHandle (self->outPipe.hw);
+    CloseHandle (self->errPipe.hr);
+    CloseHandle (self->errPipe.hw);
+    
+    cape_list_del (&(self->arguments));
+    
+    CAPE_DEL (p_self, struct CapeExec_s);
+  }
+}
+
+//-----------------------------------------------------------------------------
+
 void cape_exec_append_s (CapeExec self, const char* parameter)
 {
   CapeString h = cape_str_cp (parameter);
@@ -420,6 +442,215 @@ void cape_exec_append_fmt (CapeExec self, const char* format, ...)
 
 //-----------------------------------------------------------------------------
 
+int cape_exec_run__loop (CapeExec self, HANDLE processh, CapeErr err)
+{
+  DWORD dwWait;
+  DWORD i;
+  
+  while (1) 
+  {
+    DWORD fSuccess, cbRet;
+    HANDLE hds[2];
+    EcPipe* pipes[2];
+    EcPipe* pipe;
+    
+    DWORD c = 0;
+    
+    /*
+     * {
+     *  hds[0] = processh;
+     *  pipes[0] = NULL;
+     *  c++;
+  }
+  */
+    
+    if (self->outPipe.hr != NULL)
+    {
+      hds[c] = self->outPipe.hr;
+      pipes[c] = &(self->outPipe);
+      c++;
+    }
+    
+    if (self->errPipe.hr != NULL)
+    {
+      hds[c] = self->errPipe.hr;
+      pipes[c] = &(self->errPipe);
+      c++;
+    }
+    
+    cape_log_msg (CAPE_LL_TRACE, "CAPE", "exec", "wait for %i handles", c);
+    
+    dwWait = WaitForMultipleObjects(c, hds, FALSE, INFINITE);    // waits indefinitely 
+    i = dwWait - WAIT_OBJECT_0;
+    
+    pipe = pipes[i];
+    
+    if (pipe != NULL)
+    {
+      fSuccess = ReadFile (pipe->hr, pipe->buffer, BUFSIZE, &cbRet, NULL);
+      if (!fSuccess) 
+      {
+        cape_log_msg (CAPE_LL_ERROR, "CAPE", "exec", "read IO failure");
+        
+        CloseHandle (pipe->hr);
+        pipe->hr = NULL;
+        
+        if (c < 2)
+        {
+          return;
+        }
+        
+        continue;
+      }
+      
+      if (cbRet == 0)
+      {
+        return cape_err_lastOSError (err);
+      }
+      
+      cape_log_msg (CAPE_LL_TRACE, "CAPE", "exec", "recv data: '%i'", cbRet);
+      
+      pipe->buffer[cbRet] = 0;
+      
+      cape_log_msg (CAPE_LL_TRACE, "CAPE", "exec", "recv '%s'", pipe->buffer);
+      
+      ecstream_append_buf (pipe->stream, pipe->buffer, cbRet);
+    }
+  }
+  
+  return CAPE_ERR_NONE;
+}
+
+//-----------------------------------------------------------------------------
+
+int cape_exec_run__create_child_process (CapeExec self, const char* executable, CapeErr err)
+{
+  int res;
+  BOOL bSuccess = FALSE;
+
+  STARTUPINFO            siStartInfo;
+  PROCESS_INFORMATION    piProcInfo;
+  
+  // Set up members of the PROCESS_INFORMATION structure. 
+  ZeroMemory( &piProcInfo, sizeof(PROCESS_INFORMATION) );
+  
+  // Set up members of the STARTUPINFO structure. 
+  // This structure specifies the STDIN and STDOUT handles for redirection.
+  ZeroMemory( &siStartInfo, sizeof(STARTUPINFO) );
+  
+  siStartInfo.cb = sizeof(STARTUPINFO); 
+  siStartInfo.hStdError = self->errPipe.hw;
+  siStartInfo.hStdOutput = self->outPipe.hw;
+  siStartInfo.dwFlags |= STARTF_USESTDHANDLES;
+  
+  CapeStream s = cape_stream_new ();
+  
+  // construct the command line as stream
+  {
+    CapeListCursor cursor; cape_list_cursor_init (self->arguments, &cursor, CAPE_DIRECTION_FORW);
+    
+    cape_stream_append_str (executable);
+    cape_stream_append_str (" /C");
+    
+    while (cape_list_cursor_next (&cursor))
+    {
+      const CapeString h = cape_list_node_data (cursor.node);
+      
+      cape_stream_append_c (' ');
+      cape_stream_append_str (h);
+    }
+  }
+  
+  eclog_fmt (LL_TRACE, "ENTC", "exec:run", "execute: '%s'", cape_stream_get (s));
+    
+  bSuccess = CreateProcess(NULL,
+                           cape_stream_get (s),     // command line 
+                           NULL,                    // process security attributes 
+                           NULL,                    // primary thread security attributes 
+                           TRUE,                    // handles are inherited 
+                           0,                       // creation flags 
+                           NULL,                    // use parent's environment 
+                           NULL,                    // use parent's current directory 
+                           &siStartInfo,            // STARTUPINFO pointer 
+                           &piProcInfo);            // receives PROCESS_INFORMATION 
+  
+  if (!bSuccess) 
+  {
+    res = cape_err_lastOSError (err);
+    goto exit_and_cleanup;
+  }
+  
+  CloseHandle (self->outPipe.hw);
+  CloseHandle (self->errPipe.hw);
+  
+  res = cape_exec_run__loop (self, piProcInfo.hProcess);
+    
+  CloseHandle (piProcInfo.hProcess);
+  CloseHandle (piProcInfo.hThread);
+    
+exit_and_cleanup:
+  
+  cape_stream_del (&s);
+  
+  return res;
+}
+
+//-----------------------------------------------------------------------------
+
+int cape_exec_run (CapeExec self, const char* executable, CapeErr err)
+{
+  SECURITY_ATTRIBUTES saAttr;
+  
+  saAttr.nLength = sizeof(SECURITY_ATTRIBUTES); 
+  saAttr.bInheritHandle = TRUE; 
+  saAttr.lpSecurityDescriptor = NULL;
+  
+  cape_stream_clr (self->outPipe.stream);
+  cape_stream_clr (self->errPipe.stream);
+  
+  // Create a pipe for the child process's STDOUT.
+  if (!CreatePipe (&(self->outPipe.hr), &(self->outPipe.hw), &saAttr, 0)) 
+  {
+    return cape_err_lastOSError (err);
+  }
+
+  // Ensure the read handle to the pipe for STDOUT is not inherited.
+  if (!SetHandleInformation (self->outPipe.hr, HANDLE_FLAG_INHERIT, 0))
+  {
+    return cape_err_lastOSError (err);
+  }
+  
+  // Create a pipe for the child process's STDOUT.
+  if (!CreatePipe (&(self->errPipe.hr), &(self->errPipe.hw), &saAttr, 0)) 
+  {
+    return cape_err_lastOSError (err);
+  }
+  
+  // Ensure the read handle to the pipe for STDOUT is not inherited.
+  if (!SetHandleInformation (self->errPipe.hr, HANDLE_FLAG_INHERIT, 0))
+  {
+    return cape_err_lastOSError (err);
+  }
+  
+  // Create the child process.  
+  return cape_exec_run__create_child_process (self, err);
+}
+
+//-----------------------------------------------------------------------------
+
+const CapeString cape_exec_get_stdout (CapeExec)
+{
+  return cape_stream_get (self->outPipe.stream);
+}
+
+//-----------------------------------------------------------------------------
+
+const CapeString cape_exec_get_stderr (CapeExec)
+{
+  return cape_stream_get (self->errPipe.stream);
+}
+
+//-----------------------------------------------------------------------------
 
 #endif
 

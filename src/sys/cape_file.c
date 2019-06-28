@@ -507,6 +507,10 @@ number_t cape_fh_write_buf (CapeFileHandle self, const char* bufdat, number_t bu
 
 //-----------------------------------------------------------------------------
 
+#if defined __LINUX_OS || defined __BSD_OS
+
+//-----------------------------------------------------------------------------
+
 struct CapeDirCursor_s
 {
   FTS* tree;
@@ -542,13 +546,16 @@ CapeDirCursor cape_dc_new (const CapeString path, CapeErr err)
 
 void cape_dc_del (CapeDirCursor* p_self)
 {
-  CapeDirCursor self = *p_self;
-  
-  cape_str_del (&(self->fts_path[0]));
-  
-  fts_close (self->tree);
-  
-  CAPE_DEL(p_self, struct CapeDirCursor_s);
+  if (*p_self)
+  {
+    CapeDirCursor self = *p_self;
+    
+    cape_str_del (&(self->fts_path[0]));
+    
+    fts_close (self->tree);
+    
+    CAPE_DEL(p_self, struct CapeDirCursor_s);
+  }
 }
 
 //-----------------------------------------------------------------------------
@@ -624,5 +631,101 @@ void cape_fs_write_fmt (const void* handle, const char* format, ...)
 {
   
 }
+
+//-----------------------------------------------------------------------------
+
+#elif defined __WINDOWS_OS
+
+#include <windows.h>
+
+//-----------------------------------------------------------------------------
+
+struct CapeDirCursor_s
+{
+  /* the handle */
+  HANDLE dhandle;
+  
+  /* windows structure to store file informations */
+  WIN32_FIND_DATA data;
+  
+  int initial;
+};
+
+//-----------------------------------------------------------------------------
+
+CapeDirCursor cape_dc_new (const CapeString path, CapeErr err)
+{
+  CapeDirCursor self = CAPE_NEW (struct CapeDirCursor_s);
+  
+  {
+    CapeString search_pattern = cape_fs_path_merge (path, "*");
+    
+    self->dhandle = FindFirstFile (search_pattern, &(self->data));
+    
+    cape_str_del (search_pattern);
+  }
+  
+  if (self->dhandle == NULL)
+  {
+    cape_err_lastOSError (err);
+    
+    cape_dc_del (&self);
+  }
+  
+  self->initial = TRUE;
+  
+  return self;
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_dc_del (CapeDirCursor* p_self)
+{
+  if (*p_self)
+  {
+    CapeDirCursor self = *p_self;
+    
+    if (self->dhandle)
+    {
+      FindClose (self->dhandle);
+    }
+    
+    CAPE_DEL(p_self, struct CapeDirCursor_s);
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+int cape_dc_next (CapeDirCursor self)
+{
+  if (self->dhandle == NULL)
+  {
+    return FALSE;
+  }
+  
+  if (self->initial)
+  {
+    self->initial = FALSE;
+    return TRUE;
+  }
+  
+  return FindNextFile (self->dhandle, &(self->data));
+}
+
+//-----------------------------------------------------------------------------
+
+const CapeString cape_dc_name (CapeDirCursor self)
+{
+  if (self->dhandle)
+  {
+    return self->data.cFileName;
+  }
+  
+  return NULL;
+}
+
+//-----------------------------------------------------------------------------
+
+#endif
 
 //-----------------------------------------------------------------------------

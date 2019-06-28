@@ -201,7 +201,7 @@ exit:
 
 void* cape_dl_funct (CapeDl self, const char* name, CapeErr err)
 {
-  void* function_ptr = (fct_dummy)GetProcAddress(self->ptr, name);
+  void* function_ptr = GetProcAddress(self->ptr, name);
   
   if (function_ptr == NULL)
   {
