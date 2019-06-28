@@ -17,6 +17,7 @@
 #include <malloc.h>
 #include <memory.h>
 #include <stddef.h>
+#include <stdlib.h>
 
 #endif
 
@@ -30,6 +31,15 @@
 static void* cape_alloc (number_t size)
 {
   void* ptr = malloc (size);
+  
+  if (ptr == NULL)
+  {
+    // write some last words
+    printf ("*** FATAL *** CAN't ALLOCATE MEMORY *** FATAL ***\n");
+    
+    // abort everything
+    abort ();
+  }
   
   memset (ptr, 0, size);
 
@@ -50,7 +60,7 @@ static void cape_free (void* ptr)
 
 //-----------------------------------------------------------------------------
 
-#define CAPE_NEW( type ) (type*)malloc(sizeof(type))
+#define CAPE_NEW( type ) (type*)cape_alloc(sizeof(type))
 #define CAPE_DEL( ptr, type ) { memset(*ptr, 0, sizeof(type)); free(*ptr); *ptr = 0; }
 
 //-----------------------------------------------------------------------------

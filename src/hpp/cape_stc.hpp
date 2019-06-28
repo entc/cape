@@ -6,7 +6,6 @@
 
 namespace cape
 {
-  
   struct ListHolder
   {
     ListHolder (CapeList obj) : m_obj (obj) {}
@@ -23,6 +22,19 @@ namespace cape
     ~UdcHolder () { cape_udc_del (&m_obj); }
     
     CapeUdc m_obj;
+  };
+  
+  struct UdcCursorHolder
+  {
+    UdcCursorHolder (CapeUdcCursor* obj) : m_obj (obj) {}
+
+    ~UdcCursorHolder () { cape_udc_cursor_del (&m_obj); }
+
+    bool next () { return cape_udc_cursor_next (m_obj); }
+    
+    CapeUdc item () { return m_obj->item; }
+    
+    CapeUdcCursor* m_obj;
   };
   
   struct StringHolder

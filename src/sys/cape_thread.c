@@ -63,17 +63,20 @@ CapeThread cape_thread_new (void)
 
 //-----------------------------------------------------------------------------------
 
-void cape_thread_del (CapeThread* pself)
+void cape_thread_del (CapeThread* p_self)
 {
-  CapeThread self = *pself;
-  
-  if (self->status)
+  if (*p_self)
   {
-    // WARNING
-    cape_thread_join (self);
+    CapeThread self = *p_self;
+    
+    if (self->status)
+    {
+      // WARNING
+      cape_thread_join (self);
+    }
+    
+    CAPE_DEL (p_self, struct CapeThread_s);
   }
-  
-  CAPE_DEL (pself, struct CapeThread_s);
 }
 
 //-----------------------------------------------------------------------------------

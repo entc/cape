@@ -65,14 +65,17 @@ CapeExec cape_exec_new (void)
 
 void cape_exec_del (CapeExec* p_self)
 {
-  CapeExec self = *p_self;
-  
-  cape_stream_del (&(self->stdout_stream));
-  cape_stream_del (&(self->stderr_stream));
-  
-  cape_list_del (&(self->arguments));
-  
-  CAPE_DEL (p_self, struct CapeExec_s);
+  if (*p_self)
+  {
+    CapeExec self = *p_self;
+    
+    cape_stream_del (&(self->stdout_stream));
+    cape_stream_del (&(self->stderr_stream));
+    
+    cape_list_del (&(self->arguments));
+    
+    CAPE_DEL (p_self, struct CapeExec_s);
+  }
 }
 
 //-----------------------------------------------------------------------------

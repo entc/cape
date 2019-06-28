@@ -24,11 +24,14 @@ CapeMutex cape_mutex_new (void)
 
 void cape_mutex_del (CapeMutex* p_self)
 {
-  pthread_mutex_t* self = *p_self;
-  
-  pthread_mutex_destroy (self);
-
-  CAPE_DEL(p_self, pthread_mutex_t);  
+  if (*p_self)
+  {
+    pthread_mutex_t* self = *p_self;
+    
+    pthread_mutex_destroy (self);
+    
+    CAPE_DEL(p_self, pthread_mutex_t);  
+  }
 }
 
 //-----------------------------------------------------------------------------

@@ -191,13 +191,16 @@ void cape_aio_context_closeAll (CapeAioContext self)
 
 void cape_aio_context_del (CapeAioContext* p_self)
 {
-  CapeAioContext self = *p_self;
-  
-  cape_aio_context_closeAll (self);
-  
-  pthread_mutex_destroy (&(self->mutex));
-  
-  CAPE_DEL (p_self, struct CapeAioContext_s);
+  if (*p_self)
+  {
+    CapeAioContext self = *p_self;
+    
+    cape_aio_context_closeAll (self);
+    
+    pthread_mutex_destroy (&(self->mutex));
+    
+    CAPE_DEL (p_self, struct CapeAioContext_s);
+  }
 }
 
 //-----------------------------------------------------------------------------
@@ -1017,6 +1020,8 @@ struct CapeAioContext_s
   HANDLE port;
   
   CapeList events;      // store all events into this list (used only for destruction)
+  
+  CRITICAL_SECTION* mutex;
 };
 
 //-----------------------------------------------------------------------------
@@ -1028,7 +1033,27 @@ CapeAioContext cape_aio_context_new (void)
   self->port = NULL;
   self->events = cape_list_new (cape_aio_context_events_onDestroy);
   
+  self->mutex = CAPE_NEW (CRITICAL_SECTION);
+  
+  InitializeCriticalSection (self->mutex, NULL);
+  
   return self;
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_context_del (CapeAioContext* p_self)
+{
+  if (*p_self)
+  {
+    CapeAioContext self = *p_self;
+    
+    DeleteCriticalSection (self->mutex);
+
+    cape_list_del (&(self->events));
+    
+    CAPE_DEL(p_self, struct CapeAioContext_s);
+  }
 }
 
 //-----------------------------------------------------------------------------
@@ -1042,6 +1067,28 @@ int cape_aio_context_open (CapeAioContext self, CapeErr err)
     return cape_err_lastOSError (err);
   }
 
+  return CAPE_ERR_NONE;
+}
+
+//-----------------------------------------------------------------------------
+
+static int __STDCALL cape_aio_context_close__on_event (void* ptr, void* handle, int hflags, unsigned long events, void* overlapped, unsigned long)
+{
+  return CAPE_AIO_ABORT;
+}
+
+//-----------------------------------------------------------------------------
+
+int cape_aio_context_close (CapeAioContext self, CapeErr err)
+{
+  DWORD t = 0;
+  ULONG_PTR ptr2 = (ULONG_PTR)NULL;
+  
+  CapeAioHandle aioh = cape_aio_handle_new (NULL, 0, self, cape_aio_context_close__on_event, NULL);
+  
+  // add this event to the completion port
+  PostQueuedCompletionStatus (self->port, t, ptr2, (LPOVERLAPPED)aioh);
+  
   return CAPE_ERR_NONE;
 }
 
@@ -1186,11 +1233,64 @@ int cape_aio_context_add (CapeAioContext self, CapeAioHandle aioh, number_t opti
     return FALSE;
   }
   
-  pthread_mutex_lock (&(self->mutex));
+  EnterCriticalSection (self->mutex);
   
   cape_list_push_back (self->events, aioh);
   
-  pthread_mutex_unlock (&(self->mutex));
+  LeaveCriticalSection (self->mutex);
+  
+  return TRUE;
+}
+
+//-----------------------------------------------------------------------------
+
+static EcAio g_aio = NULL;
+
+static int cape_aio_context__ctrl_handler (unsigned long ctrlType)
+{
+  int abort = FALSE;
+  
+  switch( ctrlType )
+  {
+    case CTRL_C_EVENT:
+    {
+      abort = TRUE;
+      
+      cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio", "signal seen [%i] -> %s", ctrlType, "ctrl-c");
+      break;
+    }
+    case CTRL_SHUTDOWN_EVENT:
+    {
+      abort = TRUE;
+      
+      cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio", "signal seen [%i] -> %s", ctrlType, "shutdown");
+      break;
+    }
+    case CTRL_CLOSE_EVENT:
+    {
+      abort = TRUE;
+      
+      cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio", "signal seen [%i] -> %s", ctrlType, "close");
+      break;
+    }
+    default:
+    {
+      abort = FALSE;
+      
+      cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio", "unknown signal seen [%i]", ctrlType);
+      break;
+    }
+  }
+  
+  if (abort)
+  {
+    int res;
+    CapeErr err = cape_err_new ();
+    
+    res = cape_aio_context_close (g_aio, err);
+    
+    cape_err_del (&err);
+  }
   
   return TRUE;
 }
@@ -1199,7 +1299,14 @@ int cape_aio_context_add (CapeAioContext self, CapeAioHandle aioh, number_t opti
 
 int cape_aio_context_set_interupts (CapeAioContext self, int sigint, int term, CapeErr err)
 {
+  g_aio = self;
   
+  if (SetConsoleCtrlHandler ((PHANDLER_ROUTINE) cape_aio_context__ctrl_handler, TRUE) == 0)
+  {
+    return cape_err_lastOSError (err);
+  }
+  
+  return CAPE_ERR_NONE;
 }
 
 //-----------------------------------------------------------------------------

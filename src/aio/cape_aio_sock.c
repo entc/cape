@@ -114,41 +114,44 @@ CapeAioSocket cape_aio_socket_new (void* handle)
 
 void cape_aio_socket_del (CapeAioSocket* p_self)
 {
-  CapeAioSocket self = *p_self;
-  
-  if (self->onDone)
+  if (*p_self)
   {
-    self->onDone (self->ptr, self->send_userdata);
+    CapeAioSocket self = *p_self;
     
-    self->send_userdata = NULL;
+    if (self->onDone)
+    {
+      self->onDone (self->ptr, self->send_userdata);
+      
+      self->send_userdata = NULL;
+    }
+    
+    if (self->recv_bufdat)
+    {
+      free (self->recv_bufdat);
+    }
+    
+    // turn off wait timeout of the socket
+    {
+      struct linger sl;
+      
+      sl.l_onoff = 1;     // active linger options
+      sl.l_linger = 0;    // set timeout to zero
+      
+      // apply linger option to kernel and socket
+      setsockopt((long)self->handle, SOL_SOCKET, SO_LINGER, &sl, sizeof(sl));
+    }
+    
+    // signal that this side of the socket is not going to continue to write or read from the socket
+    shutdown ((long)self->handle, SHUT_RDWR);
+    
+    // close the handle
+    close ((long)self->handle);
+    
+    // delete the AIO handle
+    cape_aio_handle_del (&(self->aioh));
+    
+    CAPE_DEL (p_self, struct CapeAioSocket_s);
   }
-  
-  if (self->recv_bufdat)
-  {
-    free (self->recv_bufdat);
-  }
-  
-  // turn off wait timeout of the socket
-  {
-    struct linger sl;
-    
-    sl.l_onoff = 1;     // active linger options
-    sl.l_linger = 0;    // set timeout to zero
-    
-    // apply linger option to kernel and socket
-    setsockopt((long)self->handle, SOL_SOCKET, SO_LINGER, &sl, sizeof(sl));
-  }
-    
-  // signal that this side of the socket is not going to continue to write or read from the socket
-  shutdown ((long)self->handle, SHUT_RDWR);
-    
-  // close the handle
-  close ((long)self->handle);
-  
-  // delete the AIO handle
-  cape_aio_handle_del (&(self->aioh));
-
-  CAPE_DEL (p_self, struct CapeAioSocket_s);
 }
 
 //-----------------------------------------------------------------------------
