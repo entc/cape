@@ -44,9 +44,9 @@ void cape_stream_allocate (CapeStream self, unsigned long amount)
 
 //-----------------------------------------------------------------------------
 
-void cape_stream_reserve (CapeStream self, unsigned long amount)
+void cape_stream_reserve (CapeStream self, number_t amount)
 {
-  unsigned long diffBytes = cape_stream_size (self) + amount + 1;
+  number_t diffBytes = cape_stream_size (self) + amount + 1;
   
   if (diffBytes > self->size)
   {

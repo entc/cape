@@ -139,7 +139,7 @@ CapeDl cape_dl_new (void)
 {
   CapeDl self = CAPE_NEW(struct CapeDl_s);
   
-  self->handle = NULL;
+  self->ptr = NULL;
   
   return self;  
 }
@@ -205,7 +205,8 @@ void* cape_dl_funct (CapeDl self, const char* name, CapeErr err)
   
   if (function_ptr == NULL)
   {
-    return cape_err_lastOSError (err);
+    cape_err_lastOSError (err);
+    return NULL;
   }
   
   return function_ptr;

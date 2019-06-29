@@ -12,6 +12,13 @@
 #include <memory.h>
 #include <stdlib.h>
 
+#elif defined __WINDOWS_OS
+
+#include <malloc.h>
+#include <memory.h>
+#include <stdlib.h>
+#include <sys/types.h>
+
 #else
 
 #include <malloc.h>

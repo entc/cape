@@ -451,8 +451,8 @@ int cape_exec_run__loop (CapeExec self, HANDLE processh, CapeErr err)
   {
     DWORD fSuccess, cbRet;
     HANDLE hds[2];
-    EcPipe* pipes[2];
-    EcPipe* pipe;
+    CapePipe* pipes[2];
+    CapePipe* pipe;
     
     DWORD c = 0;
     
@@ -478,7 +478,7 @@ int cape_exec_run__loop (CapeExec self, HANDLE processh, CapeErr err)
       c++;
     }
     
-    cape_log_msg (CAPE_LL_TRACE, "CAPE", "exec", "wait for %i handles", c);
+    cape_log_fmt (CAPE_LL_TRACE, "CAPE", "exec", "wait for %i handles", c);
     
     dwWait = WaitForMultipleObjects(c, hds, FALSE, INFINITE);    // waits indefinitely 
     i = dwWait - WAIT_OBJECT_0;
@@ -497,7 +497,7 @@ int cape_exec_run__loop (CapeExec self, HANDLE processh, CapeErr err)
         
         if (c < 2)
         {
-          return;
+          return cape_err_set (err, CAPE_ERR_NOT_FOUND, "read IO failure");
         }
         
         continue;
@@ -508,13 +508,13 @@ int cape_exec_run__loop (CapeExec self, HANDLE processh, CapeErr err)
         return cape_err_lastOSError (err);
       }
       
-      cape_log_msg (CAPE_LL_TRACE, "CAPE", "exec", "recv data: '%i'", cbRet);
+      cape_log_fmt (CAPE_LL_TRACE, "CAPE", "exec", "recv data: '%i'", cbRet);
       
       pipe->buffer[cbRet] = 0;
       
-      cape_log_msg (CAPE_LL_TRACE, "CAPE", "exec", "recv '%s'", pipe->buffer);
+      cape_log_fmt (CAPE_LL_TRACE, "CAPE", "exec", "recv '%s'", pipe->buffer);
       
-      ecstream_append_buf (pipe->stream, pipe->buffer, cbRet);
+      cape_stream_append_buf (pipe->stream, pipe->buffer, cbRet);
     }
   }
   
@@ -527,6 +527,8 @@ int cape_exec_run__create_child_process (CapeExec self, const char* executable, 
 {
   int res;
   BOOL bSuccess = FALSE;
+
+  CapeStream s = NULL;
 
   STARTUPINFO            siStartInfo;
   PROCESS_INFORMATION    piProcInfo;
@@ -543,36 +545,36 @@ int cape_exec_run__create_child_process (CapeExec self, const char* executable, 
   siStartInfo.hStdOutput = self->outPipe.hw;
   siStartInfo.dwFlags |= STARTF_USESTDHANDLES;
   
-  CapeStream s = cape_stream_new ();
+  s = cape_stream_new ();
   
   // construct the command line as stream
   {
     CapeListCursor cursor; cape_list_cursor_init (self->arguments, &cursor, CAPE_DIRECTION_FORW);
     
-    cape_stream_append_str (executable);
-    cape_stream_append_str (" /C");
+    cape_stream_append_str (s, executable);
+    cape_stream_append_str (s, " /C");
     
     while (cape_list_cursor_next (&cursor))
     {
       const CapeString h = cape_list_node_data (cursor.node);
       
-      cape_stream_append_c (' ');
-      cape_stream_append_str (h);
+      cape_stream_append_c (s, ' ');
+      cape_stream_append_str (s, h);
     }
   }
   
-  eclog_fmt (LL_TRACE, "ENTC", "exec:run", "execute: '%s'", cape_stream_get (s));
+  cape_log_fmt (CAPE_LL_TRACE, "CAPE", "exec:run", "execute: '%s'", cape_stream_get (s));
     
   bSuccess = CreateProcess(NULL,
-                           cape_stream_get (s),     // command line 
-                           NULL,                    // process security attributes 
-                           NULL,                    // primary thread security attributes 
-                           TRUE,                    // handles are inherited 
-                           0,                       // creation flags 
-                           NULL,                    // use parent's environment 
-                           NULL,                    // use parent's current directory 
-                           &siStartInfo,            // STARTUPINFO pointer 
-                           &piProcInfo);            // receives PROCESS_INFORMATION 
+                           (char*)cape_stream_get (s),   // command line 
+                           NULL,                         // process security attributes 
+                           NULL,                         // primary thread security attributes 
+                           TRUE,                         // handles are inherited 
+                           0,                            // creation flags 
+                           NULL,                         // use parent's environment 
+                           NULL,                         // use parent's current directory 
+                           &siStartInfo,                 // STARTUPINFO pointer 
+                           &piProcInfo);                 // receives PROCESS_INFORMATION 
   
   if (!bSuccess) 
   {
@@ -583,7 +585,7 @@ int cape_exec_run__create_child_process (CapeExec self, const char* executable, 
   CloseHandle (self->outPipe.hw);
   CloseHandle (self->errPipe.hw);
   
-  res = cape_exec_run__loop (self, piProcInfo.hProcess);
+  res = cape_exec_run__loop (self, piProcInfo.hProcess, err);
     
   CloseHandle (piProcInfo.hProcess);
   CloseHandle (piProcInfo.hThread);
@@ -633,19 +635,19 @@ int cape_exec_run (CapeExec self, const char* executable, CapeErr err)
   }
   
   // Create the child process.  
-  return cape_exec_run__create_child_process (self, err);
+  return cape_exec_run__create_child_process (self, executable, err);
 }
 
 //-----------------------------------------------------------------------------
 
-const CapeString cape_exec_get_stdout (CapeExec)
+const CapeString cape_exec_get_stdout (CapeExec self)
 {
   return cape_stream_get (self->outPipe.stream);
 }
 
 //-----------------------------------------------------------------------------
 
-const CapeString cape_exec_get_stderr (CapeExec)
+const CapeString cape_exec_get_stderr (CapeExec self)
 {
   return cape_stream_get (self->errPipe.stream);
 }

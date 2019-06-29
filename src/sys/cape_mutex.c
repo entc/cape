@@ -60,7 +60,7 @@ CapeMutex cape_mutex_new (void)
 {
   CRITICAL_SECTION* self = CAPE_NEW (CRITICAL_SECTION);
   
-  InitializeCriticalSection (self, NULL);
+  InitializeCriticalSection (self);
   
   return self;
 }

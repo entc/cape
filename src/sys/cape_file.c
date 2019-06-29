@@ -280,6 +280,7 @@ static void __STDCALL cape_fs_path_size__on_del (void* ptr)
 
 //-----------------------------------------------------------------------------
 
+/*
 number_t cape_fs_path_size__process_path (DIR* dir, CapeList folders, const char* path, CapeErr err)
 {
   number_t total_size = 0;
@@ -329,13 +330,14 @@ number_t cape_fs_path_size__process_path (DIR* dir, CapeList folders, const char
   
   return total_size;
 }
+*/
 
 //-----------------------------------------------------------------------------
 
+#if defined __LINUX_OS || defined __BSD_OS
+
 off_t cape_fs_path_size (const char* path, CapeErr err)
 {
-#ifdef TRUE
-  
   off_t total_size = 0;
   
   FTSENT *node;
@@ -364,56 +366,6 @@ off_t cape_fs_path_size (const char* path, CapeErr err)
   cape_str_del (&(fts_path[0]));
   
   return total_size;
-  
-#else
-  
-  number_t total_size = 0;
-  CapeList folders = cape_list_new (cape_fs_path_size__on_del);
-  
-  {
-    DIR* dir = opendir (path);
-    
-    if (dir == NULL)
-    {
-      cape_err_lastOSError (err);
-      goto exit_and_cleanup;
-    }
-    
-    total_size += cape_fs_path_size__process_path (dir, folders, path, err);
-    
-    closedir (dir);
-  }
-  
-  if (cape_err_code (err))
-  {
-    total_size = 0;
-    goto exit_and_cleanup;
-  }
-  
-  // iterate through all
-  {
-    CapeListCursor cursor; cape_list_cursor_init (folders, &cursor, CAPE_DIRECTION_FORW);
-    
-    while (cape_list_cursor_next(&cursor))
-    {
-      CapeString sub_path = cape_list_node_data (cursor.node);
-      
-      total_size += cape_fs_path_size (sub_path, err);
-      
-      if (cape_err_code (err))
-      {
-        total_size = 0;
-        goto exit_and_cleanup;
-      }
-    }
-  }
-  
-  exit_and_cleanup:
-  
-  cape_list_del (&folders);
-  return total_size;
-  
-#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -504,10 +456,6 @@ number_t cape_fh_write_buf (CapeFileHandle self, const char* bufdat, number_t bu
 {
   return write (self->fd, bufdat, buflen);
 }
-
-//-----------------------------------------------------------------------------
-
-#if defined __LINUX_OS || defined __BSD_OS
 
 //-----------------------------------------------------------------------------
 
@@ -636,7 +584,111 @@ void cape_fs_write_fmt (const void* handle, const char* format, ...)
 
 #elif defined __WINDOWS_OS
 
+#include <stdio.h>
+#include <share.h>
+#include <fcntl.h>
+#include <io.h>
+#include <sys/stat.h>
+
+#include <shlwapi.h>
+#pragma comment(lib, "shlwapi.lib")
+
 #include <windows.h>
+
+//-----------------------------------------------------------------------------
+
+off_t cape_fs_path_size (const char* path, CapeErr err)
+{
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
+
+struct CapeFileHandle_s
+{
+  CapeString file;
+  
+  number_t fd;
+};
+
+//-----------------------------------------------------------------------------
+
+CapeFileHandle cape_fh_new (const CapeString path, const CapeString file)
+{
+  CapeFileHandle self = CAPE_NEW (struct CapeFileHandle_s);
+  
+  if (path)
+  {
+    self->file = cape_fs_path_merge (path, file);
+  }
+  else
+  {
+    self->file = cape_str_cp (file);
+  }
+  
+  self->fd = -1;
+  
+  return self;
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_fh_del (CapeFileHandle* p_self)
+{
+  if (*p_self)
+  {
+    CapeFileHandle self = *p_self;
+    
+    cape_str_del (&(self->file));
+    
+    if (self->fd >= 0)
+    {
+      _close (self->fd);
+    }
+    
+    CAPE_DEL (p_self, struct CapeFileHandle_s);
+  }  
+}
+
+//-----------------------------------------------------------------------------
+
+int cape_fh_open (CapeFileHandle self, int flags, CapeErr err)
+{
+  // always open in binary mode
+  if (_sopen_s(&(self->fd), self->file, flags | _O_BINARY, _SH_DENYNO, _S_IREAD | _S_IWRITE) != 0)
+  {
+    return cape_err_lastOSError (err);
+  }
+  
+  return CAPE_ERR_NONE;
+}
+
+//-----------------------------------------------------------------------------
+
+void* cape_fh_fd (CapeFileHandle self)
+{
+  return (void*)self->fd;
+}
+
+//-----------------------------------------------------------------------------
+
+number_t cape_fh_read_buf (CapeFileHandle self, char* bufdat, number_t buflen)
+{
+  int res = _read (self->fd, bufdat, buflen);
+  if (res < 0)
+  {
+    return 0;
+  }
+  
+  return res;
+}
+
+//-----------------------------------------------------------------------------
+
+number_t cape_fh_write_buf (CapeFileHandle self, const char* bufdat, number_t buflen)
+{
+  return _write (self->fd, bufdat, buflen);
+}
 
 //-----------------------------------------------------------------------------
 
@@ -662,7 +714,7 @@ CapeDirCursor cape_dc_new (const CapeString path, CapeErr err)
     
     self->dhandle = FindFirstFile (search_pattern, &(self->data));
     
-    cape_str_del (search_pattern);
+    cape_str_del (&search_pattern);
   }
   
   if (self->dhandle == NULL)

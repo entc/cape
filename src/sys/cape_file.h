@@ -4,6 +4,7 @@
 #include "sys/cape_export.h"
 #include "sys/cape_err.h"
 #include "stc/cape_str.h"
+#include "sys/cape_types.h"
 
 #include <fcntl.h>
 
