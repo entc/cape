@@ -1102,23 +1102,26 @@ CapeUdcCursor* cape_udc_cursor_new (CapeUdc self, int direction)
 
 void cape_udc_cursor_del (CapeUdcCursor** p_cursor)
 {
-  CapeUdcCursor* cursor = *p_cursor;
-  
-  switch (cursor->type)
+  if (*p_cursor)
   {
-    case CAPE_UDC_NODE:
+    CapeUdcCursor* cursor = *p_cursor;
+    
+    switch (cursor->type)
     {
-      cape_map_cursor_destroy ((CapeMapCursor**)&(cursor->data));
-      break;
+      case CAPE_UDC_NODE:
+      {
+        cape_map_cursor_destroy ((CapeMapCursor**)&(cursor->data));
+        break;
+      }
+      case CAPE_UDC_LIST:
+      {
+        cape_list_cursor_destroy ((CapeListCursor**)&(cursor->data));
+        break;
+      }
     }
-    case CAPE_UDC_LIST:
-    {
-      cape_list_cursor_destroy ((CapeListCursor**)&(cursor->data));
-      break;
-    }
-  } 
-  
-  CAPE_DEL(p_cursor, CapeUdcCursor);
+    
+    CAPE_DEL(p_cursor, CapeUdcCursor);
+  }
 }
 
 //-----------------------------------------------------------------------------
