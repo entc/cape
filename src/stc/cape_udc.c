@@ -203,7 +203,18 @@ CapeUdc cape_udc_mv (CapeUdc* p_origin)
 
 //-----------------------------------------------------------------------------
 
-void cape_udc_replace (CapeUdc* p_self, CapeUdc* p_replace_with)
+void cape_udc_replace_cp (CapeUdc* p_self, const CapeUdc replace_with_copy)
+{
+  // remove if exists
+  cape_udc_del (p_self);
+  
+  // set
+  *p_self = cape_udc_cp (replace_with_copy);
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_udc_replace_mv (CapeUdc* p_self, CapeUdc* p_replace_with)
 {
   // remove if exists
   cape_udc_del (p_self);
