@@ -117,16 +117,16 @@ void cape_udc_del (CapeUdc* p_self)
 
 //-----------------------------------------------------------------------------
 
-static void* __STDCALL cape_udc_cp__map_on_clone_key (void* ptr)
+static void __STDCALL cape_udc_cp__map_on_clone (void* key_original, void* val_original, void** key_clone, void** val_clone)
 {
-  return ptr;  // we don't need copy, because the value is stored into the name member
-}
-
-//-----------------------------------------------------------------------------
-
-static void* __STDCALL cape_udc_cp__map_on_clone_val (void* ptr)
-{
-  return cape_udc_cp (ptr);
+  // clone the udc object
+  CapeUdc cloned_udc = cape_udc_cp (val_original);
+  
+  // set the key -> we don't need to copy it (key is owned by the udc)
+  *key_clone = (void*)cape_udc_name (cloned_udc);
+  
+  // set the cloned udc
+  *val_clone = (void*)cloned_udc;
 }
 
 //-----------------------------------------------------------------------------
@@ -156,7 +156,7 @@ CapeUdc cape_udc_cp (const CapeUdc self)
     {
       case CAPE_UDC_NODE:
       {
-        clone->data = cape_map_clone (self->data, cape_udc_cp__map_on_clone_key, cape_udc_cp__map_on_clone_val);
+        clone->data = cape_map_clone (self->data, cape_udc_cp__map_on_clone);
         break;
       }
       case CAPE_UDC_LIST:

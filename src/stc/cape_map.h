@@ -63,9 +63,9 @@ __CAPE_LIBEX   void              cape_map_node_del          (CapeMapNode*);     
 
 //-----------------------------------------------------------------------------
 
-typedef void* (__STDCALL *fct_cape_map_onClone) (void* ptr);
+typedef void (__STDCALL *fct_cape_map__on_clone) (void* key_original, void* val_original, void** key_clone, void** val_clone);
 
-__CAPE_LIBEX   CapeMap           cape_map_clone             (CapeMap, fct_cape_map_onClone onCloneKey, fct_cape_map_onClone onCloneVal);
+__CAPE_LIBEX   CapeMap           cape_map_clone             (CapeMap, fct_cape_map__on_clone on_clone);
 
 //-----------------------------------------------------------------------------
 

@@ -916,7 +916,7 @@ CapeMapNode cape_map_last (CapeMap self)
 
 //-----------------------------------------------------------------------------
 
-CapeMap cape_map_clone (CapeMap self, fct_cape_map_onClone onCloneKey, fct_cape_map_onClone onCloneVal)
+CapeMap cape_map_clone (CapeMap self, fct_cape_map__on_clone on_clone)
 {
   // create a new object
   CapeMap clone = cape_map_new (self->cmp_fct, self->del_fct, self->cmp_ptr);
@@ -927,8 +927,19 @@ CapeMap cape_map_clone (CapeMap self, fct_cape_map_onClone onCloneKey, fct_cape_
   
   while (cape_map_cursor_next (&cursor))
   {
-    // trivial copying of the node
-    cape_map_insert (clone, onCloneKey (cursor.node->key), onCloneVal (cursor.node->val));
+    void* key_clone = NULL;
+    void* val_clone = NULL;
+    
+    if (on_clone)
+    {
+      on_clone (cursor.node->key, cursor.node->val, &key_clone, &val_clone);
+    }
+
+    if (key_clone)
+    {
+      // trivial copying of the node
+      cape_map_insert (clone, key_clone, val_clone);
+    }    
   }
   
   return clone;
