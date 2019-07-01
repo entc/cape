@@ -1,4 +1,5 @@
 #include "cape_aio_sock.h"
+#include "cape_aio_ctx.h"
 
 // cape includes
 #include "sys/cape_types.h"
@@ -612,6 +613,203 @@ void cape_aio_accept_add (CapeAioAccept* p_self, CapeAioContext aio)
   self->aioh = cape_aio_handle_new (self->handle, CAPE_AIO_READ, self, cape_aio_accept_onEvent, cape_aio_accept_onUnref);
   
   cape_aio_context_add (aio, self->aioh, 0);
+}
+
+//-----------------------------------------------------------------------------
+
+#elif defined __WINDOWS_OS
+
+#include <windows.h>
+
+//-----------------------------------------------------------------------------
+
+struct CapeAioSocket_s
+{
+    HANDLE handle;
+    
+    CapeAioHandle aioh;
+
+    int mask;
+    
+    // callbacks
+    
+    void* ptr;
+    
+    fct_cape_aio_socket_onSent onSent;
+    
+    fct_cape_aio_socket_onRecv onRecv;
+    
+    fct_cape_aio_socket_onDone onDone;
+
+    // for sending
+    
+    const char* send_bufdat;
+    
+    WORD send_buflen;
+    
+    WORD send_buftos;
+    
+    void* send_userdata;
+
+    // for receive
+    
+    char* recv_bufdat;
+    
+    WORD recv_buflen;
+    
+    int refcnt;
+};
+
+//-----------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------
+
+struct CapeAioAccept_s
+{
+  SOCKET handle;
+
+  SOCKET asock;
+  
+  CapeAioHandle aioh;
+  
+  void* ptr;
+  
+  fct_cape_aio_accept_onConnect onConnect;
+  
+  fct_cape_aio_accept_onDone onDone;
+
+  char buffer[1024];
+};
+
+//-----------------------------------------------------------------------------
+
+static const DWORD lenAddr = sizeof (struct sockaddr_in) + 16;
+
+//-----------------------------------------------------------------------------
+
+CapeAioAccept cape_aio_accept_new (void* handle)
+{
+  CapeAioAccept self = CAPE_NEW(struct CapeAioAccept_s);
+
+  self->handle = (SOCKET)handle;
+  self->asock = INVALID_SOCKET;
+
+  self->aioh = NULL;
+  
+  self->ptr = NULL;
+  self->onConnect = NULL;
+  self->onDone = NULL;
+  
+  return self;
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_accept_del (CapeAioAccept* p_self)
+{
+  if (*p_self)
+  {
+    CapeAioAccept self = *p_self;
+    
+    if (self->onDone)
+    {
+      self->onDone (self->ptr);
+    }
+    
+    // delete the AIO handle
+    cape_aio_handle_del (&(self->aioh));
+    
+    CAPE_DEL(p_self, struct CapeAioAccept_s);  
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_accept_callback (CapeAioAccept self, void* ptr, fct_cape_aio_accept_onConnect onConnect, fct_cape_aio_accept_onDone onDone)
+{
+  self->ptr = ptr;
+  self->onConnect = onConnect;
+  self->onDone = onDone;
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_accept__activate (CapeAioAccept self)
+{
+  DWORD outBUflen = 0; //1024 - ((sizeof (sockaddr_in) + 16) * 2);
+  DWORD dwBytes = 0;
+  
+  // create a client socket in advance
+  self->asock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+  if (self->asock == INVALID_SOCKET)
+  {
+    return;
+    //return TError (_ERRCODE_NET__SOCKET_ERROR, "error code: " + IntToStr (::WSAGetLastError()));
+  }
+  
+  memset (self->buffer, 0, 1024);
+
+  // accept connections, client socket will be assigned
+  AcceptEx (self->handle, self->asock, self->buffer, outBUflen, lenAddr, lenAddr, &dwBytes, (LPOVERLAPPED)(self->aioh));
+}
+
+//-----------------------------------------------------------------------------
+
+static int __STDCALL cape_aio_accept_onEvent (void* ptr, void* handle, int hflags, unsigned long events, void* overlapped, unsigned long param1)
+{
+  CapeAioAccept self = ptr;
+
+  struct sockaddr *pLocal = NULL, *pRemote = NULL;
+  int nLocal = 0, nRemote = 0;
+  const char* remoteAddr = NULL;
+  
+  // retrieve the remote address
+  GetAcceptExSockaddrs (self->buffer, 0, lenAddr, lenAddr, &pLocal, &nLocal, &pRemote, &nRemote);
+  
+  if (pRemote->sa_family == AF_INET)
+  {
+    remoteAddr = inet_ntoa(((struct sockaddr_in*)pRemote)->sin_addr);
+  }
+  
+  if (self->onConnect)
+  {
+    // call the callback method
+    self->onConnect (self->ptr, (void*)self->asock, remoteAddr);
+  }
+  
+  self->asock = INVALID_SOCKET;
+  
+  // continue
+  cape_aio_accept__activate (self);
+  
+  return hflags;  
+}
+
+//-----------------------------------------------------------------------------
+
+static void __STDCALL cape_aio_accept_onUnref (void* ptr, CapeAioHandle aioh)
+{
+  CapeAioAccept self = ptr;
+  
+  cape_aio_accept_del (&self);
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_accept_add (CapeAioAccept* p_self, CapeAioContext aio)
+{
+  CapeAioAccept self = *p_self;
+
+  // create a new AIO handle
+  self->aioh = cape_aio_handle_new ((void*)(self->handle), CAPE_AIO_READ, self, cape_aio_accept_onEvent, cape_aio_accept_onUnref);
+  
+  // add the handle to the AIO subsystem
+  cape_aio_context_add (aio, self->aioh, 0);
+
+  // activate the socket for listening
+  cape_aio_accept__activate (self);
+
+  *p_self = NULL;
 }
 
 //-----------------------------------------------------------------------------

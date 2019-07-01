@@ -17,19 +17,24 @@ int main (int argc, char *argv[])
   }
   
   {
-    CapeUdc h1 = cape_udc_new (CAPE_UDC_NODE, NULL);
+    CapeUdc h1;
+    CapeUdc h2;
+    CapeString s1;
+    CapeString s2;
     
+    h1 = cape_udc_new (CAPE_UDC_NODE, NULL);
+
     cape_udc_add_n (h1, "val1", -2);
     cape_udc_add_n (h1, "val2", 0);
     cape_udc_add_n (h1, "val3", 2);
     
-    CapeString s1 = cape_json_to_s (h1);
+    s1 = cape_json_to_s (h1);
     
     printf ("S1: %s\n", s1);
     
-    CapeUdc h2 = cape_json_from_s (s1);
+    h2 = cape_json_from_s (s1);
     
-    CapeString s2 = cape_json_to_s (h1);
+    s2 = cape_json_to_s (h1);
     
     printf ("S2: %s\n", s2);
   }
