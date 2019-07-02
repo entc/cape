@@ -200,13 +200,16 @@ void cape_map_clr (CapeMap self)
 
 //-----------------------------------------------------------------------------
 
-void cape_map_del (CapeMap* pself)
+void cape_map_del (CapeMap* p_self)
 {
-  CapeMap self =  *pself;
-  
-  cape_map_clr (self);
-  
-  CAPE_DEL(pself, struct CapeMap_s);
+  if (*p_self)
+  {
+    CapeMap self = *p_self;
+    
+    cape_map_clr (self);
+    
+    CAPE_DEL(p_self, struct CapeMap_s);
+  }
 }
 
 //-----------------------------------------------------------------------------
