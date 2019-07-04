@@ -36,6 +36,7 @@ SET(CAPE_SYS_SOURCES
   sys/cape_socket.c
   sys/cape_pipe.c
   sys/cape_exec.c
+  sys/cape_time.c
 )
 
 SET(CAPE_SYS_HEADERS
@@ -48,6 +49,7 @@ SET(CAPE_SYS_HEADERS
   sys/cape_socket.h
   sys/cape_pipe.h
   sys/cape_exec.h
+  sys/cape_time.h
 )
 
 #----------------------------------------------------------------------------------
