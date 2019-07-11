@@ -28,6 +28,9 @@
 #define CAPE_ERR_WRONG_STATE        16
 #define CAPE_ERR_WRONG_VALUE        17
 
+#define CAPE_ERR_NO_CONTENT         20
+#define CAPE_ERR_PRESENT            21
+
 //=============================================================================
 
 struct CapeErr_s; typedef struct CapeErr_s* CapeErr;
