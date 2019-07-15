@@ -686,33 +686,42 @@ void cape_aio_context_mod (CapeAioContext self, CapeAioHandle aioh, int hflags, 
   // set the user pointer to the handle
   event.data.ptr = aioh;
   
-  cape_aio_update_events (&event, hflags);
-  
-  int s = epoll_ctl (self->efd, EPOLL_CTL_MOD, (long)(aioh->hfd), &event);
-  if (s < 0)
+  if (hflags & CAPE_AIO_DONE)
   {
-    int errCode = errno;
-    if (errCode == EPERM)
+    epoll_ctl (self->efd, EPOLL_CTL_DEL, (long)(aioh->hfd), &event);
+    
+    cape_aio_remove_handle (self, aioh);
+  }
+  else
+  {
+    cape_aio_update_events (&event, hflags);
+    
+    int s = epoll_ctl (self->efd, EPOLL_CTL_MOD, (long)(aioh->hfd), &event);
+    if (s < 0)
     {
-      printf ("this filedescriptor is not supported by epoll\n");
+      int errCode = errno;
+      if (errCode == EPERM)
+      {
+        printf ("this filedescriptor is not supported by epoll\n");
+        
+      }
+      else
+      {
+        CapeErr err = cape_err_new ();
+        
+        cape_err_lastOSError (err);
+        
+        printf ("can't add fd to epoll: %s\n", cape_err_text (err));
+        
+        cape_err_del (&err);
+      }
       
-    }
-    else
-    {
-      CapeErr err = cape_err_new ();
-      
-      cape_err_lastOSError (err);
-      
-      printf ("can't add fd to epoll: %s\n", cape_err_text (err));
-      
-      cape_err_del (&err);
+      return;
     }
     
-    return;
+    aioh->hflags = hflags;
   }
   
-  aioh->hflags = hflags;
-
 #endif
 }
 

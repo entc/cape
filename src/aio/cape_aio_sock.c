@@ -192,6 +192,16 @@ void cape_aio_socket_unref (CapeAioSocket self)
 
 //-----------------------------------------------------------------------------
 
+void cape_aio_socket_close (CapeAioSocket self, CapeAioContext aio)
+{
+  if (self->aioh)
+  {
+    cape_aio_context_mod (aio, self->aioh, CAPE_AIO_DONE, 0);
+  }
+}
+
+//-----------------------------------------------------------------------------
+
 void cape_aio_socket_callback (CapeAioSocket self, void* ptr, fct_cape_aio_socket_onSent onSent, fct_cape_aio_socket_onRecv onRecv, fct_cape_aio_socket_onDone onDone)
 {
     self->ptr = ptr;

@@ -25,6 +25,8 @@ __CAPE_LIBEX   void              cape_aio_socket_listen        (CapeAioSocket*, 
 
 __CAPE_LIBEX   void              cape_aio_socket_markSent      (CapeAioSocket, CapeAioContext);           // INFO: can be called from everywhere
 
+__CAPE_LIBEX   void              cape_aio_socket_close         (CapeAioSocket, CapeAioContext);
+
 //-----------------------------------------------------------------------------
 
 typedef void       (__STDCALL *fct_cape_aio_socket_onSent)     (void* ptr, CapeAioSocket socket, void* userdata);
