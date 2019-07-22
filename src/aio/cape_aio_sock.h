@@ -69,7 +69,8 @@ __CAPE_LIBEX   void                 cape_aio_accept_add            (CapeAioAccep
 
 struct CapeAioSocketCache_s; typedef struct CapeAioSocketCache_s* CapeAioSocketCache;
 
-typedef void    (__STDCALL *fct_cape_aio_socket_cache__on_recv)    (void* ptr, const char* bufdat, number_t buflen);
+typedef void  (__STDCALL *fct_cape_aio_socket_cache__on_recv)      (void* ptr, const char* bufdat, number_t buflen);
+typedef void  (__STDCALL *fct_cape_aio_socket_cache__on_event)     (void* ptr);
 
 //-----------------------------------------------------------------------------
 
@@ -77,9 +78,13 @@ __CAPE_LIBEX   CapeAioSocketCache   cape_aio_socket_cache_new      (CapeAioConte
 
 __CAPE_LIBEX   void                 cape_aio_socket_cache_del      (CapeAioSocketCache*);
 
-__CAPE_LIBEX   void                 cape_aio_socket_cache_set      (CapeAioSocketCache, void* handle, void* ptr, fct_cape_aio_socket_cache__on_recv);
+__CAPE_LIBEX   void                 cape_aio_socket_cache_set      (CapeAioSocketCache, void* handle, void* ptr, fct_cape_aio_socket_cache__on_recv, fct_cape_aio_socket_cache__on_event on_retry, fct_cape_aio_socket_cache__on_event on_connect);
 
-__CAPE_LIBEX   int                  cape_aio_socket_cache_send_s   (CapeAioSocketCache, CapeStream* p_stream, CapeErr err);
+__CAPE_LIBEX   void                 cape_aio_socket_cache_clr      (CapeAioSocketCache);
+
+__CAPE_LIBEX   int                 cape_aio_socket_cache_send_s    (CapeAioSocketCache, CapeStream* p_stream, CapeErr err);
+
+__CAPE_LIBEX   void                cape_aio_socket_cache_retry     (CapeAioSocketCache, int auto_reconnect);
 
 //=============================================================================
 

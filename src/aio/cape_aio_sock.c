@@ -1,5 +1,6 @@
 #include "cape_aio_sock.h"
 #include "cape_aio_ctx.h"
+#include "cape_aio_timer.h"
 
 // cape includes
 #include "sys/cape_types.h"
@@ -845,6 +846,11 @@ struct CapeAioSocketCache_s
   void* ptr;
   
   fct_cape_aio_socket_cache__on_recv on_recv;
+  
+  int auto_reconnect;
+  
+  fct_cape_aio_socket_cache__on_event on_retry;
+  fct_cape_aio_socket_cache__on_event on_connect;
 };
 
 //-----------------------------------------------------------------------------
@@ -867,9 +873,14 @@ CapeAioSocketCache cape_aio_socket_cache_new (CapeAioContext aio_ctx)
   
   self->mutex = cape_mutex_new ();
   
-  self->ptr = NULL;
+  self->ptr = NULL;  
+
   self->on_recv = NULL;
+  self->on_retry = NULL;
+  self->on_connect = NULL;
   
+  self->auto_reconnect = FALSE;
+
   return self;
 }
 
@@ -902,6 +913,13 @@ static void __STDCALL cape_aio_socket_cache__on_sent (void* ptr, CapeAioSocket s
   {
     s = userdata; cape_stream_del (&s);    
   }
+  else
+  {
+    if (self->on_connect)
+    {
+      self->on_connect (self->ptr);
+    }
+  }
   
   cape_mutex_lock (self->mutex);
   
@@ -929,9 +947,24 @@ static void __STDCALL cape_aio_socket_cache__on_recv (void* ptr, CapeAioSocket s
 
 //-----------------------------------------------------------------------------
 
+int __STDCALL cape_aio_socket_cache__on_timer (void* ptr)
+{
+  CapeAioSocketCache self = ptr;
+  
+  if (self->on_retry)
+  {
+    self->on_retry (self->ptr);
+  }
+  
+  return FALSE;
+}
+
+//-----------------------------------------------------------------------------
+
 static void __STDCALL cape_aio_socket_cache__on_done (void* ptr, void* userdata)
 {
   CapeAioSocketCache self = ptr;
+  int retry;
   
   if (userdata)
   {
@@ -945,13 +978,34 @@ static void __STDCALL cape_aio_socket_cache__on_done (void* ptr, void* userdata)
 
   // clear the cache
   cape_list_clr (self->cache);
+
+  retry = self->auto_reconnect;
   
   cape_mutex_unlock (self->mutex);
+  
+  // check for auto reconnect system
+  if (retry)
+  {
+    CapeErr err = cape_err_new ();
+    
+    CapeAioTimer timer = cape_aio_timer_new ();
+    
+    int res = cape_aio_timer_set (timer, 10000, self, cape_aio_socket_cache__on_timer, err);   // create timer with 10 seconds
+    if (res)
+    {
+      cape_log_fmt (CAPE_LL_DEBUG, "CAPE", "aio socket", "can't create reconnect timer: %s", cape_err_text (err));
+    }
+    
+    // add the timer to AIO system
+    cape_aio_timer_add (&timer, self->aio_ctx);
+    
+    cape_err_del (&err);
+  }  
 }
 
 //-----------------------------------------------------------------------------
 
-void cape_aio_socket_cache_set (CapeAioSocketCache self, void* handle, void* ptr, fct_cape_aio_socket_cache__on_recv on_recv)
+void cape_aio_socket_cache_set (CapeAioSocketCache self, void* handle, void* ptr, fct_cape_aio_socket_cache__on_recv on_recv, fct_cape_aio_socket_cache__on_event on_retry, fct_cape_aio_socket_cache__on_event on_connect)
 {
   // create a new handler for the created socket
   CapeAioSocket sock = cape_aio_socket_new (handle);
@@ -973,12 +1027,48 @@ void cape_aio_socket_cache_set (CapeAioSocketCache self, void* handle, void* ptr
 
   // set callback
   self->ptr = ptr;
+  self->auto_reconnect = FALSE;
+  
   self->on_recv = on_recv;
-
+  self->on_retry = on_retry;
+  self->on_connect = on_connect;
+  
   cape_mutex_unlock (self->mutex);
   
   // listen on the connection  
   cape_aio_socket_listen (&sock, self->aio_ctx);
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket_cache_retry (CapeAioSocketCache self, int auto_reconnect)
+{
+  cape_mutex_lock (self->mutex);
+  
+  self->auto_reconnect = auto_reconnect;
+  
+  cape_mutex_unlock (self->mutex);
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket_cache_clr (CapeAioSocketCache self)
+{  
+  cape_mutex_lock (self->mutex);
+  
+  // disable connection
+  self->aio_socket = NULL;
+  
+  // disable reconnection
+  self->auto_reconnect = FALSE;
+  
+  // clear the cache
+  cape_list_clr (self->cache);
+  
+  cape_mutex_unlock (self->mutex);
+
+  // close the socket, this will trigger the '__on_done' method
+  cape_aio_socket_close (self->aio_socket, self->aio_ctx);  
 }
 
 //-----------------------------------------------------------------------------
