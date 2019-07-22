@@ -4,6 +4,8 @@
 // cape includes
 #include "sys/cape_types.h"
 #include "sys/cape_log.h"
+#include "sys/cape_mutex.h"
+#include "stc/cape_list.h"
 
 #if defined __BSD_OS || defined __LINUX_OS
 
@@ -825,3 +827,198 @@ void cape_aio_accept_add (CapeAioAccept* p_self, CapeAioContext aio)
 //-----------------------------------------------------------------------------
 
 #endif
+
+//-----------------------------------------------------------------------------
+
+struct CapeAioSocketCache_s
+{
+  CapeAioContext aio_ctx;
+  
+  CapeAioSocket aio_socket;
+  
+  CapeList cache;
+  
+  CapeMutex mutex;
+  
+  // for callback
+
+  void* ptr;
+  
+  fct_cape_aio_socket_cache__on_recv on_recv;
+};
+
+//-----------------------------------------------------------------------------
+
+static void __STDCALL cape_aio_socket_cache__cache_on_del (void* ptr)
+{
+  CapeStream s = ptr; cape_stream_del (&s);
+}
+
+//-----------------------------------------------------------------------------
+
+CapeAioSocketCache cape_aio_socket_cache_new (CapeAioContext aio_ctx)
+{
+  CapeAioSocketCache self = CAPE_NEW (struct CapeAioSocketCache_s);
+  
+  self->aio_ctx = aio_ctx;
+  self->aio_socket = NULL;
+  
+  self->cache = cape_list_new (cape_aio_socket_cache__cache_on_del);
+  
+  self->mutex = cape_mutex_new ();
+  
+  self->ptr = NULL;
+  self->on_recv = NULL;
+  
+  return self;
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket_cache_del (CapeAioSocketCache* p_self)
+{
+  if (*p_self)
+  {
+    CapeAioSocketCache self = *p_self;
+    
+    cape_aio_socket_close (self->aio_socket, self->aio_ctx);
+    
+    cape_mutex_del (&(self->mutex));
+    
+    CAPE_DEL (p_self, struct CapeAioSocketCache_s);
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+static void __STDCALL cape_aio_socket_cache__on_sent (void* ptr, CapeAioSocket socket, void* userdata)
+{
+  CapeAioSocketCache self = ptr;
+  
+  // local objects
+  CapeStream s = NULL;
+  
+  if (userdata)
+  {
+    s = userdata; cape_stream_del (&s);    
+  }
+  
+  cape_mutex_lock (self->mutex);
+  
+  s = cape_list_pop_front (self->cache);
+  
+  cape_mutex_unlock (self->mutex);
+
+  if (s)
+  {
+    cape_aio_socket_send (self->aio_socket, self->aio_ctx, cape_stream_get (s), cape_stream_size (s), s);   
+  }  
+}
+
+//-----------------------------------------------------------------------------
+
+static void __STDCALL cape_aio_socket_cache__on_recv (void* ptr, CapeAioSocket socket, const char* bufdat, number_t buflen)
+{
+  CapeAioSocketCache self = ptr;
+
+  if (self->on_recv)
+  {
+    self->on_recv (self->ptr, bufdat, buflen);    
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+static void __STDCALL cape_aio_socket_cache__on_done (void* ptr, void* userdata)
+{
+  CapeAioSocketCache self = ptr;
+  
+  if (userdata)
+  {
+    CapeStream s = userdata; cape_stream_del (&s);    
+  }
+  
+  cape_mutex_lock (self->mutex);
+
+  // disable connection
+  self->aio_socket = NULL;
+
+  // clear the cache
+  cape_list_clr (self->cache);
+  
+  cape_mutex_unlock (self->mutex);
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket_cache_set (CapeAioSocketCache self, void* handle, void* ptr, fct_cape_aio_socket_cache__on_recv on_recv)
+{
+  // create a new handler for the created socket
+  CapeAioSocket sock = cape_aio_socket_new (handle);
+  
+  // set callback
+  cape_aio_socket_callback (sock, self, cape_aio_socket_cache__on_sent, cape_aio_socket_cache__on_recv, cape_aio_socket_cache__on_done);
+
+  cape_mutex_lock (self->mutex);
+  
+  if (self->aio_socket)
+  {
+    // disconnect the old socket
+    // socket will be released from the aio context
+    cape_aio_socket_close (self->aio_socket, self->aio_ctx);
+  }
+  
+  // set the new socket handler
+  self->aio_socket = sock;
+
+  // set callback
+  self->ptr = ptr;
+  self->on_recv = on_recv;
+
+  cape_mutex_unlock (self->mutex);
+  
+  // listen on the connection  
+  cape_aio_socket_listen (&sock, self->aio_ctx);
+}
+
+//-----------------------------------------------------------------------------
+
+int cape_aio_socket_cache_send_s (CapeAioSocketCache self, CapeStream* p_stream, CapeErr err)
+{
+  int res;
+  
+  if (*p_stream)
+  {
+    cape_mutex_lock (self->mutex);
+    
+    if (self->aio_socket)
+    {
+      // add the stream to the send cache
+      cape_list_push_back (self->cache, (void*)(*p_stream));
+      
+      // unset the stream
+      *p_stream = NULL;
+      
+      res = CAPE_ERR_NONE;
+    }
+    else
+    {
+      // free the stream
+      cape_stream_del (p_stream);
+
+      // set the error
+      res = cape_err_set (err, CAPE_ERR_NO_OBJECT, "socket is not connected");
+    }
+    
+    cape_mutex_unlock (self->mutex);
+  }  
+  
+  if (res == CAPE_ERR_NONE)
+  {
+    cape_aio_socket_markSent (self->aio_socket, self->aio_ctx);
+  }
+  
+  return res;
+}
+
+//-----------------------------------------------------------------------------
