@@ -197,9 +197,12 @@ void cape_aio_socket_unref (CapeAioSocket self)
 
 void cape_aio_socket_close (CapeAioSocket self, CapeAioContext aio)
 {
-  if (self->aioh)
+  if (self)
   {
-    cape_aio_context_mod (aio, self->aioh, CAPE_AIO_DONE, 0);
+    if (self->aioh)
+    {
+      cape_aio_context_mod (aio, self->aioh, CAPE_AIO_DONE, 0);
+    }
   }
 }
 
@@ -891,11 +894,17 @@ void cape_aio_socket_cache_del (CapeAioSocketCache* p_self)
   if (*p_self)
   {
     CapeAioSocketCache self = *p_self;
-    
+
+    // close the socket and disconnect
     cape_aio_socket_close (self->aio_socket, self->aio_ctx);
+
+    // clear the list and free it
+    cape_list_del (&(self->cache));
     
+    // cleanup the mutex
     cape_mutex_del (&(self->mutex));
-    
+
+    // free memory
     CAPE_DEL (p_self, struct CapeAioSocketCache_s);
   }
 }
@@ -951,6 +960,8 @@ int __STDCALL cape_aio_socket_cache__on_timer (void* ptr)
 {
   CapeAioSocketCache self = ptr;
   
+  cape_log_msg (CAPE_LL_TRACE, "CAPE", "aio_cache set", "triggered retry");
+  
   if (self->on_retry)
   {
     self->on_retry (self->ptr);
@@ -990,6 +1001,8 @@ static void __STDCALL cape_aio_socket_cache__on_done (void* ptr, void* userdata)
     
     CapeAioTimer timer = cape_aio_timer_new ();
     
+    cape_log_msg (CAPE_LL_TRACE, "CAPE", "aio_cache set", "create retry timer");
+    
     int res = cape_aio_timer_set (timer, 10000, self, cape_aio_socket_cache__on_timer, err);   // create timer with 10 seconds
     if (res)
     {
@@ -1010,10 +1023,10 @@ void cape_aio_socket_cache_set (CapeAioSocketCache self, void* handle, void* ptr
   // create a new handler for the created socket
   CapeAioSocket sock = cape_aio_socket_new (handle);
   
+  cape_log_msg (CAPE_LL_TRACE, "CAPE", "aio_cache set", "register new connection");
+  
   // set callback
   cape_aio_socket_callback (sock, self, cape_aio_socket_cache__on_sent, cape_aio_socket_cache__on_recv, cape_aio_socket_cache__on_done);
-
-  cape_mutex_lock (self->mutex);
   
   if (self->aio_socket)
   {
@@ -1022,6 +1035,8 @@ void cape_aio_socket_cache_set (CapeAioSocketCache self, void* handle, void* ptr
     cape_aio_socket_close (self->aio_socket, self->aio_ctx);
   }
   
+  cape_mutex_lock (self->mutex);
+
   // set the new socket handler
   self->aio_socket = sock;
 
@@ -1037,6 +1052,9 @@ void cape_aio_socket_cache_set (CapeAioSocketCache self, void* handle, void* ptr
   
   // listen on the connection  
   cape_aio_socket_listen (&sock, self->aio_ctx);
+  
+  // also enable writing to the connection
+  cape_aio_socket_markSent (self->aio_socket, self->aio_ctx);
 }
 
 //-----------------------------------------------------------------------------
