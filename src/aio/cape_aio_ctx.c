@@ -103,7 +103,20 @@ void cape_aio_handle_unref (CapeAioHandle self)
   if (self->on_unref)
   {
     // call the callback to signal the destruction of the handle
-    self->on_unref (self->ptr, self);
+    self->on_unref (self->ptr, self, FALSE);
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_handle_close (CapeAioHandle self)
+{
+  cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio_ctx rm", "close handle: %p", self->hfd);
+  
+  if (self->on_unref)
+  {
+    // call the callback to signal the destruction of the handle
+    self->on_unref (self->ptr, self, TRUE);
   }
 }
 
@@ -296,8 +309,8 @@ exit_and_unlock:
   
   if (ptr)
   {
-    // decrease referenced counted content
-    cape_aio_handle_unref (ptr);
+    // clsoe handle
+    cape_aio_handle_close (ptr);
   }
 }
 
@@ -833,7 +846,7 @@ static int __STDCALL cape_aio_context_signal_onEvent (void* ptr, void* handle, i
 
 //-----------------------------------------------------------------------------
 
-static void __STDCALL cape_aio_context_signal_onUnref (void* ptr, CapeAioHandle aioh)
+static void __STDCALL cape_aio_context_signal_onUnref (void* ptr, CapeAioHandle aioh, int force_close)
 {
   //printf ("close signalfs\n");
   
@@ -1031,6 +1044,14 @@ void cape_aio_handle_unref (CapeAioHandle self)
     // call the callback to signal the destruction of the handle
     self->on_unref (self->ptr, self);
   }
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_handle_close (CapeAioHandle self)
+{
+  
+  
 }
 
 //-----------------------------------------------------------------------------
