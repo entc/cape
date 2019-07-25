@@ -1,9 +1,12 @@
 #include "cape_aio_sock.h"
 #include "cape_aio_ctx.h"
+#include "cape_aio_timer.h"
 
 // cape includes
 #include "sys/cape_types.h"
 #include "sys/cape_log.h"
+#include "sys/cape_mutex.h"
+#include "stc/cape_list.h"
 
 #if defined __BSD_OS || defined __LINUX_OS
 
@@ -192,6 +195,19 @@ void cape_aio_socket_unref (CapeAioSocket self)
 
 //-----------------------------------------------------------------------------
 
+void cape_aio_socket_close (CapeAioSocket self, CapeAioContext aio)
+{
+  if (self)
+  {
+    if (self->aioh)
+    {
+      cape_aio_context_mod (aio, self->aioh, CAPE_AIO_DONE, 0);
+    }
+  }
+}
+
+//-----------------------------------------------------------------------------
+
 void cape_aio_socket_callback (CapeAioSocket self, void* ptr, fct_cape_aio_socket_onSent onSent, fct_cape_aio_socket_onRecv onRecv, fct_cape_aio_socket_onDone onDone)
 {
     self->ptr = ptr;
@@ -254,14 +270,14 @@ void cape_aio_socket_write (CapeAioSocket self, long sockfd)
 {
     if (self->send_buflen == 0)
     {
-        // disable to listen on write events
-        self->mask &= ~CAPE_AIO_WRITE;
+      // disable to listen on write events
+      self->mask &= ~CAPE_AIO_WRITE;
         
-        if (self->onSent)
-        {
-            // userdata must be empty, if not we don't it still needs to be sent, so don't delete it here
-            self->onSent (self->ptr, self, NULL);
-        }
+      if (self->onSent)
+      {
+        // userdata must be empty, if not we don't it still needs to be sent, so don't delete it here
+        self->onSent (self->ptr, self, NULL);
+      }
     }
     else
     {
@@ -282,6 +298,7 @@ void cape_aio_socket_write (CapeAioSocket self, long sockfd)
             
             cape_err_del(&err);
 
+            // decrease ref counter (this was increased in send function) 
             cape_aio_socket_unref (self);
             
             return;
@@ -298,6 +315,7 @@ void cape_aio_socket_write (CapeAioSocket self, long sockfd)
         }
         else if (writtenBytes == 0)
         {
+          // decrease ref counter (this was increased in send function) 
           cape_aio_socket_unref (self);
           
           // disable all other read / write / etc mask flags
@@ -329,6 +347,7 @@ void cape_aio_socket_write (CapeAioSocket self, long sockfd)
               self->onSent (self->ptr, self, userdata);                
             }
             
+            // decrease ref counter (this was increased in send function) 
             cape_aio_socket_unref (self);
           }
         }
@@ -362,8 +381,10 @@ static int __STDCALL cape_aio_socket_onEvent (void* ptr, void* handle, int hflag
       cape_err_del (&err);
       
       // we still have a buffer in the queue
+      // this means we have called send before and the ref counter was increased
       if (self->send_buflen)
       {
+        // decrease ref counter (this was increased in send function) 
         cape_aio_socket_unref (self);
       }
       
@@ -402,9 +423,17 @@ static int __STDCALL cape_aio_socket_onEvent (void* ptr, void* handle, int hflag
 
 //-----------------------------------------------------------------------------
 
-static void __STDCALL cape_aio_socket_onUnref (void* ptr, CapeAioHandle aioh)
+static void __STDCALL cape_aio_socket_onUnref (void* ptr, CapeAioHandle aioh, int force_close)
 {
-  cape_aio_socket_unref (ptr);    
+  CapeAioSocket self = ptr;
+  
+  if (self->send_buflen)
+  {
+    // decrease ref counter (this was increased in send function) 
+    cape_aio_socket_unref (self);
+  }
+  
+  cape_aio_socket_unref (self);    
 }
 
 //-----------------------------------------------------------------------------
@@ -449,6 +478,9 @@ void cape_aio_socket_send (CapeAioSocket self, CapeAioContext aio, const char* b
       // register handle at the AIO system
       if (!cape_aio_context_add (aio, self->aioh, 0))
       {
+        // our object was not added to the AIO subsystem
+        // -> try to free it
+        // TODO: maybe try again?
         cape_aio_socket_unref (self);
         
         return;
@@ -595,7 +627,7 @@ static int __STDCALL cape_aio_accept_onEvent (void* ptr, void* handle, int hflag
 
 //-----------------------------------------------------------------------------
 
-static void __STDCALL cape_aio_accept_onUnref (void* ptr, CapeAioHandle aioh)
+static void __STDCALL cape_aio_accept_onUnref (void* ptr, CapeAioHandle aioh, int force_close)
 {
   CapeAioAccept self = ptr;
   
@@ -815,3 +847,330 @@ void cape_aio_accept_add (CapeAioAccept* p_self, CapeAioContext aio)
 //-----------------------------------------------------------------------------
 
 #endif
+
+//-----------------------------------------------------------------------------
+
+struct CapeAioSocketCache_s
+{
+  CapeAioContext aio_ctx;
+  
+  CapeAioSocket aio_socket;
+  
+  CapeList cache;
+  
+  CapeMutex mutex;
+  
+  // for callback
+
+  void* ptr;
+  
+  fct_cape_aio_socket_cache__on_recv on_recv;
+  
+  int auto_reconnect;
+  
+  fct_cape_aio_socket_cache__on_event on_retry;
+  fct_cape_aio_socket_cache__on_event on_connect;
+};
+
+//-----------------------------------------------------------------------------
+
+static void __STDCALL cape_aio_socket_cache__cache_on_del (void* ptr)
+{
+  CapeStream s = ptr; cape_stream_del (&s);
+}
+
+//-----------------------------------------------------------------------------
+
+CapeAioSocketCache cape_aio_socket_cache_new (CapeAioContext aio_ctx)
+{
+  CapeAioSocketCache self = CAPE_NEW (struct CapeAioSocketCache_s);
+  
+  self->aio_ctx = aio_ctx;
+  self->aio_socket = NULL;
+  
+  self->cache = cape_list_new (cape_aio_socket_cache__cache_on_del);
+  
+  self->mutex = cape_mutex_new ();
+  
+  self->ptr = NULL;  
+
+  self->on_recv = NULL;
+  self->on_retry = NULL;
+  self->on_connect = NULL;
+  
+  self->auto_reconnect = FALSE;
+
+  return self;
+}
+
+//-----------------------------------------------------------------------------
+
+static void __STDCALL cape_aio_socket_cache__on_done__delete_only (void* ptr, void* userdata)
+{
+  if (userdata)
+  {
+    CapeStream s = userdata; cape_stream_del (&s);    
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket_cache__close (CapeAioSocketCache self)
+{
+  CapeAioSocket sock;
+  
+  cape_mutex_lock (self->mutex);
+
+  sock = self->aio_socket;
+  self->aio_socket = NULL;
+  
+  cape_mutex_unlock (self->mutex);
+  
+  if (sock)
+  {
+    cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio_cache close", "[%p] close connection process initiated", sock->handle);
+    
+    // disable all callbacks
+    cape_aio_socket_callback (sock, NULL, NULL, NULL, cape_aio_socket_cache__on_done__delete_only);
+    
+    // close the socket and disconnect
+    cape_aio_socket_close (sock, self->aio_ctx);
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket_cache_del (CapeAioSocketCache* p_self)
+{
+  if (*p_self)
+  {
+    CapeAioSocketCache self = *p_self;
+
+    cape_aio_socket_cache__close (self);
+
+    // clear the list and free it
+    cape_list_del (&(self->cache));
+    
+    // cleanup the mutex
+    cape_mutex_del (&(self->mutex));
+
+    // free memory
+    CAPE_DEL (p_self, struct CapeAioSocketCache_s);
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+static void __STDCALL cape_aio_socket_cache__on_sent (void* ptr, CapeAioSocket socket, void* userdata)
+{
+  CapeAioSocketCache self = ptr;
+  
+  // local objects
+  CapeStream s = NULL;
+  
+  if (userdata)
+  {
+    s = userdata; cape_stream_del (&s);    
+  }
+  else
+  {
+    cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio_cache sent", "[%p] *** CONNECTED ***", socket->handle);
+    
+    if (self->on_connect)
+    {
+      self->on_connect (self->ptr);
+    }
+  }
+  
+  cape_mutex_lock (self->mutex);
+  
+  s = cape_list_pop_front (self->cache);
+  
+  cape_mutex_unlock (self->mutex);
+
+  if (s)
+  {
+    cape_aio_socket_send (self->aio_socket, self->aio_ctx, cape_stream_get (s), cape_stream_size (s), s);   
+  }  
+}
+
+//-----------------------------------------------------------------------------
+
+static void __STDCALL cape_aio_socket_cache__on_recv (void* ptr, CapeAioSocket socket, const char* bufdat, number_t buflen)
+{
+  CapeAioSocketCache self = ptr;
+
+  if (self->on_recv)
+  {
+    self->on_recv (self->ptr, bufdat, buflen);    
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+int __STDCALL cape_aio_socket_cache__on_timer (void* ptr)
+{
+  CapeAioSocketCache self = ptr;
+  
+  if (self->on_retry)
+  {
+    self->on_retry (self->ptr);
+  }
+  
+  return FALSE;
+}
+
+//-----------------------------------------------------------------------------
+
+static void __STDCALL cape_aio_socket_cache__on_done (void* ptr, void* userdata)
+{
+  CapeAioSocketCache self = ptr;
+  int retry;
+  
+  if (userdata)
+  {
+    CapeStream s = userdata; cape_stream_del (&s);    
+  }
+  
+  cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio_cache done", "[%p] *** CONNECTION LOST ***", self->aio_socket->handle);
+  
+  cape_mutex_lock (self->mutex);
+
+  // disable connection
+  self->aio_socket = NULL;
+
+  // clear the cache
+  cape_list_clr (self->cache);
+
+  retry = self->auto_reconnect;
+  
+  cape_mutex_unlock (self->mutex);
+  
+  // check for auto reconnect system
+  if (retry)
+  {
+    CapeErr err = cape_err_new ();
+    
+    CapeAioTimer timer = cape_aio_timer_new ();
+    
+    number_t timeout_in_ms = 10000;
+    
+    cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio_cache set", "start retry timer [%ims]", timeout_in_ms);
+    
+    int res = cape_aio_timer_set (timer, timeout_in_ms, self, cape_aio_socket_cache__on_timer, err);   // create timer with 10 seconds
+    if (res)
+    {
+      cape_log_fmt (CAPE_LL_DEBUG, "CAPE", "aio socket", "can't create reconnect timer: %s", cape_err_text (err));
+    }
+    
+    // add the timer to AIO system
+    cape_aio_timer_add (&timer, self->aio_ctx);
+    
+    cape_err_del (&err);
+  }  
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket_cache_set (CapeAioSocketCache self, void* handle, void* ptr, fct_cape_aio_socket_cache__on_recv on_recv, fct_cape_aio_socket_cache__on_event on_retry, fct_cape_aio_socket_cache__on_event on_connect)
+{
+  // create a new handler for the created socket
+  CapeAioSocket sock = cape_aio_socket_new (handle);
+  
+  cape_aio_socket_cache__close (self);
+
+  cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio_cache set", "[%p] register new connection", sock->handle);
+  
+  // set callback
+  cape_aio_socket_callback (sock, self, cape_aio_socket_cache__on_sent, cape_aio_socket_cache__on_recv, cape_aio_socket_cache__on_done);
+    
+  cape_mutex_lock (self->mutex);
+
+  // set the new socket handler
+  self->aio_socket = sock;
+
+  // set callback
+  self->ptr = ptr;
+  self->auto_reconnect = FALSE;
+  
+  self->on_recv = on_recv;
+  self->on_retry = on_retry;
+  self->on_connect = on_connect;
+  
+  cape_mutex_unlock (self->mutex);
+  
+  // listen on the connection  
+  cape_aio_socket_listen (&sock, self->aio_ctx);
+  
+  // also enable writing to the connection
+  cape_aio_socket_markSent (self->aio_socket, self->aio_ctx);
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket_cache_retry (CapeAioSocketCache self, int auto_reconnect)
+{
+  cape_mutex_lock (self->mutex);
+  
+  self->auto_reconnect = auto_reconnect;
+  
+  cape_mutex_unlock (self->mutex);
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket_cache_clr (CapeAioSocketCache self)
+{  
+  cape_log_msg (CAPE_LL_TRACE, "CAPE", "aio_cache clr", "start reset");
+  
+  cape_aio_socket_cache__close (self);
+  
+  cape_mutex_lock (self->mutex);
+    
+  // clear the cache
+  cape_list_clr (self->cache);
+  
+  cape_mutex_unlock (self->mutex);
+}
+
+//-----------------------------------------------------------------------------
+
+int cape_aio_socket_cache_send_s (CapeAioSocketCache self, CapeStream* p_stream, CapeErr err)
+{
+  int res;
+  
+  if (*p_stream)
+  {
+    cape_mutex_lock (self->mutex);
+    
+    if (self->aio_socket)
+    {
+      // add the stream to the send cache
+      cape_list_push_back (self->cache, (void*)(*p_stream));
+      
+      // unset the stream
+      *p_stream = NULL;
+      
+      res = CAPE_ERR_NONE;
+    }
+    else
+    {
+      // free the stream
+      cape_stream_del (p_stream);
+
+      // set the error
+      res = cape_err_set (err, CAPE_ERR_NO_OBJECT, "socket is not connected");
+    }
+    
+    cape_mutex_unlock (self->mutex);
+  }  
+  
+  if (res == CAPE_ERR_NONE)
+  {
+    cape_aio_socket_markSent (self->aio_socket, self->aio_ctx);
+  }
+  
+  return res;
+}
+
+//-----------------------------------------------------------------------------
