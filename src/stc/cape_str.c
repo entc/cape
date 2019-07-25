@@ -139,6 +139,30 @@ number_t cape_str_size (const CapeString s)
 
 //-----------------------------------------------------------------------------
 
+int cape_str_empty (const CapeString s)
+{
+  if (s)
+  {
+    return (*s == '\0');
+  }
+  
+  return TRUE;
+}
+
+//-----------------------------------------------------------------------------
+
+int cape_str_not_empty (const CapeString s)
+{
+  if (s)
+  {
+    return (*s != '\0');
+  }
+  
+  return FALSE;
+}
+
+//-----------------------------------------------------------------------------
+
 int cape_str_equal (const CapeString s1, const CapeString s2)
 {
   if ((NULL == s1) || (NULL == s2))
