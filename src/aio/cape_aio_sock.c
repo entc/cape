@@ -967,31 +967,53 @@ static void __STDCALL cape_aio_socket_cache__on_sent (void* ptr, CapeAioSocket s
   
   // local objects
   CapeStream s = NULL;
+  int first_on_sent = FALSE;
   
+  // check for userdata
   if (userdata)
   {
-    s = userdata; cape_stream_del (&s);    
+    // userdata is always a stream
+    s = userdata;
+    
+    // cleanup stream
+    cape_stream_del (&s);    
   }
-  else
+
+  cape_mutex_lock (self->mutex);
+  
+  if (self->aio_socket == NULL)
+  {
+    // set the socket AIO handle now
+    self->aio_socket = socket;
+    
+    // this is the first write aknoledgement
+    first_on_sent = TRUE;
+  }
+  
+  cape_mutex_unlock (self->mutex);
+
+  if (first_on_sent)
   {
     cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio_cache sent", "[%p] *** CONNECTED ***", socket->handle);
     
     if (self->on_connect)
     {
+      // call callback
       self->on_connect (self->ptr);
     }
   }
   
   cape_mutex_lock (self->mutex);
-  
+
   s = cape_list_pop_front (self->cache);
   
   cape_mutex_unlock (self->mutex);
-
+  
   if (s)
   {
+    // if we do have a stream send it to the socket
     cape_aio_socket_send (self->aio_socket, self->aio_ctx, cape_stream_get (s), cape_stream_size (s), s);   
-  }  
+  }    
 }
 
 //-----------------------------------------------------------------------------
@@ -1087,7 +1109,7 @@ void cape_aio_socket_cache_set (CapeAioSocketCache self, void* handle, void* ptr
   cape_mutex_lock (self->mutex);
 
   // set the new socket handler
-  self->aio_socket = sock;
+  self->aio_socket = NULL;
 
   // set callback
   self->ptr = ptr;
@@ -1098,12 +1120,17 @@ void cape_aio_socket_cache_set (CapeAioSocketCache self, void* handle, void* ptr
   self->on_connect = on_connect;
   
   cape_mutex_unlock (self->mutex);
-  
-  // listen on the connection  
-  cape_aio_socket_listen (&sock, self->aio_ctx);
-  
-  // also enable writing to the connection
-  cape_aio_socket_markSent (self->aio_socket, self->aio_ctx);
+
+  {
+    CapeAioSocket sock_reference = sock;
+    
+    // listen on the connection  
+    // TODO: provide a method which can do both
+    cape_aio_socket_listen (&sock, self->aio_ctx);
+    
+    // also enable writing to the connection
+    cape_aio_socket_markSent (sock_reference, self->aio_ctx);
+  }
 }
 
 //-----------------------------------------------------------------------------
