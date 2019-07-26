@@ -315,6 +315,8 @@ void cape_aio_socket_write (CapeAioSocket self, long sockfd)
         }
         else if (writtenBytes == 0)
         {
+          //cape_log_msg (CAPE_LL_TRACE, "CAPE", "aio_sock", "-- UNREF --");
+          
           // decrease ref counter (this was increased in send function) 
           cape_aio_socket_unref (self);
           
@@ -346,6 +348,8 @@ void cape_aio_socket_write (CapeAioSocket self, long sockfd)
               // userdata can be deleted
               self->onSent (self->ptr, self, userdata);                
             }
+            
+            //cape_log_msg (CAPE_LL_TRACE, "CAPE", "aio_sock", "-- UNREF --");
             
             // decrease ref counter (this was increased in send function) 
             cape_aio_socket_unref (self);
@@ -384,6 +388,8 @@ static int __STDCALL cape_aio_socket_onEvent (void* ptr, void* handle, int hflag
       // this means we have called send before and the ref counter was increased
       if (self->send_buflen)
       {
+        //cape_log_msg (CAPE_LL_TRACE, "CAPE", "aio_sock", "-- UNREF --");
+
         // decrease ref counter (this was increased in send function) 
         cape_aio_socket_unref (self);
       }
@@ -427,13 +433,19 @@ static void __STDCALL cape_aio_socket_onUnref (void* ptr, CapeAioHandle aioh, in
 {
   CapeAioSocket self = ptr;
   
+  cape_log_msg (CAPE_LL_TRACE, "CAPE", "aio_sock", "unref");
+
   if (self->send_buflen)
   {
+    cape_log_msg (CAPE_LL_TRACE, "CAPE", "aio_sock", "unref buflen");
+
+    self->send_buflen = 0;
+    
     // decrease ref counter (this was increased in send function) 
     cape_aio_socket_unref (self);
   }
   
-  cape_aio_socket_unref (self);    
+  cape_aio_socket_unref (self);
 }
 
 //-----------------------------------------------------------------------------
@@ -457,6 +469,31 @@ void cape_aio_socket_markSent (CapeAioSocket self, CapeAioContext aio)
 
 void cape_aio_socket_send (CapeAioSocket self, CapeAioContext aio, const char* bufdata, unsigned long buflen, void* userdata)
 {
+  // check if we are ready to send
+  if (self->send_buflen)
+  {
+    // increase the refcounter to ensure that the object will nont be deleted during sending cycle
+    cape_log_msg (CAPE_LL_ERROR, "CAPE", "aio_sock", "socket has already a buffer to send");    
+    return;
+  }
+  
+  // only allow data with a length
+  if (buflen == 0)
+  {
+    if (self->onSent)
+    {
+      // transfer userdata to the ownership beyond the callback
+      self->send_userdata = NULL;
+      
+      // userdata can be deleted
+      self->onSent (self->ptr, self, userdata);                
+    }    
+    
+    // increase the refcounter to ensure that the object will nont be deleted during sending cycle
+    cape_log_msg (CAPE_LL_WARN, "CAPE", "aio_sock", "can't send a buffer with buflen = 0");    
+    return;
+  }
+  
   self->send_bufdat = bufdata;
   self->send_buflen = buflen;
   
@@ -481,6 +518,8 @@ void cape_aio_socket_send (CapeAioSocket self, CapeAioContext aio, const char* b
         // our object was not added to the AIO subsystem
         // -> try to free it
         // TODO: maybe try again?
+        //cape_log_msg (CAPE_LL_TRACE, "CAPE", "aio_sock", "-- UNREF --");
+
         cape_aio_socket_unref (self);
         
         return;
@@ -493,6 +532,8 @@ void cape_aio_socket_send (CapeAioSocket self, CapeAioContext aio, const char* b
   }
 
   // increase the refcounter to ensure that the object will nont be deleted during sending cycle
+  //cape_log_msg (CAPE_LL_TRACE, "CAPE", "aio_sock", "-- INREF --");
+  
   cape_aio_socket_inref (self);
 }
 
@@ -911,6 +952,8 @@ static void __STDCALL cape_aio_socket_cache__on_done__delete_only (void* ptr, vo
   {
     CapeStream s = userdata; cape_stream_del (&s);    
   }
+
+  cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio_cache done", "cache all cleared");
 }
 
 //-----------------------------------------------------------------------------

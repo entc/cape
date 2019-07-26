@@ -153,7 +153,7 @@ static int __STDCALL cape_aio_timer_onEvent (void* ptr, void* handle, int hflags
 
 //-----------------------------------------------------------------------------
 
-static void __STDCALL cape_aio_timer_onUnref (void* ptr, CapeAioHandle aioh)
+static void __STDCALL cape_aio_timer_onUnref (void* ptr, CapeAioHandle aioh, int force_close)
 {
   CapeAioTimer self = ptr;
   
