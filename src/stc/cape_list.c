@@ -589,9 +589,12 @@ CapeListCursor* cape_list_cursor_create (CapeList self, int direction)
 
 //-----------------------------------------------------------------------------
 
-void cape_list_cursor_destroy (CapeListCursor** pcursor)
+void cape_list_cursor_destroy (CapeListCursor** p_cursor)
 {
-  CAPE_DEL (pcursor, CapeListCursor);
+  if (*p_cursor)
+  {
+    CAPE_DEL (p_cursor, CapeListCursor);
+  }
 }
 
 //-----------------------------------------------------------------------------

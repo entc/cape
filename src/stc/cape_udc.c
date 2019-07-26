@@ -356,17 +356,20 @@ void cape_udc_merge_cp__item__list (CapeUdc origin, const CapeUdc other)
 
 void cape_udc_merge_cp (CapeUdc self, const CapeUdc udc)
 {
-  switch (self->type)
+  if (udc)
   {
-    case CAPE_UDC_NODE:
+    switch (self->type)
     {
-      cape_udc_merge_cp__item__node (self, udc);
-      break;
-    }
-    case CAPE_UDC_LIST:
-    {
-      cape_udc_merge_cp__item__list (self, udc);
-      break;
+      case CAPE_UDC_NODE:
+      {
+        cape_udc_merge_cp__item__node (self, udc);
+        break;
+      }
+      case CAPE_UDC_LIST:
+      {
+        cape_udc_merge_cp__item__list (self, udc);
+        break;
+      }
     }
   }
 }
@@ -416,21 +419,26 @@ void* cape_udc_data (const CapeUdc self)
 
 number_t cape_udc_size (const CapeUdc self)
 {
-  switch (self->type)
+  if (self)
   {
-    case CAPE_UDC_NODE:
+    switch (self->type)
     {
-      return cape_map_size (self->data);
-    }
-    case CAPE_UDC_LIST:
-    {
-      return cape_list_size (self->data);
-    }
-    default:
-    {
-      return 0;
+      case CAPE_UDC_NODE:
+      {
+        return cape_map_size (self->data);
+      }
+      case CAPE_UDC_LIST:
+      {
+        return cape_list_size (self->data);
+      }
+      default:
+      {
+        return 0;
+      }
     }
   }
+  
+  return 0;
 }
 
 //-----------------------------------------------------------------------------
@@ -1236,16 +1244,20 @@ CapeUdc cape_udc_cursor_ext (CapeUdc self, CapeUdcCursor* cursor)
     {
       CapeMapNode n = cape_map_cursor_extract (self->data, cursor->data);
       
-      CapeUdc h = cape_map_node_value (n);
-      
-      cape_map_node_del (&n);
-      
-      return h;
+      if (n)
+      {
+        CapeUdc h = cape_map_node_value (n);
+        
+        cape_map_node_del (&n);
+        
+        return h;
+      }
+
+      break;
     }
     case CAPE_UDC_LIST:
     {
       return cape_list_cursor_extract (self->data, cursor->data);
-      break;
     }
   }
   
