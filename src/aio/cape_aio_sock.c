@@ -1097,17 +1097,26 @@ static void __STDCALL cape_aio_socket_cache__on_done (void* ptr, void* userdata)
     CapeStream s = userdata; cape_stream_del (&s);    
   }
   
-  cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio_cache done", "[%p] *** CONNECTION LOST ***", self->aio_socket->handle);
-  
   cape_mutex_lock (self->mutex);
 
+  if (self->aio_socket)
+  {
+    cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio_cache done", "[%p] *** CONNECTION LOST ***", self->aio_socket->handle);
+
+    retry = self->auto_reconnect;    
+  }
+  else
+  {
+    cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio_cache done", "[none] *** CONNECTION LOST ***");    
+    
+    retry = FALSE;
+  }
+  
   // disable connection
   self->aio_socket = NULL;
 
   // clear the cache
   cape_list_clr (self->cache);
-
-  retry = self->auto_reconnect;
   
   cape_mutex_unlock (self->mutex);
   
@@ -1241,6 +1250,21 @@ int cape_aio_socket_cache_send_s (CapeAioSocketCache self, CapeStream* p_stream,
   }
   
   return res;
+}
+
+//-----------------------------------------------------------------------------
+
+int cape_aio_socket_cache_active (CapeAioSocketCache self)
+{
+  int active = FALSE;
+  
+  cape_mutex_lock (self->mutex);
+
+  active = self->aio_socket != NULL;
+  
+  cape_mutex_unlock (self->mutex);
+  
+  return active;
 }
 
 //-----------------------------------------------------------------------------
