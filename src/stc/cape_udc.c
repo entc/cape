@@ -181,6 +181,10 @@ CapeUdc cape_udc_cp (const CapeUdc self)
       }
       case CAPE_UDC_FLOAT:
       {
+        // allocate memory
+        clone->data = CAPE_NEW(double);
+        
+        // copy the value
         *(double*)(clone->data) = *(double*)(self->data);
         break;
       }
