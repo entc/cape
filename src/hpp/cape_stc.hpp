@@ -3,6 +3,7 @@
 
 #include <stc/cape_stream.h>
 #include <stc/cape_list.h>
+#include <stc/cape_udc.h>
 
 namespace cape
 {

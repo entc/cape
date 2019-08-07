@@ -83,7 +83,7 @@ static int __STDCALL cape_aio_freader_onEvent (void* ptr, void* handle, int hfla
 
 //-----------------------------------------------------------------------------
 
-static void __STDCALL cape_aio_freader_onDestroy (void* ptr, CapeAioHandle aioh)
+static void __STDCALL cape_aio_freader_onDestroy (void* ptr, CapeAioHandle aioh, int force_close)
 {
   CapeAioFileReader self = ptr;
   
