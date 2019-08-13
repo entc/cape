@@ -41,6 +41,8 @@ __CAPE_LIBEX   CapeMapNode       cape_map_insert            (CapeMap, void* key,
 
 __CAPE_LIBEX   CapeMapNode       cape_map_find              (CapeMap, const void* key);
 
+__CAPE_LIBEX   CapeMapNode       cape_map_find_cmd          (CapeMap, const void* key, fct_cape_map_cmp);
+
 __CAPE_LIBEX   void              cape_map_erase             (CapeMap, CapeMapNode);       // removes the node, calls the onDestroy callback and releases the node
 
 __CAPE_LIBEX   CapeMapNode       cape_map_extract           (CapeMap, CapeMapNode);       // extracts the node from the container and returns it
