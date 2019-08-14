@@ -241,28 +241,24 @@ int cape_str_begins (const CapeString s, const CapeString begins_with)
 
 //-----------------------------------------------------------------------------
 
-int cape_str_contains_c (const CapeString s1, const CapeString s2)
+int cape_str_contains (const CapeString s1, const CapeString s2)
 {
   int ret;
   
   number_t l1 = strlen (s1);
   number_t l2 = strlen (s2);
 
-  if (l1 < l2)
+  if (l2 < l1)
   {
-    CapeString h = cape_str_sub (s2, l1);
+    CapeString h = cape_str_sub (s1, l2);
     
-    ret = cape_str_compare_c (s1, h);
+    ret = cape_str_compare (h, s2);
     
     cape_str_del (&h);
   }
   else
   {
-    CapeString h = cape_str_sub (s1, l2);
-    
-    ret = cape_str_compare_c (h, s2);
-    
-    cape_str_del (&h);
+    ret = cape_str_compare (s1, s2);
   }
   
   return ret;

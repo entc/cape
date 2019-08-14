@@ -41,7 +41,7 @@ __CAPE_LIBEX   int                cape_str_compare_c     (const CapeString, cons
 
 __CAPE_LIBEX   int                cape_str_begins        (const CapeString, const CapeString);
 
-__CAPE_LIBEX   int                cape_str_contains_c    (const CapeString, const CapeString);
+__CAPE_LIBEX   int                cape_str_contains      (const CapeString, const CapeString);
 
 //-----------------------------------------------------------------------------
 
