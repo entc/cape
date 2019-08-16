@@ -5,8 +5,14 @@
 #include <stc/cape_list.h>
 #include <stc/cape_udc.h>
 
+// STL includes
+#include <limits>
+
 namespace cape
 {
+  
+  //-----------------------------------------------------------------------------------------------------
+  
   struct ListHolder
   {
     ListHolder (CapeList obj) : m_obj (obj) {}
@@ -16,15 +22,72 @@ namespace cape
     CapeList m_obj;
   };
 
-  struct UdcHolder
+  //-----------------------------------------------------------------------------------------------------
+
+  // a traits prototype for UDC types
+  template <typename T> struct UdcTransType 
   {
-    UdcHolder (CapeUdc obj) : m_obj (obj) {}
+    static const int type = CAPE_UDC_UNDEFINED;     
+    static void add (CapeUdc, const CapeString, const T&) {  }
+  };
+  
+  template <> struct UdcTransType<int>
+  {
+    static const int type = CAPE_UDC_NUMBER;
+    static void add (CapeUdc obj, const CapeString name, const int& value) { cape_udc_add_n (obj, name, value); }
+  };
+  
+  template <> struct UdcTransType<long>
+  {
+    static const int type = CAPE_UDC_NUMBER;
+    static void add (CapeUdc obj, const CapeString name, const long& value) { cape_udc_add_n (obj, name, value); }
+  };
+
+  template <> struct UdcTransType<double>
+  {
+    static const int type = CAPE_UDC_FLOAT;
+    static void add (CapeUdc obj, const CapeString name, const double& value) { cape_udc_add_f (obj, name, value); }
+  };
+
+  template <> struct UdcTransType<bool>
+  {
+    static const int type = CAPE_UDC_BOOL;
+    static void add (CapeUdc obj, const CapeString name, const bool& value) { cape_udc_add_b (obj, name, value ? TRUE : FALSE); }
+  };
+
+  template <> struct UdcTransType<char*>
+  {
+    static const int type = CAPE_UDC_STRING;
+    static void add (CapeUdc obj, const CapeString name, const char*& value) { cape_udc_add_s_cp (obj, name, value); }
+  };
+
+  //-----------------------------------------------------------------------------------------------------
+
+  struct Udc
+  {
+    Udc (CapeUdc obj) : m_obj (obj) {}
     
-    ~UdcHolder () { cape_udc_del (&m_obj); }
+    // copy constructor
+    Udc (const Udc& e) noexcept : m_obj (cape_udc_cp (e.m_obj)) {}
     
+    // move constructor
+    Udc (Udc&& e) noexcept : m_obj (cape_udc_mv (&(e.m_obj))) {}
+    
+    // destructor
+    ~Udc () { cape_udc_del (&m_obj); }
+    
+    template <typename T> void add (const CapeString name, const T& val)
+    {
+      // use the traits for specialization
+      UdcTransType<T>::add (m_obj, name, val);
+    }
+
+    // the cape object
     CapeUdc m_obj;
   };
   
+  //-----------------------------------------------------------------------------------------------------
+
   struct UdcCursorHolder
   {
     UdcCursorHolder (CapeUdcCursor* obj) : m_obj (obj) {}
@@ -38,6 +101,8 @@ namespace cape
     CapeUdcCursor* m_obj;
   };
   
+  //-----------------------------------------------------------------------------------------------------
+
   struct StringHolder
   {
     StringHolder (CapeString obj) : m_obj (obj) {}
@@ -47,7 +112,7 @@ namespace cape
     CapeString m_obj;
   };
 
-  //======================================================================
+  //-----------------------------------------------------------------------------------------------------
   
   struct StreamHolder
   {
@@ -95,7 +160,7 @@ namespace cape
     
   };
   
-  
+  //-----------------------------------------------------------------------------------------------------  
 }
 
 #endif
