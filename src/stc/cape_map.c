@@ -260,6 +260,30 @@ CapeMapNode cape_map_find (CapeMap self, const void* key)
 
 //-----------------------------------------------------------------------------
 
+CapeMapNode cape_map_find_cmd (CapeMap self, const void* key, fct_cape_map_cmp on_cmp)
+{
+  CapeMapNode ret = NULL;
+    
+  if (on_cmp)
+  {
+    // save the default compare method
+    fct_cape_map_cmp on_original_cmp = self->cmp_fct;
+
+    // temporary set the other compare method
+    self->cmp_fct = on_cmp;
+    
+    // do the search
+    ret = cape_map_find (self, key);
+    
+    // set back
+    self->cmp_fct = on_original_cmp;
+  }
+  
+  return ret;
+}
+
+//-----------------------------------------------------------------------------
+
 CapeMapNode cape_map_insert (CapeMap self, void* key, void* val)
 {
   CapeMapNode y;

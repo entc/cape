@@ -175,6 +175,31 @@ int cape_str_equal (const CapeString s1, const CapeString s2)
 
 //-----------------------------------------------------------------------------
 
+int cape_str_compare_c (const CapeString s1, const CapeString s2)
+{
+  if (NULL == s1)
+  {
+    return -1;
+  }
+
+  if (NULL == s2)
+  {
+    return 1;
+  }
+  
+#ifdef _MSC_VER
+  
+  return _stricmp (s1, s2);
+  
+#elif __GNUC__
+  
+  return strcasecmp (s1, s2);
+  
+#endif
+}
+
+//-----------------------------------------------------------------------------
+
 int cape_str_compare (const CapeString s1, const CapeString s2)
 {
   if ((NULL == s1) || (NULL == s2))
@@ -212,6 +237,31 @@ int cape_str_begins (const CapeString s, const CapeString begins_with)
     
     return strncmp (s, begins_with, len) == 0;
   }
+}
+
+//-----------------------------------------------------------------------------
+
+int cape_str_contains (const CapeString s1, const CapeString s2)
+{
+  int ret;
+  
+  number_t l1 = strlen (s1);
+  number_t l2 = strlen (s2);
+
+  if (l2 < l1)
+  {
+    CapeString h = cape_str_sub (s1, l2);
+    
+    ret = cape_str_compare (h, s2);
+    
+    cape_str_del (&h);
+  }
+  else
+  {
+    ret = cape_str_compare (s1, s2);
+  }
+  
+  return ret;
 }
 
 //-----------------------------------------------------------------------------
