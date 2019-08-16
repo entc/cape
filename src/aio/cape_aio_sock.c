@@ -559,6 +559,83 @@ void cape_aio_socket_listen (CapeAioSocket* p_self, CapeAioContext aio)
 
 //-----------------------------------------------------------------------------
 
+void cape_aio_socket_add (CapeAioSocket* p_self, CapeAioContext aio)
+{
+  CapeAioSocket self = *p_self;
+  
+  *p_self = NULL;
+  
+  if (self->aioh)
+  {
+    cape_aio_context_mod (aio, self->aioh, self->mask, 0);
+  }
+  else
+  {
+    self->aioh = cape_aio_handle_new (self->handle, self->mask, self, cape_aio_socket_onEvent, cape_aio_socket_onUnref);
+    
+    cape_aio_context_add (aio, self->aioh, 0);
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket_add_w (CapeAioSocket* p_self, CapeAioContext aio)
+{
+  CapeAioSocket self = *p_self;
+  
+  self->mask = CAPE_AIO_WRITE;
+  
+  cape_aio_socket_add (p_self, aio);
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket_add_r (CapeAioSocket* p_self, CapeAioContext aio)
+{
+  CapeAioSocket self = *p_self;
+
+  self->mask = CAPE_AIO_READ;
+  
+  cape_aio_socket_add (p_self, aio);  
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket_add_b (CapeAioSocket* p_self, CapeAioContext aio)
+{
+  CapeAioSocket self = *p_self;
+  
+  self->mask = CAPE_AIO_WRITE | CAPE_AIO_READ;
+  
+  cape_aio_socket_add (p_self, aio);  
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket_change_w (CapeAioSocket self, CapeAioContext aio)
+{
+  self->mask |= CAPE_AIO_WRITE;
+  
+  if (self->aioh)
+  {
+    cape_aio_context_mod (aio, self->aioh, self->mask, 0);
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket_change_r (CapeAioSocket self, CapeAioContext aio)
+{
+  self->mask |= CAPE_AIO_READ;
+  
+  if (self->aioh)
+  {
+    cape_aio_context_mod (aio, self->aioh, self->mask, 0);
+  }
+}
+
+//-----------------------------------------------------------------------------
+
 struct CapeAioAccept_s
 {
   void* handle;
@@ -1044,6 +1121,9 @@ static void __STDCALL cape_aio_socket_cache__on_sent (void* ptr, CapeAioSocket s
       // call callback
       self->on_connect (self->ptr);
     }
+    
+    // enable now the read events
+    cape_aio_socket_change_r (self->aio_socket, self->aio_ctx);
   }
   
   cape_mutex_lock (self->mutex);
@@ -1173,16 +1253,8 @@ void cape_aio_socket_cache_set (CapeAioSocketCache self, void* handle, void* ptr
   
   cape_mutex_unlock (self->mutex);
 
-  {
-    CapeAioSocket sock_reference = sock;
-    
-    // listen on the connection  
-    // TODO: provide a method which can do both
-    cape_aio_socket_listen (&sock, self->aio_ctx);
-    
-    // also enable writing to the connection
-    cape_aio_socket_markSent (sock_reference, self->aio_ctx);
-  }
+  // enable the event handling and activate events on 'sent'
+  cape_aio_socket_add_w (&sock, self->aio_ctx);
 }
 
 //-----------------------------------------------------------------------------

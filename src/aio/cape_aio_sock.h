@@ -37,11 +37,29 @@ __CAPE_LIBEX   void              cape_aio_socket_inref         (CapeAioSocket); 
 
 __CAPE_LIBEX   void              cape_aio_socket_unref         (CapeAioSocket);                          ///< decrease the reference counter of the object
 
-__CAPE_LIBEX   void              cape_aio_socket_listen        (CapeAioSocket*, CapeAioContext);         ///< turn on 'receive' events on the socket
+//-----------------------------------------------------------------------------
+
+__CAPE_LIBEX   void              cape_aio_socket_add           (CapeAioSocket*, CapeAioContext);         ///< turn on events on the socket
+
+__CAPE_LIBEX   void              cape_aio_socket_add_w         (CapeAioSocket*, CapeAioContext);         ///< turn on write events on the socket
+
+__CAPE_LIBEX   void              cape_aio_socket_add_r         (CapeAioSocket*, CapeAioContext);         ///< turn on read events on the socket
+
+__CAPE_LIBEX   void              cape_aio_socket_add_b         (CapeAioSocket*, CapeAioContext);         ///< turn on write / read events on the socket
+
+__CAPE_LIBEX   void              cape_aio_socket_change_w      (CapeAioSocket, CapeAioContext);         ///< turn on read events
+
+__CAPE_LIBEX   void              cape_aio_socket_change_r      (CapeAioSocket, CapeAioContext);         ///< turn on write events
+
+__CAPE_LIBEX   void              cape_aio_socket_close         (CapeAioSocket, CapeAioContext);          ///< turn off all events and disconnect
+
+//-----------------------------------------------------------------------------
+// **** DEPRICATED METHODS ****
 
 __CAPE_LIBEX   void              cape_aio_socket_markSent      (CapeAioSocket, CapeAioContext);          ///< turn on 'write' events on the socket
 
-__CAPE_LIBEX   void              cape_aio_socket_close         (CapeAioSocket, CapeAioContext);          ///< turn off all events and disconnect
+/* depricated */
+__CAPE_LIBEX   void              cape_aio_socket_listen        (CapeAioSocket*, CapeAioContext);         ///< turn on 'receive' events on the socket
 
 //-----------------------------------------------------------------------------
 
