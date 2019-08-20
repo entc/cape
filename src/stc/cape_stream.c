@@ -273,7 +273,32 @@ void cape_stream_append_f (CapeStream self, double val)
   
 #else
   
-  self->pos += snprintf(self->pos, 24, "%f", val);
+  int decpt;
+  int sign;
+  
+  char* s = fcvt (val, 24, &decpt, &sign);
+  
+  if (sign)
+  {
+    *(self->pos) = '-';
+    self->pos++;
+  }
+  
+  memcpy (self->pos, s, decpt);
+  self->pos += decpt;
+  
+  *(self->pos) = '.';
+  self->pos++;
+  
+  int rest = strlen(s) - decpt;
+  
+  memcpy (self->pos, s + decpt, rest);
+  self->pos += rest;
+  
+  //printf ("FLOAT: %s | %i | %i\n", s, decpt, sign);
+  
+  
+  //self->pos += snprintf(self->pos, 24, "%#.10f", val);
   
 #endif
 }

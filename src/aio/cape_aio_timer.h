@@ -21,6 +21,8 @@ typedef int        (__STDCALL *fct_cape_aio_timer_onEvent)      (void* ptr);   /
 
 __CAPE_LIBEX   int                cape_aio_timer_set            (CapeAioTimer, long inMs, void*, fct_cape_aio_timer_onEvent, CapeErr);
 
+
+
 //=============================================================================
 
 #endif
