@@ -16,6 +16,10 @@ __CAPE_LIBEX   int                cape_tokenizer_split         (const CapeString
 
 //-----------------------------------------------------------------------------
 
+__CAPE_LIBEX   CapeList           cape_tokenizer_str_all       (const CapeString haystack, const CapeString needle);
+
+//-----------------------------------------------------------------------------
+
 #endif
 
 

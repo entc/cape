@@ -1612,278 +1612,6 @@ static cape_uint32 Dragon4 (BigInt *bigints, const cape_int32 exponent, const ca
  * from the 64 bit version. The python interface functions are new.
  */
 
-
-/* Options struct for easy passing of Dragon4 options.
- *
- *   scientific - boolean controlling whether scientific notation is used
- *   digit_mode - whether to use unique or fixed fracional output
- *   cutoff_mode - whether 'precision' refers to toal digits, or digits past
- *                 the decimal point.
- *   precision - When negative, prints as many digits as needed for a unique
- *               number. When positive specifies the maximum number of
- *               significant digits to print.
- *   sign - whether to always show sign
- *   trim_mode - how to treat trailing 0s and '.'. See TrimMode comments.
- *   digits_left - pad characters to left of decimal point. -1 for no padding
- *   digits_right - pad characters to right of decimal point. -1 for no padding.
- *                  Padding adds whitespace until there are the specified
- *                  number characters to sides of decimal point. Applies after
- *                  trim_mode characters were removed. If digits_right is
- *                  positive and the decimal point was trimmed, decimal point
- *                  will be replaced by a whitespace character.
- *   exp_digits - Only affects scientific output. If positive, pads the
- *                exponent with 0s until there are this many digits. If
- *                negative, only use sufficient digits.
- */
-typedef struct Dragon4_Options {
-  cape_bool scientific;
-  CapeDragon4DigitMode digit_mode;
-  CapeDragon4CutoffMode cutoff_mode;
-  cape_int32 precision;
-  cape_bool sign;
-  CapeDragon4TrimMode trim_mode;
-  cape_int32 digits_left;
-  cape_int32 digits_right;
-  cape_int32 exp_digits;
-} Dragon4_Options;
-
-//-----------------------------------------------------------------------------------------------------------
-
-/*
- * Outputs the positive number with positional notation: ddddd.dddd
- * The output is always NUL terminated and the output length (not including the
- * NUL) is returned.
- *
- * Arguments:
- *    buffer - buffer to output into
- *    bufferSize - maximum characters that can be printed to buffer
- *    mantissa - value significand
- *    exponent - value exponent in base 2
- *    signbit - value of the sign position. Should be '+', '-' or ''
- *    mantissaBit - index of the highest set mantissa bit
- *    hasUnequalMargins - is the high margin twice as large as the low margin
- *
- * See Dragon4_Options for description of remaining arguments.
- */
-static cape_uint32 FormatPositional (char *buffer, cape_uint32 bufferSize, BigInt *mantissa,
-                 cape_int32 exponent, char signbit, cape_uint32 mantissaBit,
-                 cape_bool hasUnequalMargins, CapeDragon4DigitMode digit_mode,
-                 CapeDragon4CutoffMode cutoff_mode, cape_int32 precision,
-                 CapeDragon4TrimMode trim_mode, cape_int32 digits_left,
-                 cape_int32 digits_right)
-{
-  cape_int32 printExponent;
-  cape_int32 numDigits, numWholeDigits=0, has_sign=0;
-  
-  cape_int32 maxPrintLen = (cape_int32)bufferSize - 1, pos = 0;
-  
-  /* track the # of digits past the decimal point that have been printed */
-  cape_int32 numFractionDigits = 0, desiredFractionalDigits;
-  
-  DEBUG_ASSERT(bufferSize > 0);
-  
-  if (digit_mode != CAPE_DRAGON4__DMODE_UNIQUE) {
-    DEBUG_ASSERT(precision >= 0);
-  }
-  
-  if (signbit == '+' && pos < maxPrintLen) {
-    buffer[pos++] = '+';
-    has_sign = 1;
-  }
-  else if (signbit == '-' && pos < maxPrintLen) {
-    buffer[pos++] = '-';
-    has_sign = 1;
-  }
-  
-  numDigits = Dragon4(mantissa, exponent, mantissaBit, hasUnequalMargins,
-                      digit_mode, cutoff_mode, precision, buffer + has_sign,
-                      maxPrintLen - has_sign, &printExponent);
-  
-  DEBUG_ASSERT(numDigits > 0);
-  DEBUG_ASSERT(numDigits <= bufferSize);
-  
-  /* if output has a whole number */
-  if (printExponent >= 0) {
-    /* leave the whole number at the start of the buffer */
-    numWholeDigits = printExponent+1;
-    if (numDigits <= numWholeDigits) {
-      cape_int32 count = numWholeDigits - numDigits;
-      pos += numDigits;
-      
-      /* don't overflow the buffer */
-      if (pos + count > maxPrintLen) {
-        count = maxPrintLen - pos;
-      }
-      
-      /* add trailing zeros up to the decimal point */
-      numDigits += count;
-      for ( ; count > 0; count--) {
-        buffer[pos++] = '0';
-      }
-    }
-    /* insert the decimal point prior to the fraction */
-    else if (numDigits > numWholeDigits) {
-      cape_int32 maxFractionDigits;
-      
-      numFractionDigits = numDigits - numWholeDigits;
-      maxFractionDigits = maxPrintLen - numWholeDigits - 1 - pos;
-      if (numFractionDigits > maxFractionDigits) {
-        numFractionDigits = maxFractionDigits;
-      }
-      
-      memmove(buffer + pos + numWholeDigits + 1,
-              buffer + pos + numWholeDigits, numFractionDigits);
-      pos += numWholeDigits;
-      buffer[pos] = '.';
-      numDigits = numWholeDigits + 1 + numFractionDigits;
-      pos += 1 + numFractionDigits;
-    }
-  }
-  else {
-    /* shift out the fraction to make room for the leading zeros */
-    cape_int32 numFractionZeros = 0;
-    if (pos + 2 < maxPrintLen) {
-      cape_int32 maxFractionZeros, digitsStartIdx, maxFractionDigits, i;
-      
-      maxFractionZeros = maxPrintLen - 2 - pos;
-      numFractionZeros = -(printExponent + 1);
-      if (numFractionZeros > maxFractionZeros) {
-        numFractionZeros = maxFractionZeros;
-      }
-      
-      digitsStartIdx = 2 + numFractionZeros;
-      
-      /*
-       * shift the significant digits right such that there is room for
-       * leading zeros
-       */
-      numFractionDigits = numDigits;
-      maxFractionDigits = maxPrintLen - digitsStartIdx - pos;
-      if (numFractionDigits > maxFractionDigits) {
-        numFractionDigits = maxFractionDigits;
-      }
-      
-      memmove(buffer + pos + digitsStartIdx, buffer + pos,
-              numFractionDigits);
-      
-      /* insert the leading zeros */
-      for (i = 2; i < digitsStartIdx; ++i) {
-        buffer[pos + i] = '0';
-      }
-      
-      /* update the counts */
-      numFractionDigits += numFractionZeros;
-      numDigits = numFractionDigits;
-    }
-    
-    /* add the decimal point */
-    if (pos + 1 < maxPrintLen) {
-      buffer[pos+1] = '.';
-    }
-    
-    /* add the initial zero */
-    if (pos < maxPrintLen) {
-      buffer[pos] = '0';
-      numDigits += 1;
-    }
-    numWholeDigits = 1;
-    pos += 2 + numFractionDigits;
-  }
-  
-  /* always add decimal point, except for DprZeros mode */
-  if (trim_mode != CAPE_DRAGON4__TMODE_BOTH && numFractionDigits == 0 &&
-      pos < maxPrintLen) {
-    buffer[pos++] = '.';
-  }
-  
-  desiredFractionalDigits = precision;
-  if (cutoff_mode == CAPE_DRAGON4__CMODE_TOTAL && precision >= 0) {
-    desiredFractionalDigits = precision - numWholeDigits;
-  }
-  
-  if (trim_mode == CAPE_DRAGON4__TMODE_ONE_ZERO) {
-    /* if we didn't print any fractional digits, add a trailing 0 */
-    if (numFractionDigits == 0 && pos < maxPrintLen) {
-      buffer[pos++] = '0';
-      numFractionDigits++;
-    }
-  }
-  else if (trim_mode == CAPE_DRAGON4__TMODE_NONE &&
-           digit_mode != CAPE_DRAGON4__DMODE_UNIQUE &&
-           desiredFractionalDigits > numFractionDigits &&
-           pos < maxPrintLen) {
-    /* add trailing zeros up to precision length */
-    /* compute the number of trailing zeros needed */
-    cape_int32 count = desiredFractionalDigits - numFractionDigits;
-    if (pos + count > maxPrintLen) {
-      count = maxPrintLen - pos;
-    }
-    numFractionDigits += count;
-    
-    for ( ; count > 0; count--) {
-      buffer[pos++] = '0';
-    }
-  }
-  /* else, for trim_mode Zeros or DptZeros, there is nothing more to add */
-  
-  /*
-   * when rounding, we may still end up with trailing zeros. Remove them
-   * depending on trim settings.
-   */
-  if (precision >= 0 && trim_mode != CAPE_DRAGON4__TMODE_NONE && numFractionDigits > 0) {
-    while (buffer[pos-1] == '0') {
-      pos--;
-      numFractionDigits--;
-    }
-    if (trim_mode == CAPE_DRAGON4__TMODE_ONE_ZERO && buffer[pos-1] == '.') {
-      buffer[pos++] = '0';
-      numFractionDigits++;
-    }
-  }
-  
-  /* add any whitespace padding to right side */
-  if (digits_right >= numFractionDigits) {
-    cape_int32 count = digits_right - numFractionDigits;
-    
-    /* in trim_mode DptZeros, if right padding, add a space for the . */
-    if (trim_mode == CAPE_DRAGON4__TMODE_BOTH && numFractionDigits == 0
-        && pos < maxPrintLen) {
-      buffer[pos++] = ' ';
-    }
-    
-    if (pos + count > maxPrintLen) {
-      count = maxPrintLen - pos;
-    }
-    
-    for ( ; count > 0; count--) {
-      buffer[pos++] = ' ';
-    }
-  }
-  /* add any whitespace padding to left side */
-  if (digits_left > numWholeDigits + has_sign) {
-    cape_int32 shift = digits_left - (numWholeDigits + has_sign);
-    cape_int32 count = pos;
-    
-    if (count + shift > maxPrintLen) {
-      count = maxPrintLen - shift;
-    }
-    
-    if (count > 0) {
-      memmove(buffer + shift, buffer, count);
-    }
-    pos = shift + count;
-    for ( ; shift > 0; shift--) {
-      buffer[shift - 1] = ' ';
-    }
-  }
-  
-  /* terminate the buffer */
-  DEBUG_ASSERT(pos <= maxPrintLen);
-  buffer[pos] = '\0';
-  
-  return pos;
-}
-
 //-----------------------------------------------------------------------------------------------------------
 
 /*
@@ -2131,60 +1859,6 @@ static cape_uint32 FormatScientific (char *buffer, cape_uint32 bufferSize, BigIn
  }
  */
 
-/*
- * Print special case values for infinities and NaNs.
- * The output string is always NUL terminated and the string length (not
- * including the NUL) is returned.
- */
-static cape_uint32 PrintInfNan (char *buffer, cape_uint32 bufferSize, cape_uint64 mantissa, cape_uint32 mantissaHexWidth, char signbit)
-{
-  cape_uint32 maxPrintLen = bufferSize-1;
-  cape_uint32 pos = 0;
-  
-  DEBUG_ASSERT(bufferSize > 0);
-  
-  /* Check for infinity */
-  if (mantissa == 0) {
-    cape_uint32 printLen;
-    
-    /* only print sign for inf values (though nan can have a sign set) */
-    if (signbit == '+') {
-      if (pos < maxPrintLen-1) {
-        buffer[pos++] = '+';
-      }
-    }
-    else if (signbit == '-') {
-      if (pos < maxPrintLen-1) {
-        buffer[pos++] = '-';
-      }
-    }
-    
-    /* copy and make sure the buffer is terminated */
-    printLen = (3 < maxPrintLen - pos) ? 3 : maxPrintLen - pos;
-    memcpy(buffer + pos, "inf", printLen);
-    buffer[pos + printLen] = '\0';
-    return pos + printLen;
-  }
-  else {
-    /* copy and make sure the buffer is terminated */
-    cape_uint32 printLen = (3 < maxPrintLen - pos) ? 3 : maxPrintLen - pos;
-    memcpy(buffer + pos, "nan", printLen);
-    buffer[pos + printLen] = '\0';
-    
-    /*
-     *  For numpy we ignore unusual mantissa values for nan, but keep this
-     *  code in case we change our mind later.
-     *
-     * // append HEX value
-     * if (maxPrintLen > 3) {
-     *     printLen += PrintHex(buffer+3, bufferSize-3, mantissa,
-     *                          mantissaHexWidth);
-     * }
-     */
-    
-    return pos + printLen;
-  }
-}
 
 //-----------------------------------------------------------------------------------------------------------
 
@@ -2195,6 +1869,7 @@ static cape_uint32 PrintInfNan (char *buffer, cape_uint32 bufferSize, cape_uint6
  * exponent:  8 bits
  * mantissa: 23 bits
  */
+/*
 static cape_uint32 Dragon4_PrintFloat_IEEE_binary32 (Dragon4_Scratch *scratch, cape_float32 *value, Dragon4_Options *opt)
 {
   char *buffer = scratch->repr;
@@ -2223,13 +1898,13 @@ static cape_uint32 Dragon4_PrintFloat_IEEE_binary32 (Dragon4_Scratch *scratch, c
     return 0;
   }
   
-  /* deconstruct the floating point value */
+  // deconstruct the floating point value
   floatUnion.floatingPoint = *value;
   floatMantissa = floatUnion.integer & bitmask_u32(23);
   floatExponent = (floatUnion.integer >> 23) & bitmask_u32(8);
   floatSign = floatUnion.integer >> 31;
   
-  /* output the sign */
+  // output the sign
   if (floatSign != 0) {
     signbit = '-';
   }
@@ -2237,14 +1912,14 @@ static cape_uint32 Dragon4_PrintFloat_IEEE_binary32 (Dragon4_Scratch *scratch, c
     signbit = '+';
   }
   
-  /* if this is a special value */
+  // if this is a special value
   if (floatExponent == bitmask_u32(8)) {
     return PrintInfNan(buffer, bufferSize, floatMantissa, 6, signbit);
   }
-  /* else this is a number */
-  
-  /* factor the value into its parts */
+ 
+  // factor the value into its parts
   if (floatExponent != 0) {
+ */
     /*
      * normalized
      * The floating point equation is:
@@ -2258,12 +1933,14 @@ static cape_uint32 Dragon4_PrintFloat_IEEE_binary32 (Dragon4_Scratch *scratch, c
      *   m = (2^23 + mantissa)
      *   e = (exponent-127-23)
      */
+/*
     mantissa            = (1UL << 23) | floatMantissa;
     exponent            = floatExponent - 127 - 23;
     mantissaBit         = 23;
     hasUnequalMargins   = (floatExponent != 1) && (floatMantissa == 0);
   }
   else {
+ */
     /*
      * denormalized
      * The floating point equation is:
@@ -2276,6 +1953,7 @@ static cape_uint32 Dragon4_PrintFloat_IEEE_binary32 (Dragon4_Scratch *scratch, c
      *   m = (mantissa)
      *   e = (1-127-23)
      */
+/*
     mantissa           = floatMantissa;
     exponent           = 1 - 127 - 23;
     mantissaBit        = LogBase2_32(mantissa);
@@ -2286,12 +1964,32 @@ static cape_uint32 Dragon4_PrintFloat_IEEE_binary32 (Dragon4_Scratch *scratch, c
   
   return Format_floatbits (buffer, bufferSize, bigints, exponent, signbit, mantissaBit, hasUnequalMargins, opt);
 }
+*/
 
 //-----------------------------------------------------------------------------------------------------------
 
-#undef DEBUG_ASSERT
-
-//-----------------------------------------------------------------------------------------------------------
+/* Options struct for easy passing of Dragon4 options.
+ *
+ *   scientific - boolean controlling whether scientific notation is used
+ *   digit_mode - whether to use unique or fixed fracional output
+ *   cutoff_mode - whether 'precision' refers to toal digits, or digits past
+ *                 the decimal point.
+ *   precision - When negative, prints as many digits as needed for a unique
+ *               number. When positive specifies the maximum number of
+ *               significant digits to print.
+ *   sign - whether to always show sign
+ *   trim_mode - how to treat trailing 0s and '.'. See TrimMode comments.
+ *   digits_left - pad characters to left of decimal point. -1 for no padding
+ *   digits_right - pad characters to right of decimal point. -1 for no padding.
+ *                  Padding adds whitespace until there are the specified
+ *                  number characters to sides of decimal point. Applies after
+ *                  trim_mode characters were removed. If digits_right is
+ *                  positive and the decimal point was trimmed, decimal point
+ *                  will be replaced by a whitespace character.
+ *   exp_digits - Only affects scientific output. If positive, pads the
+ *                exponent with 0s until there are this many digits. If
+ *                negative, only use sufficient digits.
+ */
 
 struct CapeDragon4_s
 {
@@ -2305,7 +2003,12 @@ struct CapeDragon4_s
   cape_int32 digits_right;
   cape_int32 exp_digits;
 
-  Dragon4_Scratch* scratch;
+  // buffer
+  char* bufdat;             // reference
+  number_t buflen;          // length of the buffer
+  number_t bufpos;          // the current position in the buffer
+  
+  BigInt bigints[BIGINT_DRAGON4_GROUPSIZE];
 };
 
 //-----------------------------------------------------------------------------------------------------------
@@ -2318,15 +2021,17 @@ CapeDragon4 cape_dragon4_new ()
   self->scientific = FALSE;
   self->digit_mode = CAPE_DRAGON4__DMODE_UNIQUE;
   self->cutoff_mode = CAPE_DRAGON4__CMODE_TOTAL;
-  self->precision = 200;
+  self->precision = -1;
   self->sign = FALSE;
   self->trim_mode = CAPE_DRAGON4__TMODE_NONE;
   self->digits_left = 0;
   self->digits_right = 0;
   self->exp_digits = -1;
-  
-  self->scratch = NULL;
-  
+
+  self->buflen = 0;
+  self->bufdat = NULL;
+  self->bufpos = 0;
+
   return self;
 }
 
@@ -2337,14 +2042,347 @@ void cape_dragon4_del (CapeDragon4* p_self)
   if (*p_self)
   {
     CapeDragon4 self = *p_self;
+
     
-    if (self->scratch)
-    {
-      free_dragon4_bigint_scratch (self->scratch);
-    }
     
     CAPE_DEL (p_self, struct CapeDragon4_s);
   }
+}
+
+//-----------------------------------------------------------------------------------------------------------
+
+/*
+ * Print special case values for infinities and NaNs.
+ * The output string is always NUL terminated and the string length (not
+ * including the NUL) is returned.
+ */
+static int cape_dragon4__fmt__special (CapeDragon4 self, cape_uint64 mantissa, cape_uint32 mantissaHexWidth, char signbit, CapeErr err)
+{
+  cape_uint32 maxPrintLen = self->buflen - 1;
+  cape_uint32 pos = 0;
+  
+  // check for infinity
+  if (mantissa == 0)
+  {
+    cape_uint32 printLen;
+    
+    /* only print sign for inf values (though nan can have a sign set) */
+    if (signbit == '+')
+    {
+      if (pos < maxPrintLen - 1)
+      {
+        self->bufdat[pos++] = '+';
+      }
+    }
+    else if (signbit == '-')
+    {
+      if (pos < maxPrintLen - 1)
+      {
+        self->bufdat[pos++] = '-';
+      }
+    }
+    
+    /* copy and make sure the buffer is terminated */
+    printLen = (3 < maxPrintLen - pos) ? 3 : maxPrintLen - pos;
+    
+    memcpy(self->bufdat + pos, "inf", printLen);
+    
+    self->bufdat[pos + printLen] = '\0';
+    
+    self->bufpos = pos + printLen;
+    
+    return CAPE_ERR_NONE;
+  }
+  else
+  {
+    /* copy and make sure the buffer is terminated */
+    cape_uint32 printLen = (3 < maxPrintLen - pos) ? 3 : maxPrintLen - pos;
+    
+    memcpy(self->bufdat + pos, "nan", printLen);
+    
+    self->bufdat[pos + printLen] = '\0';
+    
+    /*
+     *  For numpy we ignore unusual mantissa values for nan, but keep this
+     *  code in case we change our mind later.
+     *
+     * // append HEX value
+     * if (maxPrintLen > 3) {
+     *     printLen += PrintHex(buffer+3, bufferSize-3, mantissa,
+     *                          mantissaHexWidth);
+     * }
+     */
+    
+    self->bufpos = pos + printLen;
+    
+    return CAPE_ERR_NONE;
+  }
+}
+
+//-----------------------------------------------------------------------------------------------------------
+
+/*
+ * Outputs the positive number with positional notation: ddddd.dddd
+ * The output is always NUL terminated and the output length (not including the
+ * NUL) is returned.
+ *
+ * Arguments:
+ *    mantissa - value significand
+ *    exponent - value exponent in base 2
+ *    signbit - value of the sign position. Should be '+', '-' or ''
+ *    mantissaBit - index of the highest set mantissa bit
+ *    hasUnequalMargins - is the high margin twice as large as the low margin
+ *
+ * See Dragon4_Options for description of remaining arguments.
+ */
+static cape_uint32 cape_dragon4__fmt__position (CapeDragon4 self, cape_int32 exponent, char signbit, cape_uint32 mantissaBit, cape_bool hasUnequalMargins)
+{
+  cape_int32 printExponent;
+  cape_int32 numDigits, numWholeDigits=0, has_sign=0;
+  
+  cape_int32 maxPrintLen = self->buflen - 1, pos = 0;
+  
+  /* track the # of digits past the decimal point that have been printed */
+  cape_int32 numFractionDigits = 0, desiredFractionalDigits;
+  
+  if (self->digit_mode != CAPE_DRAGON4__DMODE_UNIQUE)
+  {
+    DEBUG_ASSERT(precision >= 0);
+  }
+  
+  if (signbit == '+' && pos < maxPrintLen)
+  {
+    self->bufdat[pos++] = '+';
+    has_sign = 1;
+  }
+  else if (signbit == '-' && pos < maxPrintLen)
+  {
+    self->bufdat[pos++] = '-';
+    has_sign = 1;
+  }
+  
+  numDigits = Dragon4(self->bigints, exponent, mantissaBit, hasUnequalMargins, self->digit_mode, self->cutoff_mode, self->precision, self->bufdat + has_sign, maxPrintLen - has_sign, &printExponent);
+  
+  DEBUG_ASSERT(numDigits > 0);
+  DEBUG_ASSERT(numDigits <= bufferSize);
+  
+  // if output has a whole number
+  if (printExponent >= 0)
+  {
+    /* leave the whole number at the start of the buffer */
+    numWholeDigits = printExponent + 1;
+    if (numDigits <= numWholeDigits)
+    {
+      cape_int32 count = numWholeDigits - numDigits;
+      pos += numDigits;
+      
+      /* don't overflow the buffer */
+      if (pos + count > maxPrintLen)
+      {
+        count = maxPrintLen - pos;
+      }
+      
+      /* add trailing zeros up to the decimal point */
+      numDigits += count;
+      for ( ; count > 0; count--)
+      {
+        self->bufdat[pos++] = '0';
+      }
+    }
+    /* insert the decimal point prior to the fraction */
+    else if (numDigits > numWholeDigits)
+    {
+      cape_int32 maxFractionDigits;
+      
+      numFractionDigits = numDigits - numWholeDigits;
+      maxFractionDigits = maxPrintLen - numWholeDigits - 1 - pos;
+      
+      if (numFractionDigits > maxFractionDigits)
+      {
+        numFractionDigits = maxFractionDigits;
+      }
+      
+      memmove(self->bufdat + pos + numWholeDigits + 1, self->bufdat + pos + numWholeDigits, numFractionDigits);
+      
+      pos += numWholeDigits;
+      
+      self->bufdat[pos] = '.';
+      
+      numDigits = numWholeDigits + 1 + numFractionDigits;
+      pos += 1 + numFractionDigits;
+    }
+  }
+  else
+  {
+    // shift out the fraction to make room for the leading zeros
+    cape_int32 numFractionZeros = 0;
+    if (pos + 2 < maxPrintLen)
+    {
+      cape_int32 maxFractionZeros, digitsStartIdx, maxFractionDigits, i;
+      
+      maxFractionZeros = maxPrintLen - 2 - pos;
+      numFractionZeros = -(printExponent + 1);
+
+      if (numFractionZeros > maxFractionZeros)
+      {
+        numFractionZeros = maxFractionZeros;
+      }
+      
+      digitsStartIdx = 2 + numFractionZeros;
+      
+      /*
+       * shift the significant digits right such that there is room for
+       * leading zeros
+       */
+      numFractionDigits = numDigits;
+      maxFractionDigits = maxPrintLen - digitsStartIdx - pos;
+      
+      if (numFractionDigits > maxFractionDigits)
+      {
+        numFractionDigits = maxFractionDigits;
+      }
+      
+      memmove(self->bufdat + pos + digitsStartIdx, self->bufdat + pos, numFractionDigits);
+      
+      /* insert the leading zeros */
+      for (i = 2; i < digitsStartIdx; ++i)
+      {
+        self->bufdat[pos + i] = '0';
+      }
+      
+      /* update the counts */
+      numFractionDigits += numFractionZeros;
+      numDigits = numFractionDigits;
+    }
+    
+    /* add the decimal point */
+    if (pos + 1 < maxPrintLen)
+    {
+      self->bufdat[pos + 1] = '.';
+    }
+    
+    /* add the initial zero */
+    if (pos < maxPrintLen)
+    {
+      self->bufdat[pos] = '0';
+      numDigits += 1;
+    }
+    
+    numWholeDigits = 1;
+    pos += 2 + numFractionDigits;
+  }
+  
+  /* always add decimal point, except for DprZeros mode */
+  if (self->trim_mode != CAPE_DRAGON4__TMODE_BOTH && numFractionDigits == 0 && pos < maxPrintLen)
+  {
+    self->bufdat[pos++] = '.';
+  }
+  
+  desiredFractionalDigits = self->precision;
+ 
+  if (self->cutoff_mode == CAPE_DRAGON4__CMODE_TOTAL && self->precision >= 0)
+  {
+    desiredFractionalDigits = self->precision - numWholeDigits;
+  }
+  
+  if (self->trim_mode == CAPE_DRAGON4__TMODE_ONE_ZERO)
+  {
+    /* if we didn't print any fractional digits, add a trailing 0 */
+    if (numFractionDigits == 0 && pos < maxPrintLen)
+    {
+      self->bufdat[pos++] = '0';
+      numFractionDigits++;
+    }
+  }
+  else if ((self->trim_mode == CAPE_DRAGON4__TMODE_NONE) && (self->digit_mode != CAPE_DRAGON4__DMODE_UNIQUE) && (desiredFractionalDigits > numFractionDigits) && (pos < maxPrintLen))
+  {
+    /* add trailing zeros up to precision length */
+    /* compute the number of trailing zeros needed */
+    cape_int32 count = desiredFractionalDigits - numFractionDigits;
+    if (pos + count > maxPrintLen)
+    {
+      count = maxPrintLen - pos;
+    }
+    
+    numFractionDigits += count;
+    
+    for ( ; count > 0; count--)
+    {
+      self->bufdat[pos++] = '0';
+    }
+  }
+  /* else, for trim_mode Zeros or DptZeros, there is nothing more to add */
+  
+  /*
+   * when rounding, we may still end up with trailing zeros. Remove them
+   * depending on trim settings.
+   */
+  if (self->precision >= 0 && self->trim_mode != CAPE_DRAGON4__TMODE_NONE && numFractionDigits > 0)
+  {
+    while (self->bufdat[pos-1] == '0')
+    {
+      pos--;
+      numFractionDigits--;
+    }
+    if (self->trim_mode == CAPE_DRAGON4__TMODE_ONE_ZERO && self->bufdat[pos - 1] == '.')
+    {
+      self->bufdat[pos++] = '0';
+      numFractionDigits++;
+    }
+  }
+  
+  /* add any whitespace padding to right side */
+  if (self->digits_right >= numFractionDigits)
+  {
+    cape_int32 count = self->digits_right - numFractionDigits;
+    
+    /* in trim_mode DptZeros, if right padding, add a space for the . */
+    if (self->trim_mode == CAPE_DRAGON4__TMODE_BOTH && numFractionDigits == 0 && pos < maxPrintLen)
+    {
+      self->bufdat[pos++] = ' ';
+    }
+    
+    if (pos + count > maxPrintLen)
+    {
+      count = maxPrintLen - pos;
+    }
+    
+    for ( ; count > 0; count--)
+    {
+      self->bufdat[pos++] = ' ';
+    }
+  }
+  
+  // add any whitespace padding to left side
+  if (self->digits_left > numWholeDigits + has_sign)
+  {
+    cape_int32 shift = self->digits_left - (numWholeDigits + has_sign);
+    cape_int32 count = pos;
+    
+    if (count + shift > maxPrintLen)
+    {
+      count = maxPrintLen - shift;
+    }
+    
+    if (count > 0)
+    {
+      memmove(self->bufdat + shift, self->bufdat, count);
+    }
+    
+    pos = shift + count;
+    for ( ; shift > 0; shift--)
+    {
+      self->bufdat[shift - 1] = ' ';
+    }
+  }
+  
+  /* terminate the buffer */
+  DEBUG_ASSERT(pos <= maxPrintLen);
+  self->bufdat[pos] = '\0';
+  
+  self->bufpos = pos;
+  
+  return CAPE_ERR_NONE;
 }
 
 //-----------------------------------------------------------------------------------------------------------
@@ -2368,12 +2406,12 @@ void cape_dragon4_del (CapeDragon4* p_self)
  * Helper function that takes Dragon4 parameters and options and
  * calls Dragon4.
  */
-static cape_uint32 cape_dragon4__fmt__floatbits (CapeDragon4 self, char *buffer, cape_uint32 bufferSize, BigInt *mantissa, cape_int32 exponent, char signbit, cape_uint32 mantissaBit, cape_bool hasUnequalMargins)
+static cape_uint32 cape_dragon4__fmt__floatbits (CapeDragon4 self, cape_int32 exponent, char signbit, cape_uint32 mantissaBit, cape_bool hasUnequalMargins)
 {
   /* format the value */
   if (self->scientific)
   {
-    return FormatScientific (buffer, bufferSize, mantissa, exponent,
+    return FormatScientific (self->bufdat, self->buflen, self->bigints, exponent,
                              signbit, mantissaBit, hasUnequalMargins,
                              self->digit_mode, self->precision,
                              self->trim_mode, self->digits_left,
@@ -2381,11 +2419,7 @@ static cape_uint32 cape_dragon4__fmt__floatbits (CapeDragon4 self, char *buffer,
   }
   else
   {
-    return FormatPositional (buffer, bufferSize, mantissa, exponent,
-                             signbit, mantissaBit, hasUnequalMargins,
-                             self->digit_mode, self->cutoff_mode,
-                             self->precision, self->trim_mode,
-                             self->digits_left, self->digits_right);
+    return cape_dragon4__fmt__position (self, exponent, signbit, mantissaBit, hasUnequalMargins);
   }
 }
 
@@ -2398,12 +2432,8 @@ static cape_uint32 cape_dragon4__fmt__floatbits (CapeDragon4 self, char *buffer,
  * exponent: 11 bits
  * mantissa: 52 bits
  */
-static cape_uint32 cape_dragon4__IEEE_bin64 (CapeDragon4 self, cape_float64 *value)
+static int cape_dragon4__IEEE_bin64 (CapeDragon4 self, cape_float64 value, CapeErr err)
 {
-  char *buffer = self->scratch->repr;
-  cape_uint32 bufferSize = sizeof(self->scratch->repr);
-  BigInt *bigints = self->scratch->bigints;
-  
   union
   {
     cape_float64 floatingPoint;
@@ -2419,24 +2449,24 @@ static cape_uint32 cape_dragon4__IEEE_bin64 (CapeDragon4 self, cape_float64 *val
   cape_bool hasUnequalMargins;
   char signbit = '\0';
   
-  if (bufferSize == 0)
+  if (self->buflen == 0)
   {
-    return 0;
+    return cape_err_set (err, CAPE_ERR_NO_OBJECT, "buffer size is zero");
   }
   
-  if (bufferSize == 1)
+  if (self->buflen == 1)
   {
-    buffer[0] = '\0';
-    return 0;
+    self->bufdat[0] = '\0';
+    return CAPE_ERR_NONE;
   }
   
-  /* deconstruct the floating point value */
-  floatUnion.floatingPoint = *value;
+  // deconstruct the floating point value
+  floatUnion.floatingPoint = value;
   floatMantissa = floatUnion.integer & bitmask_u64(52);
   floatExponent = (floatUnion.integer >> 52) & bitmask_u32(11);
   floatSign = floatUnion.integer >> 63;
   
-  /* output the sign */
+  // output the sign
   if (floatSign != 0)
   {
     signbit = '-';
@@ -2446,12 +2476,11 @@ static cape_uint32 cape_dragon4__IEEE_bin64 (CapeDragon4 self, cape_float64 *val
     signbit = '+';
   }
   
-  /* if this is a special value */
+  // if this is a special value
   if (floatExponent == bitmask_u32(11))
   {
-    return PrintInfNan (buffer, bufferSize, floatMantissa, 13, signbit);
+    return cape_dragon4__fmt__special (self, floatMantissa, 13, signbit, err);
   }
-  /* else this is a number */
   
   /* factor the value into its parts */
   if (floatExponent != 0)
@@ -2494,46 +2523,51 @@ static cape_uint32 cape_dragon4__IEEE_bin64 (CapeDragon4 self, cape_float64 *val
     hasUnequalMargins   = FALSE;
   }
   
-  BigInt_Set_uint64 (&bigints[0], mantissa);
+  BigInt_Set_uint64 (&(self->bigints)[0], mantissa);
   
-  return cape_dragon4__fmt__floatbits (self, buffer, bufferSize, bigints, exponent, signbit, mantissaBit, hasUnequalMargins);
+  return cape_dragon4__fmt__floatbits (self, exponent, signbit, mantissaBit, hasUnequalMargins);
 }
 
 //-----------------------------------------------------------------------------------------------------------
 
-CapeString cape_dragon4_get (CapeDragon4 self, double value, CapeErr err)
+int cape_dragon4_run (CapeDragon4 self, char* bufdat, number_t buflen, double value, CapeErr err)
 {
-  CapeString ret = NULL;
+  int res;
   
-  if (self->scratch == NULL)
-  {
-    self->scratch = get_dragon4_bigint_scratch (err);
-    if (self->scratch == NULL)
-    {
-      return NULL;
-    }
-  }
+  // assign the buffer
+  self->bufdat = bufdat;
+  self->buflen = buflen;
+  
+  // set the initial position
+  self->bufpos = 0;
   
   if (sizeof(double) == 8)
   {
-    if (cape_dragon4__IEEE_bin64 (self, &value) < 0)
-    {
-      return NULL;
-    }
-    
-    ret = cape_str_cp (self->scratch->repr);
+    res = cape_dragon4__IEEE_bin64 (self, value, err);
   }
 
-  return ret;
+  return res;
 }
 
 //-----------------------------------------------------------------------------------------------------------
 
-CapeString cape_dragon4_positional (double value, CapeDragon4DigitMode digit_mode, CapeDragon4CutoffMode cutoff_mode, int precision, int sign, CapeDragon4TrimMode trim, int pad_left, int pad_right, CapeErr err)
+number_t cape_dragon4_len (CapeDragon4 self)
 {
-  CapeString ret = NULL;
-  CapeDragon4 self = cape_dragon4_new ();
-  
+  // AK: workaround at the moment
+  return cape_str_size (self->bufdat);
+}
+
+//-----------------------------------------------------------------------------------------------------------
+
+CapeString cape_dragon4_get (CapeDragon4 self)
+{
+  return cape_str_sub (self->bufdat, cape_dragon4_len (self));
+}
+
+//-----------------------------------------------------------------------------------------------------------
+
+void cape_dragon4_positional (CapeDragon4 self, CapeDragon4DigitMode digit_mode, CapeDragon4CutoffMode cutoff_mode, int precision, int sign, CapeDragon4TrimMode trim, int pad_left, int pad_right)
+{
   self->scientific = FALSE;
   self->digit_mode = digit_mode;
   self->cutoff_mode = cutoff_mode;
@@ -2543,20 +2577,12 @@ CapeString cape_dragon4_positional (double value, CapeDragon4DigitMode digit_mod
   self->digits_left = pad_left;
   self->digits_right = pad_right;
   self->exp_digits = -1;
-
-  ret = cape_dragon4_get (self, value, err);
-  
-  cape_dragon4_del (&self);
-  return ret;
 }
 
 //-----------------------------------------------------------------------------------------------------------
 
-CapeString cape_dragon4_scientific (double value, CapeDragon4DigitMode digit_mode, int precision, int sign, CapeDragon4TrimMode trim, int pad_left, int exp_digits, CapeErr err)
+void cape_dragon4_scientific (CapeDragon4 self, CapeDragon4DigitMode digit_mode, int precision, int sign, CapeDragon4TrimMode trim, int pad_left, int exp_digits)
 {
-  CapeString ret = NULL;
-  CapeDragon4 self = cape_dragon4_new ();
-  
   self->scientific = TRUE;
   self->digit_mode = digit_mode;
   self->cutoff_mode = CAPE_DRAGON4__CMODE_TOTAL;
@@ -2566,11 +2592,8 @@ CapeString cape_dragon4_scientific (double value, CapeDragon4DigitMode digit_mod
   self->digits_left = pad_left;
   self->digits_right = -1;
   self->exp_digits = exp_digits;
-  
-  ret = cape_dragon4_get (self, value, err);
-  
-  cape_dragon4_del (&self);
-  return ret;
 }
 
 //-----------------------------------------------------------------------------------------------------------
+
+#undef DEBUG_ASSERT

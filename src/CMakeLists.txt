@@ -75,6 +75,7 @@ SET(CAPE_FMT_SOURCES
   fmt/cape_json.c
   fmt/cape_tokenizer.c
   fmt/cape_args.c
+  fmt/cape_dragon4.c
 )
 
 SET(CAPE_FMT_HEADERS
@@ -82,13 +83,24 @@ SET(CAPE_FMT_HEADERS
   fmt/cape_json.h
   fmt/cape_tokenizer.h
   fmt/cape_args.h
+  fmt/cape_dragon4.h
+)
+
+#----------------------------------------------------------------------------------
+
+SET(CAPE_EXTERN_SOURCES
+
+)
+
+SET(CAPE_EXTERN_HEADERS
+
 )
 
 #----------------------------------------------------------------------------------
 
 INCLUDE_DIRECTORIES(".")
 
-add_library             (cape SHARED ${CAPE_STC_SOURCES} ${CAPE_STC_HEADERS} ${CAPE_SYS_SOURCES} ${CAPE_SYS_HEADERS} ${CAPE_AIO_SOURCES} ${CAPE_AIO_HEADERS} ${CAPE_FMT_SOURCES} ${CAPE_FMT_HEADERS})
+add_library             (cape SHARED ${CAPE_STC_SOURCES} ${CAPE_STC_HEADERS} ${CAPE_SYS_SOURCES} ${CAPE_SYS_HEADERS} ${CAPE_AIO_SOURCES} ${CAPE_AIO_HEADERS} ${CAPE_FMT_SOURCES} ${CAPE_FMT_HEADERS} ${CAPE_EXTERN_SOURCES} ${CAPE_EXTERN_HEADERS})
 target_link_libraries   (cape ${DLL_LIBRARIES} ${PTHREAD_LIBRARIES})
 set_target_properties   (cape PROPERTIES VERSION 1.0.1 SOVERSION 1.0.1)
 

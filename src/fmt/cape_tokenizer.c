@@ -75,3 +75,27 @@ int cape_tokenizer_split (const CapeString source, char token, CapeString* p_lef
 }
 
 //-----------------------------------------------------------------------------------------------------------
+
+CapeList cape_tokenizer_str_all (const CapeString haystack, const CapeString needle)
+{
+  CapeList ret = cape_list_new (NULL);
+
+  number_t pos = 0;
+  number_t plh = 0;
+  number_t len = cape_str_size (needle);
+  
+  while (cape_str_find_first (haystack + plh, needle, &pos))
+  {
+    // calculate the absolute position
+    plh += pos;
+    
+    cape_list_push_back (ret, (void*)plh);
+    
+    // calculate position to continue
+    plh += len;
+  }
+  
+  return ret;
+}
+
+//-----------------------------------------------------------------------------------------------------------

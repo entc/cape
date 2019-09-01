@@ -915,7 +915,7 @@ CapeUdc cape_udc_get_first (CapeUdc self)
   {
     case CAPE_UDC_LIST:
     {
-      CapeListNode n = cape_list_node_begin (self->data);
+      CapeListNode n = cape_list_node_front (self->data);
       
       if (n)
       {

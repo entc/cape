@@ -256,9 +256,16 @@ CapeListNode cape_list_noed_next (CapeListNode node)
 
 //-----------------------------------------------------------------------------
 
-CapeListNode cape_list_node_begin (CapeList self)
+CapeListNode cape_list_node_front (CapeList self)
 {
   return self->fpos;
+}
+
+//-----------------------------------------------------------------------------
+
+CapeListNode cape_list_node_back (CapeList self)
+{
+  return self->lpos;
 }
 
 //-----------------------------------------------------------------------------

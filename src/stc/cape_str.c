@@ -241,7 +241,7 @@ int cape_str_begins (const CapeString s, const CapeString begins_with)
 
 //-----------------------------------------------------------------------------
 
-int cape_str_contains (const CapeString s1, const CapeString s2)
+int cape_str_begins_i (const CapeString s1, const CapeString s2)
 {
   int ret;
   
@@ -262,6 +262,25 @@ int cape_str_contains (const CapeString s1, const CapeString s2)
   }
   
   return ret;
+}
+
+//-----------------------------------------------------------------------------
+
+int cape_str_find_first (const CapeString haystack, const CapeString needle, number_t* p_pos)
+{
+  if (p_pos)
+  {
+    // use the string.h function to find the first occourence
+    char* res = strstr (haystack, needle);
+    if (res)
+    {
+      // calculate the position
+      *p_pos = res - haystack;
+      return TRUE;
+    }
+  }
+
+  return FALSE;
 }
 
 //-----------------------------------------------------------------------------

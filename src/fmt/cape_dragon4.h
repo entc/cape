@@ -37,9 +37,6 @@ typedef enum CapeDragon4TrimMode
 
 //-----------------------------------------------------------------------------
 
-__CAPE_LIBEX   CapeString        cape_dragon4_positional    (double value, CapeDragon4DigitMode, CapeDragon4CutoffMode cutoff_mode, int precision, int sign, CapeDragon4TrimMode trim, int pad_left, int pad_right, CapeErr err);
-
-__CAPE_LIBEX   CapeString        cape_dragon4_scientific    (double value, CapeDragon4DigitMode, int precision, int sign, CapeDragon4TrimMode trim, int pad_left, int exp_digits, CapeErr err);
 
 //-----------------------------------------------------------------------------
 
@@ -51,7 +48,15 @@ __CAPE_LIBEX   CapeDragon4       cape_dragon4_new           (void);
 
 __CAPE_LIBEX   void              cape_dragon4_del           (CapeDragon4*);
 
-__CAPE_LIBEX   CapeString        cape_dragon4_get           (CapeDragon4, double value, CapeErr err);
+__CAPE_LIBEX   int               cape_dragon4_run           (CapeDragon4, char* bufdat, number_t buflen, double value, CapeErr err);
+
+__CAPE_LIBEX   number_t          cape_dragon4_len           (CapeDragon4);
+
+__CAPE_LIBEX   CapeString        cape_dragon4_get           (CapeDragon4);
+
+__CAPE_LIBEX   void              cape_dragon4_positional    (CapeDragon4, CapeDragon4DigitMode, CapeDragon4CutoffMode cutoff_mode, int precision, int sign, CapeDragon4TrimMode trim, int pad_left, int pad_right);
+
+__CAPE_LIBEX   void              cape_dragon4_scientific    (CapeDragon4, CapeDragon4DigitMode, int precision, int sign, CapeDragon4TrimMode trim, int pad_left, int exp_digits);
 
 //-----------------------------------------------------------------------------
 

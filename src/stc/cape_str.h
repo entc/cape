@@ -39,9 +39,11 @@ __CAPE_LIBEX   int                cape_str_compare       (const CapeString, cons
 
 __CAPE_LIBEX   int                cape_str_compare_c     (const CapeString, const CapeString);          // no case sensitive
 
-__CAPE_LIBEX   int                cape_str_begins        (const CapeString, const CapeString);
+__CAPE_LIBEX   int                cape_str_begins        (const CapeString, const CapeString);          // case sensitive
 
-__CAPE_LIBEX   int                cape_str_contains      (const CapeString, const CapeString);
+__CAPE_LIBEX   int                cape_str_begins_i      (const CapeString, const CapeString);          // case insensitive
+
+__CAPE_LIBEX   int                cape_str_find_first    (const CapeString, const CapeString, number_t* pos);
 
 //-----------------------------------------------------------------------------
 
