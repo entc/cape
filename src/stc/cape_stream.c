@@ -278,7 +278,7 @@ void cape_stream_append_f (CapeStream self, double val)
   
   CapeDragon4 dragon4 = cape_dragon4_new ();
   
-  cape_dragon4_positional (dragon4, CAPE_DRAGON4__DMODE_UNIQUE, CAPE_DRAGON4__CMODE_TOTAL, -1, FALSE, CAPE_DRAGON4__TMODE_NONE, 0, 0);
+  cape_dragon4_positional (dragon4, CAPE_DRAGON4__DMODE_UNIQUE, CAPE_DRAGON4__CMODE_TOTAL, -1, FALSE, CAPE_DRAGON4__TMODE_ONE_ZERO, 0, 0);
   
   cape_stream_reserve (self, 1024);  // for very long intergers
 
