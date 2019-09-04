@@ -4,6 +4,7 @@ SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../cmake)
 
 find_package(DLL QUIET)
 find_package(PThread)
+find_package(Math)
 
 #----------------------------------------------------------------------------------
 
@@ -101,7 +102,7 @@ SET(CAPE_EXTERN_HEADERS
 INCLUDE_DIRECTORIES(".")
 
 add_library             (cape SHARED ${CAPE_STC_SOURCES} ${CAPE_STC_HEADERS} ${CAPE_SYS_SOURCES} ${CAPE_SYS_HEADERS} ${CAPE_AIO_SOURCES} ${CAPE_AIO_HEADERS} ${CAPE_FMT_SOURCES} ${CAPE_FMT_HEADERS} ${CAPE_EXTERN_SOURCES} ${CAPE_EXTERN_HEADERS})
-target_link_libraries   (cape ${DLL_LIBRARIES} ${PTHREAD_LIBRARIES})
+target_link_libraries   (cape ${DLL_LIBRARIES} ${PTHREAD_LIBRARIES} ${MATH_LIBRARIES})
 set_target_properties   (cape PROPERTIES VERSION 1.0.1 SOVERSION 1.0.1)
 
 install (TARGETS cape DESTINATION lib)

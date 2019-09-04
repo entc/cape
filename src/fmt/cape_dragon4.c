@@ -29,6 +29,13 @@
 #include <stdio.h>
 #include <string.h>
 
+#ifdef __LINUX_OS
+
+#include <sys/types.h>
+#include <stdint.h> 
+
+#endif
+
 #include <assert.h>
 
 #if 0
