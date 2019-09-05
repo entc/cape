@@ -508,6 +508,18 @@ CapeUdc cape_udc_add_name (CapeUdc self, CapeUdc* p_item, const CapeString name)
 
 CapeUdc cape_udc_get (CapeUdc self, const CapeString name)
 {
+  // better to check here
+  if (self == NULL)
+  {
+    return NULL;
+  }
+
+  // if we don't have a name we cannot find something
+  if (name == NULL)
+  {
+    return NULL;
+  }
+  
   switch (self->type)
   {
     case CAPE_UDC_NODE:
