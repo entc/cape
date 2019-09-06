@@ -6,9 +6,15 @@
 
 //=============================================================================
 
-__CAPE_LIBEX   void*         cape_sock_reader_new     (const char* host, long port, CapeErr err);
+__CAPE_LIBEX   void*         cape_sock__tcp__clt_new      (const char* host, long port, CapeErr err);
+ 
+__CAPE_LIBEX   void*         cape_sock__tcp__srv_new      (const char* host, long port, CapeErr err);
 
-__CAPE_LIBEX   void*         cape_sock_acceptor_new   (const char* host, long port, CapeErr err);
+//-----------------------------------------------------------------------------
+
+__CAPE_LIBEX   void*         cape_sock__udp__clt_new      (const char* host, long port, CapeErr err);
+
+__CAPE_LIBEX   void*         cape_sock__udp__srv_new      (const char* host, long port, CapeErr err);
 
 //-----------------------------------------------------------------------------
 

@@ -27,6 +27,8 @@ __CAPE_LIBEX   number_t           cape_str_len           (const CapeString);    
 
 __CAPE_LIBEX   number_t           cape_str_size          (const CapeString);                            // string length in bytes
 
+__CAPE_LIBEX   CapeString         cape_str_f             (double);                                      // double to string
+
 __CAPE_LIBEX   int                cape_str_empty         (const CapeString);                            // string length in bytes
 
 __CAPE_LIBEX   int                cape_str_not_empty     (const CapeString);                            // string length in bytes

@@ -8,6 +8,7 @@
 // cape includes
 #include "sys/cape_err.h"
 #include "sys/cape_log.h"
+#include "fmt/cape_dragon4.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -135,6 +136,37 @@ number_t cape_str_len (const CapeString s)
 number_t cape_str_size (const CapeString s)
 {
   return strlen (s);
+}
+
+//-----------------------------------------------------------------------------
+
+CapeString cape_str_f (double value)
+{
+  CapeString ret = CAPE_ALLOC (1025);
+  
+  CapeErr err = cape_err_new ();
+  
+  CapeDragon4 dragon4 = cape_dragon4_new ();
+  
+  cape_dragon4_positional (dragon4, CAPE_DRAGON4__DMODE_UNIQUE, CAPE_DRAGON4__CMODE_TOTAL, -1, FALSE, CAPE_DRAGON4__TMODE_ONE_ZERO, 0, 0);
+  
+  
+  int res = cape_dragon4_run (dragon4, ret, 1024, value, err);
+  if (res)
+  {
+    
+  }
+  else
+  {
+  }
+  
+  ret[cape_dragon4_len (dragon4)] = '\0';
+  
+  cape_dragon4_del (&dragon4);
+  
+  cape_err_del (&err);
+
+  return ret;
 }
 
 //-----------------------------------------------------------------------------

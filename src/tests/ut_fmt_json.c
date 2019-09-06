@@ -24,6 +24,12 @@ int main (int argc, char *argv[])
   
   printf ("OUT2: %s\n", s2);
 
+
+  cape_str_del (&s1);
+  cape_str_del (&s2);
+  
+  cape_udc_del (&n);
+  cape_udc_del (&m);
   
   return 0;
 }

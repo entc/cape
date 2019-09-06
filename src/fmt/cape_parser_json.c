@@ -6,6 +6,7 @@
 
 // c includes
 #include <stdlib.h>
+#include <math.h>
 
 //-----------------------------------------------------------------------------
 
@@ -471,7 +472,6 @@ void cape_parser_json_item_next (CapeParserJson self, int type, const char* key,
               }
               
               cape_stream_clr (self->valElement->stream);
-              
               break;
             }
             case 'f':
@@ -482,7 +482,6 @@ void cape_parser_json_item_next (CapeParserJson self, int type, const char* key,
               }
               
               cape_stream_clr (self->valElement->stream);
-              
               break;
             }
             case 'n':
@@ -492,14 +491,33 @@ void cape_parser_json_item_next (CapeParserJson self, int type, const char* key,
                 self->onItem (self->ptr, self->keyElement->obj, CAPE_JPARSER_OBJECT_NULL, NULL, key, index);
               }
               
-              cape_stream_clr (self->valElement->stream);
+              if (strcmp("nan", val) == 0 && self->onItem)
+              {
+                // create a double as NotANumber
+                double h = NAN;
+                
+                self->onItem (self->ptr, self->keyElement->obj, CAPE_JPARSER_OBJECT_FLOAT, &h, key, index);
+              }
               
+              cape_stream_clr (self->valElement->stream);
+              break;
+            }
+            case 'i':
+            {
+              if (strcmp("inf", val) == 0 && self->onItem)
+              {
+                // create a double as infinity value
+                double h = INFINITY;
+                
+                self->onItem (self->ptr, self->keyElement->obj, CAPE_JPARSER_OBJECT_FLOAT, &h, key, index);
+              }
+              
+              cape_stream_clr (self->valElement->stream);
               break;
             }
           }
           
           cape_stream_clr (self->valElement->stream);
-          
           break;
         }
       }
