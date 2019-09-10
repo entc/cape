@@ -263,6 +263,30 @@ namespace cape
     
     //-----------------------------------------------------------------------------
     
+    template <typename T> T as (T const& default_value)
+    {
+      if (m_obj == NULL)
+      {
+        throw cape::Exception (CAPE_ERR_NO_OBJECT, "UDC object has no content");
+      }
+      
+      return UdcTransType<T>::as (m_obj, default_value);
+    }
+    
+    //-----------------------------------------------------------------------------
+    
+    const char* as (const char* default_value)
+    {
+      if (m_obj == NULL)
+      {
+        throw cape::Exception (CAPE_ERR_NO_OBJECT, "UDC object has no content");
+      }
+      
+      return cape_udc_s (m_obj, default_value);
+    }
+    
+    //-----------------------------------------------------------------------------
+    
     operator const char*()
     {
       return cape_udc_s (m_obj, NULL);
@@ -451,28 +475,28 @@ namespace cape
   {
     static void add_cp (CapeUdc obj, const char* name, const long& value) { cape_udc_add_n (obj, name, value); }
     static void add_mv (CapeUdc obj, const char* name, long& value) { cape_udc_add_n (obj, name, value); }
-    static long as (CapeUdc obj) { return cape_udc_n (obj, 0); }    
+    static long as (CapeUdc obj, long dv = 0) { return cape_udc_n (obj, dv); }    
   };
   
   template <> struct UdcTransType<double>
   {
     static void add_cp (CapeUdc obj, const char* name, const double& value) { cape_udc_add_f (obj, name, value); }
     static void add_mv (CapeUdc obj, const char* name, double& value) { cape_udc_add_f (obj, name, value); }
-    static double as (CapeUdc obj) { return cape_udc_f (obj, 0.0); }
+    static double as (CapeUdc obj, double dv = .0) { return cape_udc_f (obj, dv); }
   };
   
   template <> struct UdcTransType<bool>
   {
     static void add_cp (CapeUdc obj, const char* name, const bool& value) { cape_udc_add_b (obj, name, value ? TRUE : FALSE); }
     static void add_mv (CapeUdc obj, const char* name, bool& value) { cape_udc_add_b (obj, name, value ? TRUE : FALSE); }
-    static bool as (CapeUdc obj) { return cape_udc_b (obj, FALSE) == TRUE ? true : false; }
+    static bool as (CapeUdc obj, bool dv = false) { return cape_udc_b (obj, dv ? TRUE : FALSE) == TRUE ? true : false; }
   };
   
   template <> struct UdcTransType<std::string>
   {
     static void add_cp (CapeUdc obj, const char* name, const std::string& value) { cape_udc_add_s_cp (obj, name, value.c_str()); }
     static void add_mv (CapeUdc obj, const char* name, std::string& value) { cape_udc_add_s_cp (obj, name, value.c_str()); }
-    static std::string as (CapeUdc obj) { return std::string (cape_udc_s (obj, "")); }
+    static std::string as (CapeUdc obj, const char* dv = "") { return std::string (cape_udc_s (obj, dv)); }
   };
   
   template <> struct UdcTransType<Udc>
