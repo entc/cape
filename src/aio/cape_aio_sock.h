@@ -97,6 +97,24 @@ __CAPE_LIBEX   void                 cape_aio_accept_add            (CapeAioAccep
 
 //=============================================================================
 
+struct CapeAioSocketUdp_s; typedef struct CapeAioSocketUdp_s* CapeAioSocketUdp;
+
+__CAPE_LIBEX   CapeAioSocketUdp     cape_aio_socket__udp__new      (void* handle);                       ///< constructor to allocate memory for the object
+
+__CAPE_LIBEX   void                 cape_aio_socket__upd__del      (CapeAioSocketUdp*);                  ///< destructor to free memory
+
+__CAPE_LIBEX   void                 cape_aio_socket__udp__add      (CapeAioSocketUdp*, CapeAioContext, int mode);       ///< turn on events on the socket
+
+__CAPE_LIBEX   void                 cape_aio_socket__udp__set      (CapeAioSocketUdp, CapeAioContext, int mode);        ///< turn on events on the socket
+
+__CAPE_LIBEX   void                 cape_aio_socket__udp__rm       (CapeAioSocketUdp, CapeAioContext);                  ///< remove all events
+
+__CAPE_LIBEX   void                 cape_aio_socket__udp__cb       (CapeAioSocketUdp, void* ptr);                       ///< set callbacks
+
+__CAPE_LIBEX   void                 cape_aio_socket__udp__send     (CapeAioSocketUdp, CapeAioContext, const char* bufdat, unsigned long buflen, void* userdata);                       
+
+//=============================================================================
+
 /*
  \ brief This class implements a cached sendbuffer for the AIO socket subsystem. If you are not sure how to use the CapeAioSocket class
            please consider CapeAioSocketCache instead. 

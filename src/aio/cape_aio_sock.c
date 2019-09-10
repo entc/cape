@@ -634,6 +634,39 @@ void cape_aio_socket_change_r (CapeAioSocket self, CapeAioContext aio)
   }
 }
 
+//=============================================================================
+
+struct CapeAioSocketUdp_s
+{
+  
+  
+};
+
+//-----------------------------------------------------------------------------
+
+CapeAioSocketUdp cape_aio_socket__udp__new (void* handle)
+{
+  
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket__upd__del (CapeAioSocketUdp* p_self)
+{
+  
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket__udp__add (CapeAioSocketUdp* p_self, CapeAioContext aioctx, int mode)
+{
+  
+}
+
+//-----------------------------------------------------------------------------
+
+  
+
 //-----------------------------------------------------------------------------
 
 struct CapeAioAccept_s

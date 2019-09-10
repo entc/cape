@@ -35,6 +35,17 @@ CapeString cape_str_cp (const CapeString source)
 
 //-----------------------------------------------------------------------------
 
+CapeString cape_str_mv (CapeString* p_source)
+{
+  CapeString ret = *p_source;
+  
+  *p_source = NULL;
+  
+  return ret;
+}
+
+//-----------------------------------------------------------------------------
+
 CapeString cape_str_sub (const CapeString source, number_t len)
 {
   char* ret;

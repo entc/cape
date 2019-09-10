@@ -13,6 +13,8 @@
 
 __CAPE_LIBEX   CapeString         cape_str_cp            (const CapeString);                            // allocate memory and initialize the object
 
+__CAPE_LIBEX   CapeString         cape_str_mv            (CapeString*);                                 // move string
+
 __CAPE_LIBEX   void               cape_str_del           (CapeString*);                                 // release memory
 
 __CAPE_LIBEX   CapeString         cape_str_sub           (const CapeString, number_t len);              // copy a part of the substring
