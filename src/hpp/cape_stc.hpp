@@ -68,12 +68,12 @@ namespace cape
       cape_log_fmt (CAPE_LL_ERROR, "CAPE", "EXCEPTION", "THROW: %s", err_text);
     }
     
-    virtual ~Exception ()
+    ~Exception () throw()
     {
       cape_str_del (&m_err_text);
     }
     
-    const char * what () const throw ()
+    const char * what () const throw()
     {
       return m_err_text;
     }
@@ -540,17 +540,17 @@ namespace cape
   
   struct StreamHolder
   {
-    StreamHolder ()  noexcept : obj (cape_stream_new ())
+    StreamHolder () : obj (cape_stream_new ())
     {
     }
     
     // copy constructor
-    StreamHolder (const StreamHolder& e) noexcept : obj (const_cast<StreamHolder&>(e).release())
+    StreamHolder (const StreamHolder& e) : obj (const_cast<StreamHolder&>(e).release())
     {
     }
     
     // move constructor
-    StreamHolder (StreamHolder&& e) noexcept : obj (e.release())
+    StreamHolder (StreamHolder&& e) : obj (e.release())
     {
     }
     
