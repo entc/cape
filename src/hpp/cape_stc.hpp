@@ -94,10 +94,9 @@ namespace cape
     
     //------------------------ CONSTRUCTOR -----------------------
 
-    Udc () : m_owned (false), m_obj (NULL)
+    Udc () : m_owned (false), m_obj (NULL)  // empty
     {
-      printf ("CONSTRUCTOR EMPTY\n");
-    }   // empty
+    }   
         
     //-----------------------------------------------------------------------------
         
@@ -526,61 +525,134 @@ namespace cape
   };
   
   //-----------------------------------------------------------------------------------------------------
-
-  struct StringHolder
-  {
-    StringHolder (CapeString obj) : m_obj (obj) {}
-    
-    ~StringHolder () { cape_str_del (&m_obj); }
-    
-    CapeString m_obj;
-  };
-
-  //-----------------------------------------------------------------------------------------------------
   
-  struct StreamHolder
+  class Stream
   {
-    StreamHolder () : obj (cape_stream_new ())
+    
+  public:
+    
+    //-----------------------------------------------------------------------------
+    
+    Stream () : m_obj (cape_stream_new ())
     {
     }
+    
+    //-----------------------------------------------------------------------------
     
     // copy constructor
-    StreamHolder (const StreamHolder& e) : obj (const_cast<StreamHolder&>(e).release())
+    Stream (const Stream& rhs) : m_obj (cape_stream_new ())
     {
+      cape_stream_append_stream (m_obj, rhs.m_obj);
     }
+    
+    //-----------------------------------------------------------------------------
     
     // move constructor
-    StreamHolder (StreamHolder&& e) : obj (e.release())
+    Stream (Stream&& rhs) : m_obj (rhs.release())
     {
     }
     
-    StreamHolder& operator=(const StreamHolder& e) = default;
+    //-----------------------------------------------------------------------------
     
-    ~StreamHolder ()
+    ~Stream ()
     {
-      cape_stream_del (&obj);
+      cape_stream_del (&m_obj);
     }
+    
+    //-----------------------------------------------------------------------------
     
     CapeStream release ()
     {
-      CapeStream ret = obj;
+      if (m_obj == NULL)
+      {
+        throw cape::Exception (CAPE_ERR_NO_OBJECT, "Stream object has no content");
+      }
       
-      obj = NULL;
+      CapeStream ret = m_obj;
+      
+      m_obj = NULL;
       
       return ret;
     }
     
-    const char* data ()
+    //-----------------------------------------------------------------------------
+    
+    Stream& operator =(const Stream& rhs)
     {
-      return cape_stream_data (obj);
+      if(this == &rhs)
+      {
+        return *this;
+      }
+      
+      // always create a copy
+      cape_stream_append_stream (m_obj, rhs.m_obj);
+      
+      return *this;
     }
+    
+    //-----------------------------------------------------------------------------
+    
+    Stream& operator =(Stream&& rhs)
+    {
+      if(this == &rhs)
+      {
+        return *this;
+      }
+
+      // move
+      m_obj = rhs.release();
+      
+      return *this;
+    }
+    
+    //-----------------------------------------------------------------------------
+    
+    const char* data () const
+    {
+      if (m_obj == NULL)
+      {
+        throw cape::Exception (CAPE_ERR_NO_OBJECT, "Stream object has no content");
+      }
+      
+      return cape_stream_data (m_obj);
+    }
+    
+    //-----------------------------------------------------------------------------
     
     number_t size ()
     {
-      return cape_stream_size (obj);
+      if (m_obj == NULL)
+      {
+        throw cape::Exception (CAPE_ERR_NO_OBJECT, "Stream object has no content");
+      }
+      
+      return cape_stream_size (m_obj);
+    }
+ 
+    //-----------------------------------------------------------------------------
+ 
+    friend std::ostream& operator<<(std::ostream& os, const Stream& stream)
+    {
+      return os << stream.data();
+    }
+ 
+    //-----------------------------------------------------------------------------
+    
+    bool empty ()
+    {
+      return m_obj == NULL;      
     }
     
-    CapeStream obj;
+    //-----------------------------------------------------------------------------
+    
+    bool valid ()
+    {
+      return m_obj;
+    }
+  
+  private:
+
+    CapeStream m_obj;
     
   };
   

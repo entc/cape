@@ -638,34 +638,107 @@ void cape_aio_socket_change_r (CapeAioSocket self, CapeAioContext aio)
 
 struct CapeAioSocketUdp_s
 {
+  // the handle to the device descriptor
+  void* handle;
   
-  
+  // the handle to the AIO system
+  CapeAioHandle aioh;
 };
 
 //-----------------------------------------------------------------------------
 
 CapeAioSocketUdp cape_aio_socket__udp__new (void* handle)
 {
+  CapeAioSocketUdp self = CAPE_NEW (struct CapeAioSocketUdp_s);
   
+  self->handle = handle;
+  self->aioh = NULL;
+  
+  return self;
 }
 
 //-----------------------------------------------------------------------------
 
 void cape_aio_socket__upd__del (CapeAioSocketUdp* p_self)
 {
+  if (*p_self)
+  {
+    CapeAioSocketUdp self = *p_self;
+    
+    // close the handle
+    close ((long)self->handle);
+    
+    // delete the AIO handle
+    cape_aio_handle_del (&(self->aioh));
+    
+    CAPE_DEL (p_self, struct CapeAioSocketUdp_s);
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+static int __STDCALL cape_aio_socket__udp__on_event (void* ptr, void* handle, int mode, unsigned long events, void* overlapped, unsigned long param1)
+{
+  CapeAioSocketUdp self = ptr;
   
+  
+}
+
+//-----------------------------------------------------------------------------
+
+static void __STDCALL cape_aio_socket__udp__on_unref (void* ptr, CapeAioHandle aioh, int force_close)
+{
+  CapeAioSocketUdp self = ptr;
+  
+  cape_aio_socket__upd__del (&self);
 }
 
 //-----------------------------------------------------------------------------
 
 void cape_aio_socket__udp__add (CapeAioSocketUdp* p_self, CapeAioContext aioctx, int mode)
 {
+  CapeAioSocketUdp self = *p_self;
+  
+  self->aioh = cape_aio_handle_new (self->handle, mode, self, cape_aio_socket__udp__on_event, cape_aio_socket__udp__on_unref);
+  
+  cape_aio_context_add (aioctx, self->aioh, 0);
+  
+  *p_self = NULL;
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket__udp__set (CapeAioSocketUdp self, CapeAioContext aio, int mode)
+{
+  if (self->aioh)
+  {
+    cape_aio_context_mod (aio, self->aioh, mode, 0);
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket__udp__rm (CapeAioSocketUdp self, CapeAioContext aio)
+{
+  if (self->aioh)
+  {
+    cape_aio_context_mod (aio, self->aioh, CAPE_AIO_DONE, 0);
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket__udp__cb (CapeAioSocketUdp self, void* ptr)
+{
   
 }
 
 //-----------------------------------------------------------------------------
 
+void cape_aio_socket__udp__send (CapeAioSocketUdp self, CapeAioContext aio, const char* bufdat, unsigned long buflen, void* userdata)
+{
   
+}
 
 //-----------------------------------------------------------------------------
 
