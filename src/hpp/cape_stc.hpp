@@ -107,7 +107,6 @@ namespace cape
     
     Udc (CapeUdc obj) : m_owned (false), m_obj (obj)
     {
-      printf ("CONSTRUCTOR REF\n");
     }
     
     //-----------------------------------------------------------------------------
