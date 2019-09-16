@@ -87,7 +87,7 @@ void cape_str_del (CapeString* p_self)
 
 //-----------------------------------------------------------------------------
 
-number_t cape_str_character__len (unsigned char c)
+number_t cape_str_char__len (unsigned char c)
 {
   if (0x20 <= c && c <= 0x7E)
   {
@@ -136,7 +136,7 @@ number_t cape_str_len (const CapeString s)
   while (*s_pos)
   {
     len++;
-    s_pos += cape_str_character__len (*s_pos);
+    s_pos += cape_str_char__len (*s_pos);
   }
   
   return len;
@@ -309,7 +309,7 @@ int cape_str_begins_i (const CapeString s1, const CapeString s2)
 
 //-----------------------------------------------------------------------------
 
-int cape_str_find_first (const CapeString haystack, const CapeString needle, number_t* p_pos)
+int cape_str_find (const CapeString haystack, const CapeString needle, number_t* p_pos)
 {
   if (p_pos)
   {
@@ -323,6 +323,37 @@ int cape_str_find_first (const CapeString haystack, const CapeString needle, num
     }
   }
 
+  return FALSE;
+}
+
+//-----------------------------------------------------------------------------
+
+int cape_str_find_utf8 (const CapeString haystack, const CapeString needle, number_t* pos_len, number_t* pos_size)
+{
+  if (pos_len && pos_size)
+  {
+    const char* spos = haystack;
+    number_t cpos = 0;
+    number_t len = strlen (needle);
+    
+    // iterate through all characters
+    while (*spos)
+    {
+      number_t char_len = cape_str_char__len (*spos);
+      
+      if (strncmp (spos, needle, len) == 0)
+      {
+        *pos_len = cpos;
+        *pos_size = spos - haystack;
+        
+        return TRUE;
+      }
+      
+      spos += char_len;
+      cpos ++;
+    }
+  }
+  
   return FALSE;
 }
 
