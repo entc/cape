@@ -12,6 +12,8 @@
 #include <string>
 #include <exception>
 #include <iostream>
+#include <sstream>
+#include <type_traits>
 
 namespace cape
 {
@@ -524,6 +526,9 @@ namespace cape
     CapeUdcCursor* m_obj;
   };
   
+  // a traits prototype for UDC types
+  template <typename T> struct StreamTransType { };
+  
   //-----------------------------------------------------------------------------------------------------
   
   class Stream
@@ -633,9 +638,55 @@ namespace cape
  
     friend std::ostream& operator<<(std::ostream& os, const Stream& stream)
     {
-      return os << stream.data();
+      if (stream.m_obj == NULL)
+      {
+        throw cape::Exception (CAPE_ERR_NO_OBJECT, "Stream object has no content");
+      }
+      
+      const CapeString h = cape_stream_get (stream.m_obj);
+      
+      return os << h;
     }
  
+    //-----------------------------------------------------------------------------
+    
+    template <typename T> cape::Stream& operator<<(T val)
+    {
+      if (m_obj == NULL)
+      {
+        throw cape::Exception (CAPE_ERR_NO_OBJECT, "Stream object has no content");
+      }
+      
+      cape::StreamTransType<T>::append (m_obj, val);
+      
+      return *this;
+    }
+  
+    //-----------------------------------------------------------------------------
+  
+    cape::Stream& operator<<(const char* val)
+    {
+      if (m_obj == NULL)
+      {
+        throw cape::Exception (CAPE_ERR_NO_OBJECT, "Stream object has no content");
+      }
+      
+      cape_stream_append_str (m_obj, val);
+
+      return *this;
+    }
+    
+    //-----------------------------------------------------------------------------
+    
+    /*
+    cape::Stream& operator<<(std::ostream&(*f)(std::ostream&))
+    {
+      static_assert (false, "ostream is not supported for cape::Stream at the moment -- * if know the black magic please change it in cape_stc.hpp *");
+      
+      return *this;
+    }
+    */
+  
     //-----------------------------------------------------------------------------
     
     bool empty ()
@@ -650,12 +701,85 @@ namespace cape
       return m_obj;
     }
   
+  //-----------------------------------------------------------------------------
+
+    template <typename T> void append (T& val)
+    {
+      if (m_obj == NULL)
+      {
+        throw cape::Exception (CAPE_ERR_NO_OBJECT, "Stream object has no content");
+      }
+      
+      cape::StreamTransType<T>::append (m_obj, val);
+    }
+
   private:
 
     CapeStream m_obj;
     
   };
   
+  //-----------------------------------------------------------------------------------------------------  
+  
+  template <> struct StreamTransType<int>
+  {
+    static void append (CapeStream obj, int value)
+    { 
+      cape_stream_append_n (obj, value);
+    }
+  };
+
+  //-----------------------------------------------------------------------------------------------------  
+  
+  template <> struct StreamTransType<number_t>
+  {
+    static void append (CapeStream obj, number_t value)
+    { 
+      cape_stream_append_n (obj, value);
+    }
+  };
+
+  //-----------------------------------------------------------------------------------------------------  
+  
+  template <> struct StreamTransType<double>
+  {
+    static void append (CapeStream obj, double value)
+    { 
+      cape_stream_append_f (obj, value);
+    }
+  };
+
+  //-----------------------------------------------------------------------------------------------------  
+  
+  template <> struct StreamTransType<char>
+  {
+    static void append (CapeStream obj, char value)
+    { 
+      cape_stream_append_c (obj, value);
+    }
+  };
+
+  //-----------------------------------------------------------------------------------------------------  
+  
+  template <> struct StreamTransType<std::string>
+  {
+    static void append (CapeStream obj, std::string& value)
+    { 
+      cape_stream_append_buf (obj, value.c_str(), value.size());
+    }
+  };
+
+  //-----------------------------------------------------------------------------------------------------  
+
+  template <> struct StreamTransType<std::stringstream>
+  {
+    static void append (CapeStream obj, std::stringstream& value)
+    { 
+      // WARNING: old compilers use a static buffer to convert to std::string
+      cape_stream_append_str (obj, value.str().c_str());
+    }
+  };
+    
   //-----------------------------------------------------------------------------------------------------  
 }
 

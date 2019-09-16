@@ -110,5 +110,11 @@ int main (int argc, char *argv[])
   std::cout << h1 << std::endl;
   
   
+  cape::Stream stream1;
+  
+  stream1 << "Hello" << std::string("World") << '\n' << d1 << '\n';
+  
+  
+  std::cout << "S:'" << stream1 << "'" << std::endl;
 }
 
