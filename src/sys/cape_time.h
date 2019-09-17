@@ -28,11 +28,27 @@ typedef struct
 
 //-----------------------------------------------------------------------------
 
-__CAPE_LIBEX void   cape_datetime_utc        (CapeDatetime*);
+__CAPE_LIBEX   void            cape_datetime_utc          (CapeDatetime*);
 
-__CAPE_LIBEX void   cape_datetime_local      (CapeDatetime*);
+__CAPE_LIBEX   void            cape_datetime_local        (CapeDatetime*);
 
-__CAPE_LIBEX void   cape_datetime_to_local   (CapeDatetime*);
+__CAPE_LIBEX   void            cape_datetime_to_local     (CapeDatetime*);
+
+//-----------------------------------------------------------------------------
+
+struct CapeStopTimer_s; typedef struct CapeStopTimer_s* CapeStopTimer;
+
+__CAPE_LIBEX   CapeStopTimer   cape_stoptimer_new         ();
+
+__CAPE_LIBEX   void            cape_stoptimer_del         (CapeStopTimer*);
+
+__CAPE_LIBEX   void            cape_stoptimer_start       (CapeStopTimer);
+
+__CAPE_LIBEX   void            cape_stoptimer_stop        (CapeStopTimer);
+
+__CAPE_LIBEX   void            cape_stoptimer_set         (CapeStopTimer, double);
+
+__CAPE_LIBEX   double          cape_stoptimer_get         (CapeStopTimer);
 
 //-----------------------------------------------------------------------------
 

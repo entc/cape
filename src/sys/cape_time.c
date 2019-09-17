@@ -1,8 +1,12 @@
 #include "cape_time.h"
 
+#include "sys/cape_types.h"
+
 //-----------------------------------------------------------------------------
 
 #if defined __LINUX_OS || defined __BSD_OS
+
+#define _BSD_SOURCE
 
 #include <time.h>
 #include <sys/time.h>
@@ -178,5 +182,74 @@ void cape_datetime_to_local (CapeDatetime* dt)
 //-----------------------------------------------------------------------------
 
 #endif
+
+//-----------------------------------------------------------------------------
+
+struct CapeStopTimer_s
+{
+  double time_passed;
+  
+  struct timeval time_start;  
+};
+
+//-----------------------------------------------------------------------------
+
+CapeStopTimer cape_stoptimer_new ()
+{
+  CapeStopTimer self = CAPE_NEW (struct CapeStopTimer_s);
+
+  self->time_passed = .0;
+
+  memset (&(self->time_start), 0, sizeof(struct timeval));
+  
+  return self;  
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_stoptimer_del (CapeStopTimer* p_self)
+{
+  if (*p_self)
+  {
+    
+    
+    CAPE_DEL (p_self, struct CapeStopTimer_s);
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_stoptimer_start (CapeStopTimer self)
+{
+  gettimeofday (&(self->time_start), NULL);
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_stoptimer_stop (CapeStopTimer self)
+{
+  struct timeval time_res;
+  struct timeval time_end;
+  
+  gettimeofday (&time_end, NULL);
+  
+  timersub (&time_end, &(self->time_start), &time_res);
+  
+  self->time_passed += (double)time_res.tv_sec / 1000 + (double)time_res.tv_usec / 1000;
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_stoptimer_set (CapeStopTimer self, double val_in_ms)
+{
+  self->time_passed = val_in_ms;
+}
+
+//-----------------------------------------------------------------------------
+
+double cape_stoptimer_get (CapeStopTimer self)
+{
+  return self->time_passed;
+}
 
 //-----------------------------------------------------------------------------
