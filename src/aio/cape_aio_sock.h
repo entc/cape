@@ -111,7 +111,7 @@ __CAPE_LIBEX   void                 cape_aio_socket__udp__rm       (CapeAioSocke
 
 __CAPE_LIBEX   void                 cape_aio_socket__udp__cb       (CapeAioSocketUdp, void* ptr);                       ///< set callbacks
 
-__CAPE_LIBEX   void                 cape_aio_socket__udp__send     (CapeAioSocketUdp, CapeAioContext, const char* bufdat, unsigned long buflen, void* userdata);                       
+__CAPE_LIBEX   void                 cape_aio_socket__udp__send     (CapeAioSocketUdp, CapeAioContext, const char* bufdat, unsigned long buflen, void* userdata, const char* host, number_t port);                       
 
 //=============================================================================
 

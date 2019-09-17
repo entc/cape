@@ -643,7 +643,30 @@ struct CapeAioSocketUdp_s
   
   // the handle to the AIO system
   CapeAioHandle aioh;
+  
+  int mode;
+
+  // *** for sending ***
+  
+  // to store the buffer
+  const char* send_bufdat;    // reference
+  
+  number_t send_buflen;
+  number_t send_bufpos;
+  
+  // address to send to
+  struct sockaddr_in send_addr;
+
+  // *** for recieving ***
+  
+  // to store the buffer
+  char* recv_bufdat;
+  
+  // address to send to
+  struct sockaddr_in recv_addr;
 };
+
+#define CAPE_AIO_SOCKET__UDP__RECV_BUFLEN 1024
 
 //-----------------------------------------------------------------------------
 
@@ -653,6 +676,14 @@ CapeAioSocketUdp cape_aio_socket__udp__new (void* handle)
   
   self->handle = handle;
   self->aioh = NULL;
+  self->mode = CAPE_AIO_NONE;
+  
+  self->send_bufdat = NULL;
+  
+  self->send_buflen = 0;
+  self->send_bufpos = 0;
+  
+  self->recv_bufdat = NULL;
   
   return self;
 }
@@ -671,7 +702,106 @@ void cape_aio_socket__upd__del (CapeAioSocketUdp* p_self)
     // delete the AIO handle
     cape_aio_handle_del (&(self->aioh));
     
+    if (self->recv_bufdat)
+    {
+      CAPE_FREE (&(self->recv_bufdat));
+    }
+    
     CAPE_DEL (p_self, struct CapeAioSocketUdp_s);
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket__udp__recv_from (CapeAioSocketUdp self)
+{
+  if (self->recv_bufdat == NULL)
+  {
+    self->recv_bufdat = CAPE_ALLOC (CAPE_AIO_SOCKET__UDP__RECV_BUFLEN);
+  }
+
+  {
+    socklen_t socklen;
+    
+    ssize_t bytes_recv = recvfrom ((number_t)self->handle, self->recv_bufdat, CAPE_AIO_SOCKET__UDP__RECV_BUFLEN, MSG_DONTWAIT | MSG_NOSIGNAL, (struct sockaddr*)&(self->recv_addr), &socklen);
+    
+    if (bytes_recv == 1)
+    {
+      
+      
+    }
+    else if (bytes_recv == 0)
+    {
+      
+      
+    }
+    else
+    {
+      
+      
+    }
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+static void cape_aio_socket__udp__send_to__execute (CapeAioSocketUdp self)
+{
+  ssize_t bytes_send = sendto ((number_t)self->handle, self->send_bufdat + self->send_bufpos, self->send_buflen - self->send_bufpos, MSG_CONFIRM | MSG_DONTWAIT | MSG_NOSIGNAL, (const struct sockaddr*)&(self->send_addr), sizeof(self->send_addr));
+  
+  if (bytes_send == 1)
+  {
+    
+    
+  }
+  else if (bytes_send == 0)
+  {
+    
+    
+  }
+  else
+  {
+    self->send_bufpos += bytes_send;
+    
+    if (self->send_bufpos == self->send_buflen)
+    {
+      // everything was sent
+      self->send_bufdat = NULL;
+      self->send_buflen = 0;
+      
+      // no buffer was set -> deactivate recv
+      self->mode &= ~CAPE_AIO_WRITE; 
+
+      // execute the on send method
+      
+    }
+  }  
+}
+
+//-----------------------------------------------------------------------------
+
+static void cape_aio_socket__udp__send_to (CapeAioSocketUdp self)
+{
+  if (self->send_buflen)
+  {
+    cape_aio_socket__udp__send_to__execute (self);
+  }
+  else
+  {
+    // try to aquire a new send buffer    
+    // execute the on send method
+    
+    
+    
+    if (self->send_buflen)
+    {
+      cape_aio_socket__udp__send_to__execute (self);
+    }
+    else
+    {
+      // no buffer was set -> deactivate recv
+      self->mode &= ~CAPE_AIO_WRITE; 
+    }
   }
 }
 
@@ -680,8 +810,29 @@ void cape_aio_socket__upd__del (CapeAioSocketUdp* p_self)
 static int __STDCALL cape_aio_socket__udp__on_event (void* ptr, void* handle, int mode, unsigned long events, void* overlapped, unsigned long param1)
 {
   CapeAioSocketUdp self = ptr;
+
+  // sync the mode
+  self->mode = mode;
   
-  
+#ifdef __BSD_OS
+  if (events & EVFILT_READ)
+#else
+  if (events & EPOLLIN)
+#endif
+  {
+    cape_aio_socket__udp__recv_from (self);
+  }
+    
+#ifdef __BSD_OS
+  if (events & EVFILT_WRITE)
+#else
+  if (events & EPOLLOUT)
+#endif
+  {
+    cape_aio_socket__udp__send_to (self);
+  }
+
+  return self->mode;
 }
 
 //-----------------------------------------------------------------------------
@@ -735,9 +886,41 @@ void cape_aio_socket__udp__cb (CapeAioSocketUdp self, void* ptr)
 
 //-----------------------------------------------------------------------------
 
-void cape_aio_socket__udp__send (CapeAioSocketUdp self, CapeAioContext aio, const char* bufdat, unsigned long buflen, void* userdata)
+void cape_aio_socket__udp__send (CapeAioSocketUdp self, CapeAioContext aio, const char* bufdat, unsigned long buflen, void* userdata, const char* host, number_t port)
 {
+  // check if we are ready to send
+  if (self->send_buflen)
+  {
+    // increase the refcounter to ensure that the object will nont be deleted during sending cycle
+    cape_log_msg (CAPE_LL_ERROR, "CAPE", "aio_sock", "socket has already a buffer to send");    
+    return;
+  }
   
+  memset (&(self->send_addr), 0, sizeof(struct sockaddr_in));
+  
+  self->send_addr.sin_family = AF_INET;      // set the network type
+  self->send_addr.sin_port = htons (port);    // set the port
+  
+  // set the address
+  if (host == NULL)
+  {
+    return;
+  }
+  
+  const struct hostent* server = gethostbyname (host);
+  
+  if (server)
+  {
+    memcpy (&(self->send_addr.sin_addr.s_addr), server->h_addr, server->h_length);
+  }
+    
+  self->send_bufdat = bufdat;
+  self->send_buflen = buflen;
+  self->send_bufpos = 0;
+  
+  // activate recieving
+  self->mode |= CAPE_AIO_WRITE;
+  cape_aio_socket__udp__set (self, aio, self->mode);
 }
 
 //-----------------------------------------------------------------------------
