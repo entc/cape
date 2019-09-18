@@ -109,7 +109,10 @@ __CAPE_LIBEX   void                 cape_aio_socket__udp__set      (CapeAioSocke
 
 __CAPE_LIBEX   void                 cape_aio_socket__udp__rm       (CapeAioSocketUdp, CapeAioContext);                  ///< remove all events
 
-__CAPE_LIBEX   void                 cape_aio_socket__udp__cb       (CapeAioSocketUdp, void* ptr);                       ///< set callbacks
+typedef void       (__STDCALL *fct_cape_aio_socket__on_sent_ready)    (void* ptr, CapeAioSocketUdp, void* userdata);
+typedef void       (__STDCALL *fct_cape_aio_socket__on_recv_from)     (void* ptr, CapeAioSocketUdp, const char* bufdat, number_t buflen, const char* host);
+
+__CAPE_LIBEX   void                 cape_aio_socket__udp__cb       (CapeAioSocketUdp, void* ptr, fct_cape_aio_socket__on_sent_ready on_send, fct_cape_aio_socket__on_recv_from on_recv, fct_cape_aio_socket_onDone on_done);                       ///< set callbacks
 
 __CAPE_LIBEX   void                 cape_aio_socket__udp__send     (CapeAioSocketUdp, CapeAioContext, const char* bufdat, unsigned long buflen, void* userdata, const char* host, number_t port);                       
 

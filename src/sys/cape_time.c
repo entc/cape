@@ -235,7 +235,7 @@ void cape_stoptimer_stop (CapeStopTimer self)
   
   timersub (&time_end, &(self->time_start), &time_res);
   
-  self->time_passed += (double)time_res.tv_sec / 1000 + (double)time_res.tv_usec / 1000;
+  self->time_passed += ((double)time_res.tv_sec * 1000) + ((double)time_res.tv_usec / 1000);
 }
 
 //-----------------------------------------------------------------------------

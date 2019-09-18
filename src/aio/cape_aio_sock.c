@@ -653,6 +653,8 @@ struct CapeAioSocketUdp_s
   
   number_t send_buflen;
   number_t send_bufpos;
+
+  void* userdata;             // reference
   
   // address to send to
   struct sockaddr_in send_addr;
@@ -664,6 +666,14 @@ struct CapeAioSocketUdp_s
   
   // address to send to
   struct sockaddr_in recv_addr;
+  
+  // *** callback ***
+  
+  void* ptr;
+  
+  fct_cape_aio_socket__on_sent_ready on_ready_for_sending;
+  fct_cape_aio_socket__on_recv_from on_recv_from;
+  fct_cape_aio_socket_onDone on_done;
 };
 
 #define CAPE_AIO_SOCKET__UDP__RECV_BUFLEN 1024
@@ -679,11 +689,20 @@ CapeAioSocketUdp cape_aio_socket__udp__new (void* handle)
   self->mode = CAPE_AIO_NONE;
   
   self->send_bufdat = NULL;
+  self->userdata = NULL;
   
   self->send_buflen = 0;
   self->send_bufpos = 0;
   
   self->recv_bufdat = NULL;
+  
+  self->ptr = NULL;
+  self->on_ready_for_sending = NULL;
+  self->on_recv_from = NULL;
+  self->on_done = NULL;
+  
+  memset (&(self->send_addr), 0, sizeof(struct sockaddr_in));
+  memset (&(self->recv_addr), 0, sizeof(struct sockaddr_in));
   
   return self;
 }
@@ -704,10 +723,36 @@ void cape_aio_socket__upd__del (CapeAioSocketUdp* p_self)
     
     if (self->recv_bufdat)
     {
-      CAPE_FREE (&(self->recv_bufdat));
+      // clean the buffer
+      memset (self->recv_bufdat, 0, CAPE_AIO_SOCKET__UDP__RECV_BUFLEN);
+      
+      CAPE_FREE (self->recv_bufdat);
+    }
+    
+    if (self->on_done)
+    {
+      self->on_done (self->ptr, self->userdata);
     }
     
     CAPE_DEL (p_self, struct CapeAioSocketUdp_s);
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket__udp__handle_error (CapeAioSocketUdp self)
+{
+  if( (errno != EWOULDBLOCK) && (errno != EINPROGRESS) && (errno != EAGAIN))
+  {
+    CapeErr err = cape_err_new ();
+    
+    cape_err_formatErrorOS (err, errno); 
+    
+    cape_log_fmt (CAPE_LL_ERROR, "CAPE", "socket write", "error while writing data to the socket: %s", cape_err_text(err));
+    
+    self->mode |= CAPE_AIO_DONE;
+    
+    cape_err_del (&err);
   }
 }
 
@@ -718,28 +763,59 @@ void cape_aio_socket__udp__recv_from (CapeAioSocketUdp self)
   if (self->recv_bufdat == NULL)
   {
     self->recv_bufdat = CAPE_ALLOC (CAPE_AIO_SOCKET__UDP__RECV_BUFLEN);
+    
+    memset (self->recv_bufdat, 0, CAPE_AIO_SOCKET__UDP__RECV_BUFLEN);
   }
 
   {
-    socklen_t socklen;
+    socklen_t socklen = 0;
     
     ssize_t bytes_recv = recvfrom ((number_t)self->handle, self->recv_bufdat, CAPE_AIO_SOCKET__UDP__RECV_BUFLEN, MSG_DONTWAIT | MSG_NOSIGNAL, (struct sockaddr*)&(self->recv_addr), &socklen);
     
-    if (bytes_recv == 1)
+    if (bytes_recv < 0)          // some error has occoured
     {
-      
-      
+      // run the error handling
+      cape_aio_socket__udp__handle_error (self);
     }
-    else if (bytes_recv == 0)
+    else if (bytes_recv == 0)    // this should not happen -> most cases the connection was lost
     {
-      
-      
+      // connection lost, deactivate the socket
+      self->mode = CAPE_AIO_DONE;
     }
     else
     {
-      
-      
+      if (self->on_recv_from)
+      {
+        const char* remote_addr = inet_ntoa (self->recv_addr.sin_addr);
+        
+        self->on_recv_from (self->ptr, self, self->recv_bufdat, bytes_recv, remote_addr);
+      }
     }
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket__udp__ready_for_send (CapeAioSocketUdp self)
+{
+  // everything was sent
+  self->send_bufdat = NULL;
+  self->send_buflen = 0;
+  
+  // no buffer was set -> deactivate recv
+  self->mode &= ~CAPE_AIO_WRITE; 
+  
+  // execute the on send method
+  if (self->on_ready_for_sending)
+  {
+    // temporary copy of the reference
+    void* userdata = self->userdata;
+    
+    // unset the reference
+    self->userdata = NULL;
+    
+    // userdata sendbuffer etc might be reset
+    self->on_ready_for_sending (self->ptr, self, userdata);
   }
 }
 
@@ -749,15 +825,15 @@ static void cape_aio_socket__udp__send_to__execute (CapeAioSocketUdp self)
 {
   ssize_t bytes_send = sendto ((number_t)self->handle, self->send_bufdat + self->send_bufpos, self->send_buflen - self->send_bufpos, MSG_CONFIRM | MSG_DONTWAIT | MSG_NOSIGNAL, (const struct sockaddr*)&(self->send_addr), sizeof(self->send_addr));
   
-  if (bytes_send == 1)
+  if (bytes_send < 0)
   {
-    
-    
+    // run the error handling
+    cape_aio_socket__udp__handle_error (self);
   }
   else if (bytes_send == 0)
   {
-    
-    
+    // connection lost, deactivate the socket
+    self->mode = CAPE_AIO_DONE;
   }
   else
   {
@@ -765,15 +841,8 @@ static void cape_aio_socket__udp__send_to__execute (CapeAioSocketUdp self)
     
     if (self->send_bufpos == self->send_buflen)
     {
-      // everything was sent
-      self->send_bufdat = NULL;
-      self->send_buflen = 0;
-      
-      // no buffer was set -> deactivate recv
-      self->mode &= ~CAPE_AIO_WRITE; 
-
       // execute the on send method
-      
+      cape_aio_socket__udp__ready_for_send (self);      
     }
   }  
 }
@@ -789,18 +858,11 @@ static void cape_aio_socket__udp__send_to (CapeAioSocketUdp self)
   else
   {
     // try to aquire a new send buffer    
-    // execute the on send method
-    
-    
+    cape_aio_socket__udp__ready_for_send (self);
     
     if (self->send_buflen)
     {
       cape_aio_socket__udp__send_to__execute (self);
-    }
-    else
-    {
-      // no buffer was set -> deactivate recv
-      self->mode &= ~CAPE_AIO_WRITE; 
     }
   }
 }
@@ -863,7 +925,12 @@ void cape_aio_socket__udp__set (CapeAioSocketUdp self, CapeAioContext aio, int m
 {
   if (self->aioh)
   {
-    cape_aio_context_mod (aio, self->aioh, mode, 0);
+    if (mode != self->mode)
+    {
+      self->mode = mode;
+      
+      cape_aio_context_mod (aio, self->aioh, mode, 0);
+    }
   }
 }
 
@@ -879,9 +946,15 @@ void cape_aio_socket__udp__rm (CapeAioSocketUdp self, CapeAioContext aio)
 
 //-----------------------------------------------------------------------------
 
-void cape_aio_socket__udp__cb (CapeAioSocketUdp self, void* ptr)
+void cape_aio_socket__udp__cb (CapeAioSocketUdp self, void* ptr, fct_cape_aio_socket__on_sent_ready on_send, fct_cape_aio_socket__on_recv_from on_recv, fct_cape_aio_socket_onDone on_done)
 {
+  // the user pointer
+  self->ptr = ptr;
   
+  // set methods
+  self->on_ready_for_sending = on_send;
+  self->on_recv_from = on_recv;
+  self->on_done = on_done;
 }
 
 //-----------------------------------------------------------------------------
@@ -917,6 +990,9 @@ void cape_aio_socket__udp__send (CapeAioSocketUdp self, CapeAioContext aio, cons
   self->send_bufdat = bufdat;
   self->send_buflen = buflen;
   self->send_bufpos = 0;
+  
+  // set the userdata to keep
+  self->userdata = userdata;
   
   // activate recieving
   self->mode |= CAPE_AIO_WRITE;

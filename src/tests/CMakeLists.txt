@@ -17,3 +17,6 @@ target_link_libraries   (ut_sys_exec cape)
 
 add_executable          (ut_hpp_stc ut_hpp_stc.cc)
 target_link_libraries   (ut_hpp_stc cape)
+
+add_executable          (ut_aio_socket_udp ut_aio_socket_udp.c)
+target_link_libraries   (ut_aio_socket_udp cape)
