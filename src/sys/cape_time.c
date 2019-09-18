@@ -8,7 +8,6 @@
 
 #define _BSD_SOURCE
 
-#include <time.h>
 #include <sys/time.h>
 
 //-----------------------------------------------------------------------------
@@ -176,6 +175,17 @@ CapeString cape_datetime_s__ISO8601 (const CapeDatetime* dt)
 {
   // TODO: use the same method as cape_datetime_s__str
   return cape_datetime_s__fmt (dt, "%Y%m%dT%H%M%SZ");
+}
+
+//-----------------------------------------------------------------------------
+
+time_t cape_datetime_n__unix (const CapeDatetime* dt)
+{
+  struct tm timeinfo;
+  
+  cape_datetime__convert_cape (&timeinfo, dt);
+  
+  return mktime (&timeinfo);
 }
 
 //-----------------------------------------------------------------------------

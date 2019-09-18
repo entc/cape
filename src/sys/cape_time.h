@@ -5,6 +5,9 @@
 #include "sys/cape_err.h"
 #include "stc/cape_str.h"
 
+// c includes
+#include <time.h>
+
 //=============================================================================
 
 #pragma pack(push, 16)
@@ -54,6 +57,10 @@ __CAPE_LIBEX   CapeString      cape_datetime_s__pre       (const CapeDatetime*);
 
                                /* 20190901T120821Z */
 __CAPE_LIBEX   CapeString      cape_datetime_s__ISO8601   (const CapeDatetime*);   // ISO8601
+
+//-----------------------------------------------------------------------------
+
+__CAPE_LIBEX   time_t          cape_datetime_n__unix      (const CapeDatetime*);
 
 //-----------------------------------------------------------------------------
 

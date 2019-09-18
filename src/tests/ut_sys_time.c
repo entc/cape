@@ -54,5 +54,11 @@ int main (int argc, char *argv[])
    cape_str_del (&s);
  }
  
+ {
+   time_t unix_timestamp = cape_datetime_n__unix (&utc_time); 
+   
+   printf ("-> UNIX    : '%lu'\n", unix_timestamp);
+ }
+ 
  return 0;
 }
