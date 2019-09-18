@@ -3,6 +3,7 @@
 
 #include "sys/cape_export.h"
 #include "sys/cape_err.h"
+#include "stc/cape_str.h"
 
 //=============================================================================
 
@@ -33,6 +34,26 @@ __CAPE_LIBEX   void            cape_datetime_utc          (CapeDatetime*);
 __CAPE_LIBEX   void            cape_datetime_local        (CapeDatetime*);
 
 __CAPE_LIBEX   void            cape_datetime_to_local     (CapeDatetime*);
+
+//-----------------------------------------------------------------------------
+
+                               /* generic method -> use the format for transformation */
+__CAPE_LIBEX   CapeString      cape_datetime_s__fmt       (const CapeDatetime*, const CapeString format);
+
+                               /* 2019-09-01 12:08:21 */
+__CAPE_LIBEX   CapeString      cape_datetime_s__str       (const CapeDatetime*);   // ISO format
+
+                               /* 20190918-12:07:55.992 */
+__CAPE_LIBEX   CapeString      cape_datetime_s__log       (const CapeDatetime*);   // LOG format
+
+                               /* Sun, 11 May 2018 17:05:40 GMT */
+__CAPE_LIBEX   CapeString      cape_datetime_s__gmt       (const CapeDatetime*);   // GMT format
+
+                               /* 2019_09_01__12_08_21__ */
+__CAPE_LIBEX   CapeString      cape_datetime_s__pre       (const CapeDatetime*);   // prefix format
+
+                               /* 20190901T120821Z */
+__CAPE_LIBEX   CapeString      cape_datetime_s__ISO8601   (const CapeDatetime*);   // ISO8601
 
 //-----------------------------------------------------------------------------
 

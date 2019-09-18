@@ -122,6 +122,64 @@ void cape_datetime_to_local (CapeDatetime* dt)
 
 //-----------------------------------------------------------------------------
 
+CapeString cape_datetime_s__fmt (const CapeDatetime* dt, const CapeString format)
+{
+  CapeString ret = CAPE_ALLOC (100);
+  
+  {
+    struct tm timeinfo;
+    
+    cape_datetime__convert_cape (&timeinfo, dt);
+    
+    mktime (&timeinfo);
+    
+    // create buffer with timeinfo as string
+    strftime (ret, 99, format, &timeinfo);
+  }
+  
+  return ret;
+}
+
+//-----------------------------------------------------------------------------
+
+CapeString cape_datetime_s__str (const CapeDatetime* dt)
+{
+  return cape_str_fmt ("%i-%02i-%02i %02i:%02i:%02i", dt->year, dt->month, dt->day, dt->hour, dt->minute, dt->sec);
+}
+
+//-----------------------------------------------------------------------------
+
+CapeString cape_datetime_s__log (const CapeDatetime* dt)
+{
+  return cape_str_fmt ("%04i%02i%02i-%02i:%02i:%02i.%03i", dt->year, dt->month, dt->day, dt->hour, dt->minute, dt->sec, dt->msec);
+}
+
+//-----------------------------------------------------------------------------
+
+CapeString cape_datetime_s__gmt (const CapeDatetime* dt)
+{
+  // TODO: use the same method as cape_datetime_s__str
+  return cape_datetime_s__fmt (dt, "%a, %d %b %Y %H:%M:%S GMT");
+}
+
+//-----------------------------------------------------------------------------
+
+CapeString cape_datetime_s__pre (const CapeDatetime* dt)
+{
+  // TODO: use the same method as cape_datetime_s__str
+  cape_datetime_s__fmt (dt, "%Y_%m_%d__%H_%M_%S__");
+}
+
+//-----------------------------------------------------------------------------
+
+CapeString cape_datetime_s__ISO8601 (const CapeDatetime* dt)
+{
+  // TODO: use the same method as cape_datetime_s__str
+  return cape_datetime_s__fmt (dt, "%Y%m%dT%H%M%SZ");
+}
+
+//-----------------------------------------------------------------------------
+
 #elif defined __WINDOWS_OS
 
 //-----------------------------------------------------------------------------
