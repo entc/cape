@@ -70,13 +70,13 @@ __CAPE_LIBEX   CapeStopTimer   cape_stoptimer_new         ();
 
 __CAPE_LIBEX   void            cape_stoptimer_del         (CapeStopTimer*);
 
-__CAPE_LIBEX   void            cape_stoptimer_start       (CapeStopTimer);
+__CAPE_LIBEX   void            cape_stoptimer_start       (CapeStopTimer);           // starts / continue the time measurement
 
-__CAPE_LIBEX   void            cape_stoptimer_stop        (CapeStopTimer);
+__CAPE_LIBEX   void            cape_stoptimer_stop        (CapeStopTimer);           // ends the time measurement
 
-__CAPE_LIBEX   void            cape_stoptimer_set         (CapeStopTimer, double);
+__CAPE_LIBEX   void            cape_stoptimer_set         (CapeStopTimer, double);   // sets the passed time
 
-__CAPE_LIBEX   double          cape_stoptimer_get         (CapeStopTimer);
+__CAPE_LIBEX   double          cape_stoptimer_get         (CapeStopTimer);           // returns the passed time in milliseconds
 
 //-----------------------------------------------------------------------------
 
