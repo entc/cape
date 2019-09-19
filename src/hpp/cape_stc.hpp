@@ -65,7 +65,12 @@ namespace cape
     
   public:
     
-    Exception (number_t err_code, const char* err_text) : m_err_text (cape_str_cp (err_text)), m_err_code (err_code)
+    Exception (number_t err_code, const char* err_text) : m_err_text (cape_str_cp (err_text)), m_err_code (err_code), m_udc (NULL)
+    {
+      cape_log_fmt (CAPE_LL_ERROR, "CAPE", "EXCEPTION", "THROW: %s", err_text);
+    }
+    
+    Exception (number_t err_code, const char* err_text, CapeUdc obj) : m_err_text (cape_str_cp (err_text)), m_err_code (err_code), m_udc (obj)
     {
       cape_log_fmt (CAPE_LL_ERROR, "CAPE", "EXCEPTION", "THROW: %s", err_text);
     }
@@ -73,6 +78,7 @@ namespace cape
     ~Exception () throw()
     {
       cape_str_del (&m_err_text);
+      cape_udc_del (&m_udc);
     }
     
     const char * what () const throw()
@@ -80,11 +86,23 @@ namespace cape
       return m_err_text;
     }
     
+    CapeUdc release_udc ()
+    {
+      return cape_udc_mv (&m_udc);
+    }
+    
+    number_t code ()
+    {
+      return m_err_code;
+    }
+    
   private:
     
     CapeString m_err_text;
     
     number_t m_err_code;    
+    
+    CapeUdc m_udc;
   };
   
   //-----------------------------------------------------------------------------------------------------
@@ -389,7 +407,43 @@ namespace cape
         throw cape::Exception (CAPE_ERR_NO_OBJECT, "UDC object has no content");
       }
       
+      if (false == m_owned)
+      {
+        throw cape::Exception (CAPE_ERR_RUNTIME, "UDC object is not owned");
+      }
+      
       return cape_udc_mv (&m_obj);
+    }
+    
+    //-----------------------------------------------------------------------------
+    
+    CapeUdc clone ()
+    {
+      if (m_obj == NULL)
+      {
+        throw cape::Exception (CAPE_ERR_NO_OBJECT, "UDC object has no content");
+      }
+      
+      return cape_udc_cp (m_obj);
+    }
+    
+    //-----------------------------------------------------------------------------
+    
+    CapeUdc clone_or_release ()
+    {
+      if (m_obj == NULL)
+      {
+        throw cape::Exception (CAPE_ERR_NO_OBJECT, "UDC object has no content");
+      }
+      
+      if (m_owned)
+      {
+        return cape_udc_mv (&m_obj);
+      }
+      else
+      {
+        return cape_udc_cp (m_obj);
+      }      
     }
     
     //-----------------------------------------------------------------------------
@@ -532,13 +586,37 @@ namespace cape
   template <> struct UdcTransType<Udc>
   {
     static void add_cp (CapeUdc obj, const char* name, const Udc& value) { CapeUdc h = cape_udc_cp (value.obj()); cape_udc_add_name (obj, &h, name); }
-    static void add_mv (CapeUdc obj, const char* name, Udc& value) { CapeUdc h = value.release(); cape_udc_add_name (obj, &h, name); }
+    static void add_mv (CapeUdc obj, const char* name, Udc& value)
+    { 
+      CapeUdc h = value.clone_or_release ();
+      
+      if (name)
+      {
+        cape_udc_add_name (obj, &h, name);
+      }
+      else
+      {
+        cape_udc_add (obj, &h);        
+      }
+    }
     static Udc as (CapeUdc obj) { return Udc (obj); }
   };
   
   template <> struct UdcTransType<Udc&>
   {
-    static void add_mv (CapeUdc obj, const char* name, Udc& value) { CapeUdc h = value.release(); cape_udc_add_name (obj, &h, name); }
+    static void add_mv (CapeUdc obj, const char* name, Udc& value)
+    {
+      CapeUdc h = value.clone_or_release(); 
+      
+      if (name)
+      {
+        cape_udc_add_name (obj, &h, name);
+      }
+      else
+      {
+        cape_udc_add (obj, &h);        
+      }
+    }
   };
 
   //-----------------------------------------------------------------------------------------------------
