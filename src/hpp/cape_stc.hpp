@@ -294,8 +294,38 @@ namespace cape
     
     //-----------------------------------------------------------------------------
     
+    Udc first ()
+    {
+      if (m_obj == NULL)
+      {
+        throw cape::Exception (CAPE_ERR_NO_OBJECT, "UDC object has no content");
+      }
+      
+      return Udc (cape_udc_get_first (m_obj));
+    }
+    
+    //-----------------------------------------------------------------------------
+    
+    Udc first_ext ()
+    {
+      if (m_obj == NULL)
+      {
+        throw cape::Exception (CAPE_ERR_NO_OBJECT, "UDC object has no content");
+      }
+      
+      CapeUdc h = cape_udc_ext_first (m_obj);
+      return Udc (&h);
+    }
+    
+    //-----------------------------------------------------------------------------
+    
     template <typename S> Udc get (const S& name)
     {
+      if (m_obj == NULL)
+      {
+        throw cape::Exception (CAPE_ERR_NO_OBJECT, "UDC object has no content");
+      }
+      
       return Udc (cape_udc_get (m_obj, StringTrans<S>::c_str(name)));
     }
     
@@ -471,10 +501,10 @@ namespace cape
 
   //-----------------------------------------------------------------------------------------------------
 
-  template <> struct UdcTransType<long>
+  template <> struct UdcTransType<number_t>
   {
     static void add_cp (CapeUdc obj, const char* name, const long& value) { cape_udc_add_n (obj, name, value); }
-    static void add_mv (CapeUdc obj, const char* name, long& value) { cape_udc_add_n (obj, name, value); }
+    static void add_mv (CapeUdc obj, const char* name, number_t& value) { cape_udc_add_n (obj, name, value); }
     static long as (CapeUdc obj, long dv = 0) { return cape_udc_n (obj, dv); }    
   };
   
