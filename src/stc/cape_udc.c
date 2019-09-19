@@ -702,6 +702,11 @@ number_t cape_udc_n (CapeUdc self, number_t alt)
     {
       return (number_t)(self->data);
     }
+    case CAPE_UDC_FLOAT:
+    {
+      double* h = self->data;
+      return *h;
+    }
     case CAPE_UDC_STRING:
     {
       char * pEnd;
@@ -729,6 +734,10 @@ double cape_udc_f (CapeUdc self, double alt)
 {
   switch (self->type)
   {
+    case CAPE_UDC_NUMBER:
+    {
+      return (number_t)(self->data);
+    }
     case CAPE_UDC_FLOAT:
     {
       double* h = self->data;
