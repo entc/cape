@@ -770,7 +770,7 @@ void cape_aio_socket__udp__recv_from (CapeAioSocketUdp self)
   {
     socklen_t socklen = 0;
     
-    ssize_t bytes_recv = recvfrom ((number_t)self->handle, self->recv_bufdat, CAPE_AIO_SOCKET__UDP__RECV_BUFLEN, MSG_DONTWAIT | MSG_NOSIGNAL, (struct sockaddr*)&(self->recv_addr), &socklen);
+    ssize_t bytes_recv = recvfrom ((number_t)self->handle, self->recv_bufdat, CAPE_AIO_SOCKET__UDP__RECV_BUFLEN, MSG_DONTWAIT | CAPE_NO_SIGNALS, (struct sockaddr*)&(self->recv_addr), &socklen);
     
     if (bytes_recv < 0)          // some error has occoured
     {
@@ -823,7 +823,7 @@ void cape_aio_socket__udp__ready_for_send (CapeAioSocketUdp self)
 
 static void cape_aio_socket__udp__send_to__execute (CapeAioSocketUdp self)
 {
-  ssize_t bytes_send = sendto ((number_t)self->handle, self->send_bufdat + self->send_bufpos, self->send_buflen - self->send_bufpos, MSG_CONFIRM | MSG_DONTWAIT | MSG_NOSIGNAL, (const struct sockaddr*)&(self->send_addr), sizeof(self->send_addr));
+  ssize_t bytes_send = sendto ((number_t)self->handle, self->send_bufdat + self->send_bufpos, self->send_buflen - self->send_bufpos, MSG_DONTWAIT | CAPE_NO_SIGNALS, (const struct sockaddr*)&(self->send_addr), sizeof(self->send_addr));
   
   if (bytes_send < 0)
   {
