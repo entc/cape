@@ -562,6 +562,13 @@ namespace cape
     static long as (CapeUdc obj, long dv = 0) { return cape_udc_n (obj, dv); }    
   };
   
+  template <> struct UdcTransType<number_t&>
+  {
+    static void add_cp (CapeUdc obj, const char* name, const long& value) { cape_udc_add_n (obj, name, value); }
+    static void add_mv (CapeUdc obj, const char* name, number_t& value) { cape_udc_add_n (obj, name, value); }
+    static long as (CapeUdc obj, long dv = 0) { return cape_udc_n (obj, dv); }    
+  };
+
   template <> struct UdcTransType<double>
   {
     static void add_cp (CapeUdc obj, const char* name, const double& value) { cape_udc_add_f (obj, name, value); }
@@ -583,6 +590,20 @@ namespace cape
     static std::string as (CapeUdc obj, const char* dv = "") { return std::string (cape_udc_s (obj, dv)); }
   };
   
+  template <> struct UdcTransType<std::string&>
+  {
+    static void add_cp (CapeUdc obj, const char* name, const std::string& value) { cape_udc_add_s_cp (obj, name, value.c_str()); }
+    static void add_mv (CapeUdc obj, const char* name, std::string& value) { cape_udc_add_s_cp (obj, name, value.c_str()); }
+    static std::string as (CapeUdc obj, const char* dv = "") { return std::string (cape_udc_s (obj, dv)); }
+  };
+  
+  template <> struct UdcTransType<cape::String&>
+  {
+    static void add_cp (CapeUdc obj, const char* name, const cape::String& value) { cape_udc_add_s_cp (obj, name, value.m_obj); }
+    static void add_mv (CapeUdc obj, const char* name, cape::String& value) { cape_udc_add_s_mv (obj, name, &(value.m_obj)); }
+    static cape::String as (CapeUdc obj, const char* dv = "") { return cape::String (cape_str_cp (cape_udc_s (obj, dv))); }
+  };
+
   template <> struct UdcTransType<Udc>
   {
     static void add_cp (CapeUdc obj, const char* name, const Udc& value) { CapeUdc h = cape_udc_cp (value.obj()); cape_udc_add_name (obj, &h, name); }
@@ -625,6 +646,8 @@ namespace cape
   {
     UdcCursorHolder (CapeUdcCursor* obj) : m_obj (obj) {}
 
+    UdcCursorHolder (cape::Udc& udc, int dir = CAPE_DIRECTION_FORW) : m_obj (cape_udc_cursor_new (udc.obj(), dir)) {}
+    
     ~UdcCursorHolder () { cape_udc_cursor_del (&m_obj); }
 
     bool next () { return cape_udc_cursor_next (m_obj); }
