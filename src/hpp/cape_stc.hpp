@@ -50,7 +50,7 @@ namespace cape
   
   struct StreamHolder
   {
-    StreamHolder ()  noexcept : obj (cape_stream_new ())
+    StreamHolder () : obj (cape_stream_new ())
     {
     }
     
