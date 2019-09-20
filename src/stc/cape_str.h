@@ -13,6 +13,8 @@
 
 __CAPE_LIBEX   CapeString         cape_str_cp            (const CapeString);                            // allocate memory and initialize the object
 
+__CAPE_LIBEX   CapeString         cape_str_mv            (CapeString*);                                 // move string
+
 __CAPE_LIBEX   void               cape_str_del           (CapeString*);                                 // release memory
 
 __CAPE_LIBEX   CapeString         cape_str_sub           (const CapeString, number_t len);              // copy a part of the substring
@@ -27,13 +29,27 @@ __CAPE_LIBEX   number_t           cape_str_len           (const CapeString);    
 
 __CAPE_LIBEX   number_t           cape_str_size          (const CapeString);                            // string length in bytes
 
+__CAPE_LIBEX   CapeString         cape_str_f             (double);                                      // double to string
+
+__CAPE_LIBEX   int                cape_str_empty         (const CapeString);                            // string length in bytes
+
+__CAPE_LIBEX   int                cape_str_not_empty     (const CapeString);                            // string length in bytes
+
 //-----------------------------------------------------------------------------
 
 __CAPE_LIBEX   int                cape_str_equal         (const CapeString, const CapeString);          // case sensitive
 
 __CAPE_LIBEX   int                cape_str_compare       (const CapeString, const CapeString);          // no case sensitive
 
-__CAPE_LIBEX   int                cape_str_begins        (const CapeString, const CapeString);
+__CAPE_LIBEX   int                cape_str_compare_c     (const CapeString, const CapeString);          // no case sensitive
+
+__CAPE_LIBEX   int                cape_str_begins        (const CapeString, const CapeString);          // case sensitive
+
+__CAPE_LIBEX   int                cape_str_begins_i      (const CapeString, const CapeString);          // case insensitive
+
+__CAPE_LIBEX   int                cape_str_find          (const CapeString, const CapeString, number_t* pos);
+
+__CAPE_LIBEX   int                cape_str_find_utf8     (const CapeString, const CapeString, number_t* pos_len, number_t* pos_size);
 
 //-----------------------------------------------------------------------------
 
@@ -56,6 +72,10 @@ __CAPE_LIBEX   void               cape_str_fill          (CapeString, number_t l
 __CAPE_LIBEX   void               cape_str_to_upper      (CapeString);
 
 __CAPE_LIBEX   void               cape_str_to_lower      (CapeString);
+
+//-----------------------------------------------------------------------------
+
+__CAPE_LIBEX   number_t           cape_str_char__len     (unsigned char c);
 
 //-----------------------------------------------------------------------------
 

@@ -5,6 +5,7 @@
 
 int main (int argc, char *argv[])
 {
+  int res;
   CapeErr err = cape_err_new ();
   
   CapeExec exec = cape_exec_new ();
@@ -13,7 +14,7 @@ int main (int argc, char *argv[])
   cape_exec_append_fmt (exec, "%s.tar", "CMakeFiles");
   cape_exec_append_s (exec, "CMakeFiles");
   
-  int res = cape_exec_run (exec, "tar", err);
+  res = cape_exec_run (exec, "tar", err);
   
   // output
   

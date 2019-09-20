@@ -1,4 +1,5 @@
 #include "cape_stream.h"
+#include "fmt/cape_dragon4.h"
 
 // c includes
 #include <stdio.h>
@@ -265,15 +266,36 @@ void cape_stream_append_n (CapeStream self, number_t val)
 
 void cape_stream_append_f (CapeStream self, double val)
 {
-  cape_stream_reserve (self, 26);  // for very long intergers
-  
 #ifdef _MSC_VER
-  
+
+  cape_stream_reserve (self, 24);  // for very long intergers
+
   self->pos += _snprintf_s (self->pos, 24, _TRUNCATE, "%f", val);
   
 #else
   
-  self->pos += snprintf(self->pos, 24, "%f", val);
+  CapeErr err = cape_err_new ();
+  
+  CapeDragon4 dragon4 = cape_dragon4_new ();
+  
+  cape_dragon4_positional (dragon4, CAPE_DRAGON4__DMODE_UNIQUE, CAPE_DRAGON4__CMODE_TOTAL, -1, FALSE, CAPE_DRAGON4__TMODE_ONE_ZERO, 0, 0);
+  
+  cape_stream_reserve (self, 1024);  // for very long intergers
+
+  int res = cape_dragon4_run (dragon4, self->pos, 1024, val, err);
+  if (res)
+  {
+    
+  }
+  else
+  {
+  }
+
+  self->pos += cape_dragon4_len (dragon4);
+
+  cape_dragon4_del (&dragon4);
+  
+  cape_err_del (&err);
   
 #endif
 }

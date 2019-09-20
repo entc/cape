@@ -41,6 +41,8 @@ __CAPE_LIBEX   CapeMapNode       cape_map_insert            (CapeMap, void* key,
 
 __CAPE_LIBEX   CapeMapNode       cape_map_find              (CapeMap, const void* key);
 
+__CAPE_LIBEX   CapeMapNode       cape_map_find_cmd          (CapeMap, const void* key, fct_cape_map_cmp);
+
 __CAPE_LIBEX   void              cape_map_erase             (CapeMap, CapeMapNode);       // removes the node, calls the onDestroy callback and releases the node
 
 __CAPE_LIBEX   CapeMapNode       cape_map_extract           (CapeMap, CapeMapNode);       // extracts the node from the container and returns it
@@ -59,13 +61,15 @@ __CAPE_LIBEX   void*             cape_map_node_value        (CapeMapNode);
 
 __CAPE_LIBEX   void*             cape_map_node_key          (CapeMapNode);
 
+__CAPE_LIBEX   void              cape_map_node_set          (CapeMapNode, void*);         // use with care
+
 __CAPE_LIBEX   void              cape_map_node_del          (CapeMapNode*);               // don't calls the onDestroy method, only releases the memory
 
 //-----------------------------------------------------------------------------
 
-typedef void* (__STDCALL *fct_cape_map_onClone) (void* ptr);
+typedef void (__STDCALL *fct_cape_map__on_clone) (void* key_original, void* val_original, void** key_clone, void** val_clone);
 
-__CAPE_LIBEX   CapeMap           cape_map_clone             (CapeMap, fct_cape_map_onClone onCloneKey, fct_cape_map_onClone onCloneVal);
+__CAPE_LIBEX   CapeMap           cape_map_clone             (CapeMap, fct_cape_map__on_clone on_clone);
 
 //-----------------------------------------------------------------------------
 

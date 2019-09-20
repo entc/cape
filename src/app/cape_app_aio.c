@@ -33,7 +33,7 @@ int main (int argc, char *argv[])
   }
 
   {
-    void* sock = cape_sock_reader_new ("127.0.0.1", 40011, err);
+    void* sock = cape_sock__tcp__clt_new ("127.0.0.1", 40011, err);
     
     if (sock)
     {

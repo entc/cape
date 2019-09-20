@@ -14,6 +14,7 @@
 
 #define __WINDOWS_OS 1
 #define __CAPE_LIBEX __EXTERN_C __declspec(dllexport)
+#define __CAPE_LOCAL __EXTERN_C
 
 #define __STDCALL __stdcall
 
@@ -24,6 +25,8 @@
 #define __BSD_OS 1
 
 #define __CAPE_LIBEX __EXTERN_C
+#define __CAPE_LOCAL __EXTERN_C __attribute__ ((visibility ("default")))
+
 #define __STDCALL
 
 //----------------------------------------------------------------------------------
@@ -33,6 +36,8 @@
 #define __BSD_OS 1
 
 #define __CAPE_LIBEX __EXTERN_C
+#define __CAPE_LOCAL __EXTERN_C
+
 #define __STDCALL
 
 //----------------------------------------------------------------------------------
@@ -42,6 +47,8 @@
 #define __LINUX_OS 1
 
 #define __CAPE_LIBEX __EXTERN_C
+#define __CAPE_LOCAL __EXTERN_C
+
 #define __STDCALL
 
 //----------------------------------------------------------------------------------

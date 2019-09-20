@@ -256,9 +256,16 @@ CapeListNode cape_list_noed_next (CapeListNode node)
 
 //-----------------------------------------------------------------------------
 
-CapeListNode cape_list_node_begin (CapeList self)
+CapeListNode cape_list_node_front (CapeList self)
 {
   return self->fpos;
+}
+
+//-----------------------------------------------------------------------------
+
+CapeListNode cape_list_node_back (CapeList self)
+{
+  return self->lpos;
 }
 
 //-----------------------------------------------------------------------------
@@ -589,9 +596,12 @@ CapeListCursor* cape_list_cursor_create (CapeList self, int direction)
 
 //-----------------------------------------------------------------------------
 
-void cape_list_cursor_destroy (CapeListCursor** pcursor)
+void cape_list_cursor_destroy (CapeListCursor** p_cursor)
 {
-  CAPE_DEL (pcursor, CapeListCursor);
+  if (*p_cursor)
+  {
+    CAPE_DEL (p_cursor, CapeListCursor);
+  }
 }
 
 //-----------------------------------------------------------------------------

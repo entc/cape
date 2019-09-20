@@ -16,6 +16,19 @@ __CAPE_LIBEX   int                cape_tokenizer_split         (const CapeString
 
 //-----------------------------------------------------------------------------
 
+                                  /* returns a list with number_t values of the position
+                                     -> WARNING: utf8 characters are not considered
+                                                 positions are related to chars only
+                                   */
+__CAPE_LIBEX   CapeList           cape_tokenizer_str           (const CapeString haystack, const CapeString needle);
+
+                                  /* returns a list with number_t values
+                                      -> use this to get utf8 char positions
+                                   */
+__CAPE_LIBEX   CapeList           cape_tokenizer_str_utf8      (const CapeString haystack, const CapeString needle);
+
+//-----------------------------------------------------------------------------
+
 #endif
 
 

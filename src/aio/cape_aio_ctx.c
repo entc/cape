@@ -103,7 +103,20 @@ void cape_aio_handle_unref (CapeAioHandle self)
   if (self->on_unref)
   {
     // call the callback to signal the destruction of the handle
-    self->on_unref (self->ptr, self);
+    self->on_unref (self->ptr, self, FALSE);
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_handle_close (CapeAioHandle self)
+{
+  cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio_ctx rm", "close handle: %p", self->hfd);
+  
+  if (self->on_unref)
+  {
+    // call the callback to signal the destruction of the handle
+    self->on_unref (self->ptr, self, TRUE);
   }
 }
 
@@ -296,8 +309,8 @@ exit_and_unlock:
   
   if (ptr)
   {
-    // decrease referenced counted content
-    cape_aio_handle_unref (ptr);
+    // clsoe handle
+    cape_aio_handle_close (ptr);
   }
 }
 
@@ -686,33 +699,42 @@ void cape_aio_context_mod (CapeAioContext self, CapeAioHandle aioh, int hflags, 
   // set the user pointer to the handle
   event.data.ptr = aioh;
   
-  cape_aio_update_events (&event, hflags);
-  
-  int s = epoll_ctl (self->efd, EPOLL_CTL_MOD, (long)(aioh->hfd), &event);
-  if (s < 0)
+  if (hflags & CAPE_AIO_DONE)
   {
-    int errCode = errno;
-    if (errCode == EPERM)
+    epoll_ctl (self->efd, EPOLL_CTL_DEL, (long)(aioh->hfd), &event);
+    
+    cape_aio_remove_handle (self, aioh);
+  }
+  else
+  {
+    cape_aio_update_events (&event, hflags);
+    
+    int s = epoll_ctl (self->efd, EPOLL_CTL_MOD, (long)(aioh->hfd), &event);
+    if (s < 0)
     {
-      printf ("this filedescriptor is not supported by epoll\n");
+      int errCode = errno;
+      if (errCode == EPERM)
+      {
+        printf ("this filedescriptor is not supported by epoll\n");
+        
+      }
+      else
+      {
+        CapeErr err = cape_err_new ();
+        
+        cape_err_lastOSError (err);
+        
+        printf ("can't add fd to epoll: %s\n", cape_err_text (err));
+        
+        cape_err_del (&err);
+      }
       
-    }
-    else
-    {
-      CapeErr err = cape_err_new ();
-      
-      cape_err_lastOSError (err);
-      
-      printf ("can't add fd to epoll: %s\n", cape_err_text (err));
-      
-      cape_err_del (&err);
+      return;
     }
     
-    return;
+    aioh->hflags = hflags;
   }
   
-  aioh->hflags = hflags;
-
 #endif
 }
 
@@ -824,7 +846,7 @@ static int __STDCALL cape_aio_context_signal_onEvent (void* ptr, void* handle, i
 
 //-----------------------------------------------------------------------------
 
-static void __STDCALL cape_aio_context_signal_onUnref (void* ptr, CapeAioHandle aioh)
+static void __STDCALL cape_aio_context_signal_onUnref (void* ptr, CapeAioHandle aioh, int force_close)
 {
   //printf ("close signalfs\n");
   
@@ -952,7 +974,7 @@ int cape_aio_context_set_interupts (CapeAioContext self, int sigint, int term, C
 
 //*****************************************************************************
 
-#elif defined __MS_IOCP
+#elif defined __WINDOWS_OS
 
 #include <windows.h>
 
@@ -1015,6 +1037,25 @@ void cape_aio_handle_del (CapeAioHandle* p_self)
 
 //-----------------------------------------------------------------------------
 
+void cape_aio_handle_unref (CapeAioHandle self)
+{
+  if (self->on_unref)
+  {
+    // call the callback to signal the destruction of the handle
+    self->on_unref (self->ptr, self);
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_handle_close (CapeAioHandle self)
+{
+  
+  
+}
+
+//-----------------------------------------------------------------------------
+
 struct CapeAioContext_s
 {
   HANDLE port;
@@ -1026,16 +1067,23 @@ struct CapeAioContext_s
 
 //-----------------------------------------------------------------------------
 
+static void __STDCALL cape_aio_context__events_on_item_del (void* ptr)
+{
+  cape_aio_handle_unref (ptr);
+}
+
+//-----------------------------------------------------------------------------
+
 CapeAioContext cape_aio_context_new (void)
 {
   CapeAioContext self = CAPE_NEW (struct CapeAioContext_s);
   
   self->port = NULL;
-  self->events = cape_list_new (cape_aio_context_events_onDestroy);
+  self->events = cape_list_new (cape_aio_context__events_on_item_del);
   
   self->mutex = CAPE_NEW (CRITICAL_SECTION);
   
-  InitializeCriticalSection (self->mutex, NULL);
+  InitializeCriticalSection (self->mutex);
   
   return self;
 }
@@ -1072,7 +1120,7 @@ int cape_aio_context_open (CapeAioContext self, CapeErr err)
 
 //-----------------------------------------------------------------------------
 
-static int __STDCALL cape_aio_context_close__on_event (void* ptr, void* handle, int hflags, unsigned long events, void* overlapped, unsigned long)
+static int __STDCALL cape_aio_context_close__on_event (void* ptr, void* handle, int hflags, unsigned long events, void* overlapped, unsigned long extra)
 {
   return CAPE_AIO_ABORT;
 }
@@ -1105,27 +1153,23 @@ int cape_aio_context_wait (CapeAioContext self, CapeErr err)
 
 int cape_aio_context_next__overlapped (OVERLAPPED* ovl, int repeat, unsigned long bytes)
 {
-  int hflags_result;
-  
-  if (ovl)
-  {
-    // we can cast into the user defined struct
-    CapeAioHandle hobj = ovl;
+  int hflags_result = 0;
 
+  // we can cast into the user defined struct
+  CapeAioHandle hobj = (CapeAioHandle)ovl;
+  
+  if (hobj)
+  {
     if (hobj->on_event)
     {
       hflags_result = hobj->on_event (hobj->ptr, (void*)hobj->hfd, hobj->hflags, 0, ovl, bytes);
-    }
-    else
-    {
-      hflags_result = 0;
     }
   }
   
   if (hflags_result & CAPE_AIO_DONE)
   {
     // remove the handle from events
-    cape_aio_remove_handle (self, hobj);
+    //cape_aio_remove_handle (self, hobj);
     
     return FALSE;
   }
@@ -1148,12 +1192,12 @@ int cape_aio_context_next (CapeAioContext self, long timeout_in_ms, CapeErr err)
   BOOL iores;
 
   // wait for any event on the completion port
-  iores = GetQueuedCompletionStatus (self->port, &numOfBytes, &ptr, &ovl, timeout);
+  iores = GetQueuedCompletionStatus (self->port, &numOfBytes, &ptr, &ovl, timeout_in_ms);
   if (iores)
   {
     if (cape_aio_context_next__overlapped (ovl, TRUE, numOfBytes))
     {
-      return cape_err_set (err, CAPE_ERR_NONE_CONTINUE, "wait abborted");
+      return cape_err_set (err, CAPE_ERR_CONTINUE, "wait abborted");
     }
     else
     {
@@ -1184,7 +1228,7 @@ int cape_aio_context_next (CapeAioContext self, long timeout_in_ms, CapeErr err)
       
       if (cape_aio_context_next__overlapped (ovl, FALSE, numOfBytes))
       {
-        return cape_err_set (err, CAPE_ERR_NONE_CONTINUE, "wait abborted");
+        return cape_err_set (err, CAPE_ERR_CONTINUE, "wait abborted");
       }
       
       switch (lastError)
@@ -1195,11 +1239,11 @@ int cape_aio_context_next (CapeAioContext self, long timeout_in_ms, CapeErr err)
         }
         case 735: // ERROR_ABANDONED_WAIT_0
         {
-          return cape_err_set (err, CAPE_ERR_OS_ERROR, "wait abborted");
+          return cape_err_set (err, CAPE_ERR_OS, "wait abborted");
         }
         case ERROR_OPERATION_ABORTED: // ABORT
         {
-          return cape_err_set (err, CAPE_ERR_OS_ERROR, "wait abborted");
+          return cape_err_set (err, CAPE_ERR_OS, "wait abborted");
         }
         default:
         {
@@ -1244,7 +1288,7 @@ int cape_aio_context_add (CapeAioContext self, CapeAioHandle aioh, number_t opti
 
 //-----------------------------------------------------------------------------
 
-static EcAio g_aio = NULL;
+static CapeAioContext g_aio = NULL;
 
 static int cape_aio_context__ctrl_handler (unsigned long ctrlType)
 {

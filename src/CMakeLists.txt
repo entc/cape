@@ -1,9 +1,18 @@
 cmake_minimum_required(VERSION 2.4)
 
-SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../cmake)
+SET (CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../cmake)
+
+IF (CMAKE_VERSION VERSION_LESS "3.1")
+  IF (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
+  ENDIF ()
+ELSE ()
+  SET (CMAKE_CXX_STANDARD 11)
+ENDIF ()
 
 find_package(DLL QUIET)
 find_package(PThread)
+find_package(Math)
 
 #----------------------------------------------------------------------------------
 
@@ -36,6 +45,7 @@ SET(CAPE_SYS_SOURCES
   sys/cape_socket.c
   sys/cape_pipe.c
   sys/cape_exec.c
+  sys/cape_time.c
 )
 
 SET(CAPE_SYS_HEADERS
@@ -48,6 +58,7 @@ SET(CAPE_SYS_HEADERS
   sys/cape_socket.h
   sys/cape_pipe.h
   sys/cape_exec.h
+  sys/cape_time.h
 )
 
 #----------------------------------------------------------------------------------
@@ -73,6 +84,7 @@ SET(CAPE_FMT_SOURCES
   fmt/cape_json.c
   fmt/cape_tokenizer.c
   fmt/cape_args.c
+  fmt/cape_dragon4.c
 )
 
 SET(CAPE_FMT_HEADERS
@@ -80,14 +92,25 @@ SET(CAPE_FMT_HEADERS
   fmt/cape_json.h
   fmt/cape_tokenizer.h
   fmt/cape_args.h
+  fmt/cape_dragon4.h
+)
+
+#----------------------------------------------------------------------------------
+
+SET(CAPE_EXTERN_SOURCES
+
+)
+
+SET(CAPE_EXTERN_HEADERS
+
 )
 
 #----------------------------------------------------------------------------------
 
 INCLUDE_DIRECTORIES(".")
 
-add_library             (cape SHARED ${CAPE_STC_SOURCES} ${CAPE_STC_HEADERS} ${CAPE_SYS_SOURCES} ${CAPE_SYS_HEADERS} ${CAPE_AIO_SOURCES} ${CAPE_AIO_HEADERS} ${CAPE_FMT_SOURCES} ${CAPE_FMT_HEADERS})
-target_link_libraries   (cape ${DLL_LIBRARIES} ${PTHREAD_LIBRARIES})
+add_library             (cape SHARED ${CAPE_STC_SOURCES} ${CAPE_STC_HEADERS} ${CAPE_SYS_SOURCES} ${CAPE_SYS_HEADERS} ${CAPE_AIO_SOURCES} ${CAPE_AIO_HEADERS} ${CAPE_FMT_SOURCES} ${CAPE_FMT_HEADERS} ${CAPE_EXTERN_SOURCES} ${CAPE_EXTERN_HEADERS})
+target_link_libraries   (cape ${DLL_LIBRARIES} ${PTHREAD_LIBRARIES} ${MATH_LIBRARIES})
 set_target_properties   (cape PROPERTIES VERSION 1.0.1 SOVERSION 1.0.1)
 
 install (TARGETS cape DESTINATION lib)

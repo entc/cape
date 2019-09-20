@@ -48,7 +48,9 @@ __CAPE_LIBEX   void              cape_list_node_erase       (CapeList, CapeListN
 
 __CAPE_LIBEX   CapeListNode      cape_list_node_next        (CapeListNode);
 
-__CAPE_LIBEX   CapeListNode      cape_list_node_begin       (CapeList);
+__CAPE_LIBEX   CapeListNode      cape_list_node_front       (CapeList);
+
+__CAPE_LIBEX   CapeListNode      cape_list_node_back        (CapeList);
 
 __CAPE_LIBEX   void              cape_list_node_swap        (CapeListNode, CapeListNode);
 

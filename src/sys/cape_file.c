@@ -334,6 +334,42 @@ number_t cape_fs_path_size__process_path (DIR* dir, CapeList folders, const char
 
 //-----------------------------------------------------------------------------
 
+int cape_fs_file_load (const CapeString path, const CapeString file, void* ptr, fct_cape_fs_file_load fct, CapeErr err)
+{
+  int res;
+  
+  // local objects
+  CapeFileHandle fh = cape_fh_new (path, file);
+  number_t bytes_read;
+  
+  // try to open
+  res = cape_fh_open (fh, O_RDONLY, err);
+  if (res)
+  {
+    goto exit_and_cleanup;
+  }
+  
+  {
+    char buffer [1024];
+    
+    for (bytes_read = cape_fh_read_buf (fh, buffer, 1024); bytes_read > 0; bytes_read = cape_fh_read_buf (fh, buffer, 1024))
+    {
+      res = fct (ptr, buffer, bytes_read, err);
+      if (res)
+      {
+        goto exit_and_cleanup;
+      }
+    }
+  }
+  
+exit_and_cleanup:
+  
+  cape_fh_del (&fh);
+  return res;
+}
+
+//-----------------------------------------------------------------------------
+
 #if defined __LINUX_OS || defined __BSD_OS
 
 off_t cape_fs_path_size (const char* path, CapeErr err)

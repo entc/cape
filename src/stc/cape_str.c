@@ -8,6 +8,7 @@
 // cape includes
 #include "sys/cape_err.h"
 #include "sys/cape_log.h"
+#include "fmt/cape_dragon4.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -30,6 +31,17 @@ CapeString cape_str_cp (const CapeString source)
 #else
   return strdup (source);
 #endif    
+}
+
+//-----------------------------------------------------------------------------
+
+CapeString cape_str_mv (CapeString* p_source)
+{
+  CapeString ret = *p_source;
+  
+  *p_source = NULL;
+  
+  return ret;
 }
 
 //-----------------------------------------------------------------------------
@@ -75,7 +87,7 @@ void cape_str_del (CapeString* p_self)
 
 //-----------------------------------------------------------------------------
 
-number_t cape_str_character__len (unsigned char c)
+number_t cape_str_char__len (unsigned char c)
 {
   if (0x20 <= c && c <= 0x7E)
   {
@@ -124,7 +136,7 @@ number_t cape_str_len (const CapeString s)
   while (*s_pos)
   {
     len++;
-    s_pos += cape_str_character__len (*s_pos);
+    s_pos += cape_str_char__len (*s_pos);
   }
   
   return len;
@@ -139,6 +151,61 @@ number_t cape_str_size (const CapeString s)
 
 //-----------------------------------------------------------------------------
 
+CapeString cape_str_f (double value)
+{
+  CapeString ret = CAPE_ALLOC (1025);
+  
+  CapeErr err = cape_err_new ();
+  
+  CapeDragon4 dragon4 = cape_dragon4_new ();
+  
+  cape_dragon4_positional (dragon4, CAPE_DRAGON4__DMODE_UNIQUE, CAPE_DRAGON4__CMODE_TOTAL, -1, FALSE, CAPE_DRAGON4__TMODE_ONE_ZERO, 0, 0);
+  
+  
+  int res = cape_dragon4_run (dragon4, ret, 1024, value, err);
+  if (res)
+  {
+    
+  }
+  else
+  {
+  }
+  
+  ret[cape_dragon4_len (dragon4)] = '\0';
+  
+  cape_dragon4_del (&dragon4);
+  
+  cape_err_del (&err);
+
+  return ret;
+}
+
+//-----------------------------------------------------------------------------
+
+int cape_str_empty (const CapeString s)
+{
+  if (s)
+  {
+    return (*s == '\0');
+  }
+  
+  return TRUE;
+}
+
+//-----------------------------------------------------------------------------
+
+int cape_str_not_empty (const CapeString s)
+{
+  if (s)
+  {
+    return (*s != '\0');
+  }
+  
+  return FALSE;
+}
+
+//-----------------------------------------------------------------------------
+
 int cape_str_equal (const CapeString s1, const CapeString s2)
 {
   if ((NULL == s1) || (NULL == s2))
@@ -147,6 +214,31 @@ int cape_str_equal (const CapeString s1, const CapeString s2)
   }
 
   return strcmp (s1, s2) == 0;
+}
+
+//-----------------------------------------------------------------------------
+
+int cape_str_compare_c (const CapeString s1, const CapeString s2)
+{
+  if (NULL == s1)
+  {
+    return -1;
+  }
+
+  if (NULL == s2)
+  {
+    return 1;
+  }
+  
+#ifdef _MSC_VER
+  
+  return _stricmp (s1, s2);
+  
+#elif __GNUC__
+  
+  return strcasecmp (s1, s2);
+  
+#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -188,6 +280,81 @@ int cape_str_begins (const CapeString s, const CapeString begins_with)
     
     return strncmp (s, begins_with, len) == 0;
   }
+}
+
+//-----------------------------------------------------------------------------
+
+int cape_str_begins_i (const CapeString s1, const CapeString s2)
+{
+  int ret;
+  
+  number_t l1 = strlen (s1);
+  number_t l2 = strlen (s2);
+
+  if (l2 < l1)
+  {
+    CapeString h = cape_str_sub (s1, l2);
+    
+    ret = cape_str_compare (h, s2);
+    
+    cape_str_del (&h);
+  }
+  else
+  {
+    ret = cape_str_compare (s1, s2);
+  }
+  
+  return ret;
+}
+
+//-----------------------------------------------------------------------------
+
+int cape_str_find (const CapeString haystack, const CapeString needle, number_t* p_pos)
+{
+  if (p_pos)
+  {
+    // use the string.h function to find the first occourence
+    char* res = strstr (haystack, needle);
+    if (res)
+    {
+      // calculate the position
+      *p_pos = res - haystack;
+      return TRUE;
+    }
+  }
+
+  return FALSE;
+}
+
+//-----------------------------------------------------------------------------
+
+int cape_str_find_utf8 (const CapeString haystack, const CapeString needle, number_t* pos_len, number_t* pos_size)
+{
+  if (pos_len && pos_size)
+  {
+    const char* spos = haystack;
+    number_t cpos = 0;
+    number_t len = strlen (needle);
+    
+    // iterate through all characters
+    while (*spos)
+    {
+      number_t char_len = cape_str_char__len (*spos);
+      
+      if (strncmp (spos, needle, len) == 0)
+      {
+        *pos_len = cpos;
+        *pos_size = spos - haystack;
+        
+        return TRUE;
+      }
+      
+      spos += char_len;
+      cpos ++;
+    }
+  }
+  
+  return FALSE;
 }
 
 //-----------------------------------------------------------------------------

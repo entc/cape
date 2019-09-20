@@ -3,6 +3,7 @@
 // cape includes
 #include "sys/cape_types.h"
 #include "sys/cape_file.h"
+#include "sys/cape_time.h"
 
 const void* CAPE_LOG_OUT_FD = NULL;
 
@@ -65,16 +66,14 @@ void cape_log_msg (CapeLogLevel lvl, const char* unit, const char* method, const
 
 #else
 
-  struct timeval time;
-  struct tm* l01;
+  CapeDatetime dt;
   number_t len;
   
-  gettimeofday (&time, NULL);
-  l01 = gmtime (&(time.tv_sec));
+  cape_datetime_utc (&dt);
   
   if (msg)
   {
-    len = snprintf (buffer, 2048, "%04i%02i%02i-%02i:%02i:%02i.%03i|%s|%8s|%-20s| %s", l01->tm_year + 1900, l01->tm_mon + 1, l01->tm_mday, l01->tm_hour, l01->tm_min, l01->tm_sec, (int)(time.tv_usec / 1000), msg_matrix[lvl], unit, method, msg);
+    len = snprintf (buffer, 2048, "%04i%02i%02i-%02i:%02i:%02i.%03i|%s|%8s|%-20s| %s", dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.sec, dt.msec, msg_matrix[lvl], unit, method, msg);
   }
   else
   {
