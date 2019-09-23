@@ -7,8 +7,8 @@
 
 #if defined __WINDOWS_OS
 
-#define CAPE_MATH_NAN         0x7fc00000  // only works for x86 try this instead 0.0 / 0.0 ?
-#define CAPE_MATH_INFINITY    0x7F800000  // only works for x86 try this instead 1.0 / 0.0
+#define CAPE_MATH_NAN       0.0 / 0.0 // 0x7fc00000  // only works for x86 try this instead 0.0 / 0.0 ?
+#define CAPE_MATH_INFINITY  1.0 / 0.0 // 0x7F800000  // only works for x86 try this instead 1.0 / 0.0
 
 #else
 

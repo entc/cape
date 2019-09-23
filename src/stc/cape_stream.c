@@ -266,14 +266,7 @@ void cape_stream_append_n (CapeStream self, number_t val)
 
 void cape_stream_append_f (CapeStream self, double val)
 {
-#ifdef _MSC_VER
-
-  cape_stream_reserve (self, 24);  // for very long intergers
-
-  self->pos += _snprintf_s (self->pos, 24, _TRUNCATE, "%f", val);
-  
-#else
-  
+  int res;
   CapeErr err = cape_err_new ();
   
   CapeDragon4 dragon4 = cape_dragon4_new ();
@@ -282,7 +275,7 @@ void cape_stream_append_f (CapeStream self, double val)
   
   cape_stream_reserve (self, 1024);  // for very long intergers
 
-  int res = cape_dragon4_run (dragon4, self->pos, 1024, val, err);
+  res = cape_dragon4_run (dragon4, self->pos, 1024, val, err);
   if (res)
   {
     
@@ -296,8 +289,6 @@ void cape_stream_append_f (CapeStream self, double val)
   cape_dragon4_del (&dragon4);
   
   cape_err_del (&err);
-  
-#endif
 }
 
 //-----------------------------------------------------------------------------
