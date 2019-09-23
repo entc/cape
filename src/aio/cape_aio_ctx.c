@@ -1037,12 +1037,12 @@ void cape_aio_handle_del (CapeAioHandle* p_self)
 
 //-----------------------------------------------------------------------------
 
-void cape_aio_handle_unref (CapeAioHandle self)
+void cape_aio_handle_unref (CapeAioHandle self, int close)
 {
   if (self->on_unref)
   {
     // call the callback to signal the destruction of the handle
-    self->on_unref (self->ptr, self);
+    self->on_unref (self->ptr, self, close);
   }
 }
 
@@ -1069,7 +1069,7 @@ struct CapeAioContext_s
 
 static void __STDCALL cape_aio_context__events_on_item_del (void* ptr)
 {
-  cape_aio_handle_unref (ptr);
+  cape_aio_handle_unref (ptr, FALSE);
 }
 
 //-----------------------------------------------------------------------------
@@ -1284,6 +1284,14 @@ int cape_aio_context_add (CapeAioContext self, CapeAioHandle aioh, number_t opti
   LeaveCriticalSection (self->mutex);
   
   return TRUE;
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_context_mod (CapeAioContext aio, CapeAioHandle aioh, int hflags, number_t option)
+{
+
+
 }
 
 //-----------------------------------------------------------------------------

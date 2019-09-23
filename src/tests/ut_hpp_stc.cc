@@ -86,7 +86,7 @@ int main (int argc, char *argv[])
 
   std::cout << "col04 = " << d1 << std::endl;
   
-  std::string s3 = val01["col04"];
+  std::string s3 = val01["col04"].as("");
   
   std::cout << "col04 = " << s3 << std::endl;
 

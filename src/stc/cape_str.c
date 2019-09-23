@@ -153,6 +153,8 @@ number_t cape_str_size (const CapeString s)
 
 CapeString cape_str_f (double value)
 {
+  int res;
+
   CapeString ret = CAPE_ALLOC (1025);
   
   CapeErr err = cape_err_new ();
@@ -161,8 +163,8 @@ CapeString cape_str_f (double value)
   
   cape_dragon4_positional (dragon4, CAPE_DRAGON4__DMODE_UNIQUE, CAPE_DRAGON4__CMODE_TOTAL, -1, FALSE, CAPE_DRAGON4__TMODE_ONE_ZERO, 0, 0);
   
-  
-  int res = cape_dragon4_run (dragon4, ret, 1024, value, err);
+
+  res = cape_dragon4_run (dragon4, ret, 1024, value, err);
   if (res)
   {
     

@@ -16,6 +16,16 @@
 #include <unistd.h>
 #include <netdb.h>
 
+#elif defined _WIN64 || defined _WIN32
+
+#include <ws2tcpip.h>
+#include <winsock2.h>
+
+#include <windows.h>
+#include <stdio.h>
+
+#endif
+
 //-----------------------------------------------------------------------------
 
 void cape_sock__set_host (struct sockaddr_in* addr, const char* host, long port)
@@ -36,7 +46,7 @@ void cape_sock__set_host (struct sockaddr_in* addr, const char* host, long port)
     
     if(server)
     {
-      bcopy((char*)server->h_addr, (char*)&(addr->sin_addr.s_addr), server->h_length);
+      memcpy (&(addr->sin_addr.s_addr), server->h_addr, server->h_length);
     }
     else
     {
@@ -44,6 +54,10 @@ void cape_sock__set_host (struct sockaddr_in* addr, const char* host, long port)
     }
   }
 }
+
+//-----------------------------------------------------------------------------
+
+#if defined __LINUX_OS || defined __BSD_OS
 
 //-----------------------------------------------------------------------------
 
@@ -266,12 +280,6 @@ exit_and_cleanup:
 
 #elif defined _WIN64 || defined _WIN32
 
-#include <ws2tcpip.h>
-#include <winsock2.h>
-
-#include <windows.h>
-#include <stdio.h>
-
 //-----------------------------------------------------------------------------
 
 static int init_wsa (void)
@@ -283,14 +291,16 @@ static int init_wsa (void)
 
 //-----------------------------------------------------------------------------
 
-void* cape_sock_reader_new (const char* host, long port, CapeErr err)
+void* cape_sock__tcp__clt_new (const char* host, long port, CapeErr err)
 {
   // TODO: needs to be done
+
+  return NULL;
 }
 
 //-----------------------------------------------------------------------------
 
-void* cape_sock_acceptor_new (const char* host, long port, CapeErr err)
+void* cape_sock__tcp__srv_new (const char* host, long port, CapeErr err)
 {
   struct addrinfo hints;
   
@@ -366,6 +376,153 @@ exit_and_cleanup:
   if (sock != INVALID_SOCKET)
   {
     closesocket (sock);
+  }
+  
+  return NULL;
+}
+
+//-----------------------------------------------------------------------------
+
+void* cape_sock__udp__clt_new (const char* host, long port, CapeErr err)
+{
+  struct sockaddr_in addr;
+  long sock = -1;
+  
+  // in windows the WSA system must be initialized first
+  if (!init_wsa ())
+  {
+    goto exit_and_cleanup;
+  }
+
+  cape_sock__set_host (&addr, host, port);
+  
+  // create socket as datagram
+  sock = socket (AF_INET, SOCK_DGRAM, 0);
+  if (sock < 0)
+  {
+    goto exit_and_cleanup;
+  }
+  
+  // make the socket none-blocking
+  /*
+  {
+    int flags = fcntl(sock, F_GETFL, 0);
+    
+    if (flags == -1)
+    {
+      goto exit_and_cleanup;
+    }
+    
+    flags |= O_NONBLOCK;
+    
+    if (fcntl(sock, F_SETFL, flags) != 0)
+    {
+      goto exit_and_cleanup;
+    }
+  }
+  */
+  
+  {
+    u_long mode = 1;  // 1 to enable non-blocking socket
+    ioctlsocket (sock, FIONBIO, &mode);
+  }
+
+  cape_log_fmt (CAPE_LL_TRACE, "CAPE", "socket", "UDP socket clt on %s:%i", host, port);
+
+  // return the socket
+  return (void*)sock;
+  
+exit_and_cleanup:
+  
+  // save the last system error into the error object
+  cape_err_lastOSError (err);
+  
+  if (sock >= 0)
+  {
+    closesocket (sock);    
+  }
+  
+  return NULL;
+}
+
+//-----------------------------------------------------------------------------
+
+void* cape_sock__udp__srv_new (const char* host, long port, CapeErr err)
+{
+  struct sockaddr_in addr;
+  long sock = -1;
+  
+  // in windows the WSA system must be initialized first
+  if (!init_wsa ())
+  {
+    goto exit_and_cleanup;
+  }
+
+  cape_sock__set_host (&addr, host, port);
+  
+  // create socket
+  sock = socket (AF_INET, SOCK_DGRAM, 0);
+  if (sock < 0)
+  {
+    goto exit_and_cleanup;
+  }
+  
+  {
+    int opt = 1;
+    
+    // set the socket option to reuse the address
+    if (setsockopt (sock, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, sizeof(opt)) < 0)
+    {
+      goto exit_and_cleanup;
+    }
+    
+    // try to bind the socket to an address
+    if (bind (sock, (const struct sockaddr*)&(addr), sizeof(addr)) < 0)
+    {
+      goto exit_and_cleanup;
+    }
+  }
+  
+  // make the socket none-blocking
+  /*
+  {
+    // get current flags
+    int flags = fcntl (sock, F_GETFL, 0);
+    
+    if (flags == -1)
+    {
+      goto exit_and_cleanup;
+    }
+    
+    // add noneblocking flag
+    flags |= O_NONBLOCK;
+
+    // set flags
+    if (fcntl (sock, F_SETFL, flags) != 0)
+    {
+      goto exit_and_cleanup;
+    }
+  }
+  */
+
+  {
+    u_long mode = 1;  // 1 to enable non-blocking socket
+    ioctlsocket (sock, FIONBIO, &mode);
+  }
+
+  cape_log_fmt (CAPE_LL_TRACE, "CAPE", "socket", "UDP socket srv on %s:%i", host, port);
+  
+  // return the socket
+  return (void*)sock;  
+  
+exit_and_cleanup:
+
+  // save the last system error into the error object
+  cape_err_lastOSError (err);
+  
+  if (sock >= 0)
+  {
+    closesocket (sock);    
   }
   
   return NULL;

@@ -10,6 +10,12 @@
 
 #include <sys/time.h>
 
+#elif defined __WINDOWS_OS
+
+#include <windows.h>
+
+#endif
+
 //-----------------------------------------------------------------------------
 
 void cape_datetime__convert_timeinfo (CapeDatetime* dt, const struct tm* timeinfo)
@@ -49,6 +55,27 @@ void cape_datetime__convert_cape (struct tm* timeinfo, const CapeDatetime* dt)
 
 void cape_datetime_utc (CapeDatetime* dt)
 {
+#if defined __WINDOWS_OS
+
+  SYSTEMTIME time;
+  GetSystemTime(&time);
+  
+  dt->sec = time.wSecond;
+  dt->msec = time.wMilliseconds;
+  dt->usec = 0;
+  
+  dt->minute = time.wMinute;
+  dt->hour = time.wHour;
+  
+  dt->day = time.wDay;
+  dt->month = time.wMonth;
+  dt->year = time.wYear;
+  
+  dt->is_dst = FALSE;
+  dt->is_utc = TRUE;
+
+#else
+
   struct timeval time;  
   struct tm* l01;
   
@@ -61,12 +88,35 @@ void cape_datetime_utc (CapeDatetime* dt)
   dt->usec = time.tv_usec;
   
   dt->is_utc = TRUE;
+
+#endif
 }
 
 //-----------------------------------------------------------------------------
 
 void cape_datetime_local (CapeDatetime* dt)
 {
+#if defined __WINDOWS_OS
+
+  SYSTEMTIME time;
+  GetLocalTime(&time);
+  
+  dt->sec = time.wSecond;
+  dt->msec = time.wMilliseconds;
+  dt->usec = 0;
+  
+  dt->minute = time.wMinute;
+  dt->hour = time.wHour;
+  
+  dt->day = time.wDay;
+  dt->month = time.wMonth;
+  dt->year = time.wYear; 
+  
+  dt->is_dst = FALSE;
+  dt->is_utc = FALSE;
+
+#else
+
   struct timeval time;  
   struct tm* l01;
   
@@ -79,12 +129,19 @@ void cape_datetime_local (CapeDatetime* dt)
   dt->usec = time.tv_usec;
 
   dt->is_utc = FALSE;
+
+#endif
 }
 
 //-----------------------------------------------------------------------------
 
 void cape_datetime_to_local (CapeDatetime* dt)
 {
+#if defined __WINDOWS_OS
+
+
+#else
+
   if (dt->is_utc)
   {
     struct tm timeinfo;
@@ -117,13 +174,15 @@ void cape_datetime_to_local (CapeDatetime* dt)
     
     dt->is_utc = FALSE;
   }
+
+#endif
 }
 
 //-----------------------------------------------------------------------------
 
 CapeString cape_datetime_s__fmt (const CapeDatetime* dt, const CapeString format)
 {
-  CapeString ret = CAPE_ALLOC (100);
+  CapeString ret = (CapeString)CAPE_ALLOC (100);
   
   {
     struct tm timeinfo;
@@ -190,74 +249,19 @@ time_t cape_datetime_n__unix (const CapeDatetime* dt)
 
 //-----------------------------------------------------------------------------
 
-#elif defined __WINDOWS_OS
-
-//-----------------------------------------------------------------------------
-
-#include <windows.h>
-
-//-----------------------------------------------------------------------------
-
-void cape_datetime_utc (CapeDatetime* dt)
-{
-  SYSTEMTIME time;
-  GetSystemTime(&time);
-  
-  dt->sec = time.wSecond;
-  dt->msec = time.wMilliseconds;
-  dt->usec = 0;
-  
-  dt->minute = time.wMinute;
-  dt->hour = time.wHour;
-  
-  dt->day = time.wDay;
-  dt->month = time.wMonth;
-  dt->year = time.wYear;
-  
-  dt->is_dst = FALSE;
-  dt->is_utc = TRUE;
-}
-
-//-----------------------------------------------------------------------------
-
-void cape_datetime_local (CapeDatetime* dt)
-{
-  SYSTEMTIME time;
-  GetLocalTime(&time);
-  
-  dt->sec = time.wSecond;
-  dt->msec = time.wMilliseconds;
-  dt->usec = 0;
-  
-  dt->minute = time.wMinute;
-  dt->hour = time.wHour;
-  
-  dt->day = time.wDay;
-  dt->month = time.wMonth;
-  dt->year = time.wYear; 
-  
-  dt->is_dst = FALSE;
-  dt->is_utc = FALSE;
-}
-
-//-----------------------------------------------------------------------------
-
-void cape_datetime_to_local (CapeDatetime* dt)
-{
-  // TODO
-}
-
-//-----------------------------------------------------------------------------
-
-#endif
-
-//-----------------------------------------------------------------------------
-
 struct CapeStopTimer_s
 {
   double time_passed;
-  
+
+#if defined __WINDOWS_OS
+
+  DWORD time_start;
+
+#else
+
   struct timeval time_start;  
+
+#endif
 };
 
 //-----------------------------------------------------------------------------
@@ -278,9 +282,7 @@ CapeStopTimer cape_stoptimer_new ()
 void cape_stoptimer_del (CapeStopTimer* p_self)
 {
   if (*p_self)
-  {
-    
-    
+  {  
     CAPE_DEL (p_self, struct CapeStopTimer_s);
   }
 }
@@ -289,13 +291,29 @@ void cape_stoptimer_del (CapeStopTimer* p_self)
 
 void cape_stoptimer_start (CapeStopTimer self)
 {
+#if defined __WINDOWS_OS
+
+  self->time_start = GetTickCount();
+
+#else
+
   gettimeofday (&(self->time_start), NULL);
+
+#endif
 }
 
 //-----------------------------------------------------------------------------
 
 void cape_stoptimer_stop (CapeStopTimer self)
 {
+#if defined __WINDOWS_OS
+
+  DWORD end = GetTickCount();
+
+  self->time_passed = end - self->time_start;
+
+#else
+
   struct timeval time_res;
   struct timeval time_end;
   
@@ -304,6 +322,8 @@ void cape_stoptimer_stop (CapeStopTimer self)
   timersub (&time_end, &(self->time_start), &time_res);
   
   self->time_passed += ((double)time_res.tv_sec * 1000) + ((double)time_res.tv_usec / 1000);
+
+#endif
 }
 
 //-----------------------------------------------------------------------------

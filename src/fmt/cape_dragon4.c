@@ -29,10 +29,22 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef __LINUX_OS
+#if defined __LINUX_OS
 
 #include <sys/types.h>
 #include <stdint.h> 
+
+#define __CAPE_INLINE inline
+
+#elif defined __WINDOWS_OS
+
+#include <stdint.h>
+
+#define __CAPE_INLINE __inline
+
+#else
+
+#define __CAPE_INLINE inline
 
 #endif
 
@@ -58,14 +70,14 @@ typedef float       cape_float32;
 
 //-----------------------------------------------------------------------------------------------------------
 
-static inline cape_uint64 bitmask_u64 (cape_uint32 n)
+static __CAPE_INLINE cape_uint64 bitmask_u64 (cape_uint32 n)
 {
   return ~(~((cape_uint64)0) << n);
 }
 
 //-----------------------------------------------------------------------------------------------------------
 
-static inline cape_uint32 bitmask_u32 (cape_uint32 n)
+static __CAPE_INLINE cape_uint32 bitmask_u32 (cape_uint32 n)
 {
   return ~(~((cape_uint32)0) << n);
 }
@@ -235,16 +247,19 @@ static void BigInt_Copy (BigInt *dst, const BigInt *src)
 /* Basic type accessors */
 static void BigInt_Set_uint64 (BigInt *i, cape_uint64 val)
 {
-  if (val > bitmask_u64(32)) {
+  if (val > bitmask_u64(32))
+  {
     i->blocks[0] = val & bitmask_u64(32);
     i->blocks[1] = (val >> 32) & bitmask_u64(32);
     i->length = 2;
   }
-  else if (val != 0) {
+  else if (val != 0)
+  {
     i->blocks[0] = val & bitmask_u64(32);
     i->length = 1;
   }
-  else {
+  else
+  {
     i->length = 0;
   }
 }
@@ -911,7 +926,7 @@ static void BigInt_MultiplyPow10 (BigInt *in, cape_uint32 exponent, BigInt *temp
 //-----------------------------------------------------------------------------------------------------------
 
 /* result = 2^exponent */
-static inline void BigInt_Pow2 (BigInt *result, cape_uint32 exponent)
+static __CAPE_INLINE void BigInt_Pow2 (BigInt *result, cape_uint32 exponent)
 {
   cape_uint32 bitIdx;
   cape_uint32 blockIdx = exponent / 32;

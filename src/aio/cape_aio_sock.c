@@ -1134,48 +1134,565 @@ void cape_aio_accept_add (CapeAioAccept* p_self, CapeAioContext aio)
 
 #elif defined __WINDOWS_OS
 
-#include <windows.h>
+#include <WinSock2.h>
+#include <Mswsock.h>
+#include <WS2tcpip.h>
+#include <Windows.h>
+
+#pragma comment(lib, "Ws2_32.lib")
+#pragma comment(lib, "mswsock.lib")
+
+#include <stdio.h>
+
+#define CAPE_AIO_SOCKET__RECV_BUFLEN 1024
 
 //-----------------------------------------------------------------------------
 
 struct CapeAioSocket_s
 {
-    HANDLE handle;
-    
-    CapeAioHandle aioh;
+  // the handle to the device descriptor
+  void* handle;
+  
+  // the handle to the AIO system
+  CapeAioHandle aioh;
+  
+  int mode;
+  LONG refcnt;
 
-    int mask;
-    
-    // callbacks
-    
-    void* ptr;
-    
-    fct_cape_aio_socket_onSent onSent;
-    
-    fct_cape_aio_socket_onRecv onRecv;
-    
-    fct_cape_aio_socket_onDone onDone;
+  // *** for sending ***
+  
+  // to store the buffer
+  const char* send_bufdat;    // reference
+  
+  number_t send_buflen;
+  number_t send_bufpos;
 
-    // for sending
-    
-    const char* send_bufdat;
-    
-    WORD send_buflen;
-    
-    WORD send_buftos;
-    
-    void* send_userdata;
-
-    // for receive
-    
-    char* recv_bufdat;
-    
-    WORD recv_buflen;
-    
-    int refcnt;
+  void* userdata;             // reference
+  
+  // *** for recieving ***
+  
+  // to store the buffer
+  char* recv_bufdat;
+  
 };
 
 //-----------------------------------------------------------------------------
+
+CapeAioSocket cape_aio_socket_new (void* handle)
+{
+  CapeAioSocket self = CAPE_NEW (struct CapeAioSocket_s);
+  
+  self->handle = handle;
+  self->aioh = NULL;
+  self->mode = CAPE_AIO_NONE;
+
+  // start with count 1 referenced to this object
+  self->refcnt = 1;
+
+  self->send_bufdat = NULL;
+  self->userdata = NULL;
+  
+  self->send_buflen = 0;
+  self->send_bufpos = 0;
+  
+  self->recv_bufdat = NULL;
+  
+  return self;
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket_del (CapeAioSocket* p_self)
+{
+  if (*p_self)
+  {
+    CapeAioSocket self = *p_self;
+
+    
+    if (self->recv_bufdat)
+    {
+      free (self->recv_bufdat);
+    }
+    
+    
+    // close the handle
+    closesocket ((long)self->handle);
+    
+    // delete the AIO handle
+    cape_aio_handle_del (&(self->aioh));
+
+    CAPE_DEL (p_self, struct CapeAioSocket_s);
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket_inref (CapeAioSocket self)
+{
+  InterlockedIncrement (&(self->refcnt));
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket_unref (CapeAioSocket self)
+{
+  int var = InterlockedDecrement (&(self->refcnt));
+  if (var == 0)
+  {
+    cape_aio_socket_del (&self);
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket_recv (CapeAioSocket self, void* overlapped)
+{
+  DWORD dwFlags = 0;
+  DWORD dwBytes = 0;
+  WSABUF dataBuf;
+  INT nBytesRecv;
+  
+  if (self->recv_bufdat == NULL)
+  {
+    self->recv_bufdat = (char*)CAPE_ALLOC (CAPE_AIO_SOCKET__RECV_BUFLEN);
+    memset (self->recv_bufdat, 0, CAPE_AIO_SOCKET__RECV_BUFLEN);
+  }
+
+  dataBuf.buf = self->recv_bufdat;
+  dataBuf.len = CAPE_AIO_SOCKET__RECV_BUFLEN;
+  
+  nBytesRecv = WSARecv ((unsigned int)self->handle, &dataBuf, 1, &dwBytes, &dwFlags, (WSAOVERLAPPED*)overlapped, NULL);
+  if (nBytesRecv == SOCKET_ERROR)
+  {
+    DWORD res = WSAGetLastError();
+    if (res == WSA_IO_PENDING || res == 997)
+    {
+      return;
+    }
+    
+    self->mode = CAPE_AIO_DONE;
+  }
+  else if (nBytesRecv == 0)
+  {
+    // connection was closed
+
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket__send (CapeAioSocket self, void* overlapped)
+{
+  DWORD dwFlags = 0;
+  DWORD dwBytes = 0;
+  WSABUF dataBuf;
+  int res;
+  
+  dataBuf.buf = (char*)self->send_bufdat + self->send_bufpos;
+  dataBuf.len = self->send_buflen - self->send_bufpos;
+  
+  res = WSASend ((unsigned int)self->handle, &dataBuf, 1, &dwBytes, dwFlags, (WSAOVERLAPPED*) overlapped, NULL);
+  if (res == 0)
+  {
+    // connection was closed
+
+  }
+  else if (res < 0)
+  {
+    DWORD err = GetLastError ();
+    if (err != ERROR_IO_PENDING || res == 997)
+    {
+      return;
+    }
+        
+    self->mode = CAPE_AIO_DONE;
+  }
+  else
+  {
+    // everything ok
+    // an event will be triggered after the buffer was sent
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket_add (CapeAioSocket* p_self, CapeAioContext aio)
+{
+
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket_add_w (CapeAioSocket* p_self, CapeAioContext aio)
+{
+
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket_add_r (CapeAioSocket* p_self, CapeAioContext aio)
+{
+
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket_add_b (CapeAioSocket* p_self, CapeAioContext aio)
+{
+
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket_change_w (CapeAioSocket self, CapeAioContext aio)
+{
+
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket_change_r (CapeAioSocket self, CapeAioContext aio)
+{
+
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket_close (CapeAioSocket self, CapeAioContext aio)
+{
+
+}
+
+//-----------------------------------------------------------------------------
+
+void  cape_aio_socket_markSent (CapeAioSocket self, CapeAioContext aio)
+{
+  cape_aio_socket_change_w (self, aio);
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket_listen (CapeAioSocket* p_self, CapeAioContext aio)
+{
+  cape_aio_socket_add_r (p_self, aio);
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket_callback (CapeAioSocket self, void* ptr, fct_cape_aio_socket_onSent on_sent, fct_cape_aio_socket_onRecv on_recv, fct_cape_aio_socket_onDone on_done)
+{
+
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket_send (CapeAioSocket self, CapeAioContext aio, const char* bufdata, unsigned long buflen, void* userdata)
+{
+
+}
+
+//=============================================================================
+
+struct CapeAioSocketUdp_s
+{
+  // the handle to the device descriptor
+  void* handle;
+  
+  // the handle to the AIO system
+  CapeAioHandle aioh;
+  
+  int mode;
+
+  // *** for sending ***
+  
+  // to store the buffer
+  const char* send_bufdat;    // reference
+  
+  number_t send_buflen;
+  number_t send_bufpos;
+
+  void* userdata;             // reference
+  
+  // address to send to
+  struct sockaddr_in send_addr;
+
+  // *** for recieving ***
+  
+  // to store the buffer
+  char* recv_bufdat;
+  
+  // address to send to
+  struct sockaddr_in recv_addr;
+  
+  // *** callback ***
+  
+  void* ptr;
+  
+  fct_cape_aio_socket__on_sent_ready on_ready_for_sending;
+  fct_cape_aio_socket__on_recv_from on_recv_from;
+  fct_cape_aio_socket_onDone on_done;
+};
+
+//-----------------------------------------------------------------------------
+
+CapeAioSocketUdp cape_aio_socket__udp__new (void* handle)
+{
+  CapeAioSocketUdp self = CAPE_NEW (struct CapeAioSocketUdp_s);
+  
+  self->handle = handle;
+  self->aioh = NULL;
+  self->mode = CAPE_AIO_NONE;
+  
+  self->send_bufdat = NULL;
+  self->userdata = NULL;
+  
+  self->send_buflen = 0;
+  self->send_bufpos = 0;
+  
+  self->recv_bufdat = NULL;
+  
+  self->ptr = NULL;
+  self->on_ready_for_sending = NULL;
+  self->on_recv_from = NULL;
+  self->on_done = NULL;
+  
+  memset (&(self->send_addr), 0, sizeof(struct sockaddr_in));
+  memset (&(self->recv_addr), 0, sizeof(struct sockaddr_in));
+  
+  return self;
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket__upd__del (CapeAioSocketUdp* p_self)
+{
+  if (*p_self)
+  {
+    CapeAioSocketUdp self = *p_self;
+    
+    // close the handle
+    closesocket ((long)self->handle);
+    
+    // delete the AIO handle
+    cape_aio_handle_del (&(self->aioh));
+    
+    if (self->recv_bufdat)
+    {
+      // clean the buffer
+      memset (self->recv_bufdat, 0, CAPE_AIO_SOCKET__RECV_BUFLEN);
+      
+      CAPE_FREE (self->recv_bufdat);
+    }
+    
+    if (self->on_done)
+    {
+      self->on_done (self->ptr, self->userdata);
+    }
+    
+    CAPE_DEL (p_self, struct CapeAioSocketUdp_s);
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket__udp__recvfrom (CapeAioSocketUdp self, void* overlapped)
+{
+  DWORD dwFlags = 0;
+  DWORD dwBytes = 0;
+  WSABUF dataBuf;
+  INT nBytesRecv;
+  INT addr_len;
+  
+  if (self->recv_bufdat == NULL)
+  {
+    self->recv_bufdat = (char*)CAPE_ALLOC (CAPE_AIO_SOCKET__RECV_BUFLEN);
+    memset (self->recv_bufdat, 0, CAPE_AIO_SOCKET__RECV_BUFLEN);
+  }
+
+  dataBuf.buf = self->recv_bufdat;
+  dataBuf.len = CAPE_AIO_SOCKET__RECV_BUFLEN;
+  
+  nBytesRecv = WSARecvFrom ((unsigned int)self->handle, &dataBuf, 1, &dwBytes, &dwFlags, (struct sockaddr*)&(self->recv_addr), &addr_len, (WSAOVERLAPPED*)overlapped, NULL);
+  if (nBytesRecv == SOCKET_ERROR)
+  {
+    DWORD res = WSAGetLastError();
+    if (res == WSA_IO_PENDING || res == 997)
+    {
+      return;
+    }
+    
+    self->mode = CAPE_AIO_DONE;
+  }
+  else if (nBytesRecv == 0)
+  {
+    // connection was closed
+
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket__udp__sendto (CapeAioSocketUdp self, void* overlapped)
+{
+  DWORD dwFlags = 0;
+  DWORD dwBytes = 0;
+  WSABUF dataBuf;
+  int res;
+  
+  dataBuf.buf = (char*)self->send_bufdat + self->send_bufpos;
+  dataBuf.len = self->send_buflen - self->send_bufpos;
+  
+  res = WSASendTo ((unsigned int)self->handle, &dataBuf, 1, &dwBytes, dwFlags, (struct sockaddr*)&(self->send_addr), sizeof(self->send_addr), (WSAOVERLAPPED*) overlapped, NULL);
+  if (res == 0)
+  {
+    // connection was closed
+
+  }
+  else if (res < 0)
+  {
+    DWORD err = GetLastError ();
+    if (err != ERROR_IO_PENDING || res == 997)
+    {
+      return;
+    }
+        
+    self->mode = CAPE_AIO_DONE;
+  }
+  else
+  {
+    // everything ok
+    // an event will be triggered after the buffer was sent
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+static int __STDCALL cape_aio_socket__udp__on_event (void* ptr, void* handle, int mode, unsigned long events, void* overlapped, unsigned long param1)
+{
+  CapeAioSocketUdp self = ptr;
+
+  if (param1 == 0)
+  {
+    return CAPE_AIO_DONE;
+  }
+
+  if (self->on_recv_from)
+  {
+    const char* remote_addr = inet_ntoa (self->recv_addr.sin_addr);
+        
+    self->on_recv_from (self->ptr, self, self->recv_bufdat, param1, remote_addr);
+  }
+  
+  cape_aio_socket__udp__recvfrom (self, overlapped);
+
+  return self->mode;
+}
+
+//-----------------------------------------------------------------------------
+
+static void __STDCALL cape_aio_socket__udp__on_unref (void* ptr, CapeAioHandle aioh, int force_close)
+{
+  CapeAioSocketUdp self = ptr;
+  
+  cape_aio_socket__upd__del (&self);
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket__udp__add (CapeAioSocketUdp* p_self, CapeAioContext aioctx, int mode)
+{
+  CapeAioSocketUdp self = *p_self;
+  
+  self->aioh = cape_aio_handle_new (self->handle, mode, self, cape_aio_socket__udp__on_event, cape_aio_socket__udp__on_unref);
+  
+  cape_aio_context_add (aioctx, self->aioh, 0);
+  
+  *p_self = NULL;
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket__udp__set (CapeAioSocketUdp self, CapeAioContext aio, int mode)
+{
+  if (self->aioh)
+  {
+    if (mode != self->mode)
+    {
+      self->mode = mode;
+      
+      cape_aio_context_mod (aio, self->aioh, mode, 0);
+    }
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket__udp__rm (CapeAioSocketUdp self, CapeAioContext aio)
+{
+  if (self->aioh)
+  {
+    cape_aio_context_mod (aio, self->aioh, CAPE_AIO_DONE, 0);
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket__udp__cb (CapeAioSocketUdp self, void* ptr, fct_cape_aio_socket__on_sent_ready on_send, fct_cape_aio_socket__on_recv_from on_recv, fct_cape_aio_socket_onDone on_done)
+{
+  // the user pointer
+  self->ptr = ptr;
+  
+  // set methods
+  self->on_ready_for_sending = on_send;
+  self->on_recv_from = on_recv;
+  self->on_done = on_done;
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket__udp__send (CapeAioSocketUdp self, CapeAioContext aio, const char* bufdat, unsigned long buflen, void* userdata, const char* host, number_t port)
+{
+  const struct hostent* server;
+
+  // check if we are ready to send
+  if (self->send_buflen)
+  {
+    // increase the refcounter to ensure that the object will nont be deleted during sending cycle
+    cape_log_msg (CAPE_LL_ERROR, "CAPE", "aio_sock", "socket has already a buffer to send");    
+    return;
+  }
+  
+  memset (&(self->send_addr), 0, sizeof(struct sockaddr_in));
+  
+  self->send_addr.sin_family = AF_INET;      // set the network type
+  self->send_addr.sin_port = htons ((u_short)port);    // set the port
+  
+  // set the address
+  if (host == NULL)
+  {
+    return;
+  }
+  
+  server = gethostbyname (host);
+  
+  if (server)
+  {
+    memcpy (&(self->send_addr.sin_addr.s_addr), server->h_addr, server->h_length);
+  }
+    
+  self->send_bufdat = bufdat;
+  self->send_buflen = buflen;
+  self->send_bufpos = 0;
+  
+  // set the userdata to keep
+  self->userdata = userdata;
+  
+  // activate recieving
+  self->mode |= CAPE_AIO_WRITE;
+
+  // try to send
+  cape_aio_socket__udp__sendto (self, NULL);
+}
 
 //-----------------------------------------------------------------------------
 
@@ -1302,7 +1819,7 @@ static int __STDCALL cape_aio_accept_onEvent (void* ptr, void* handle, int hflag
 
 //-----------------------------------------------------------------------------
 
-static void __STDCALL cape_aio_accept_onUnref (void* ptr, CapeAioHandle aioh)
+static void __STDCALL cape_aio_accept_onUnref (void* ptr, CapeAioHandle aioh, int close)
 {
   CapeAioAccept self = ptr;
   
@@ -1568,6 +2085,8 @@ static void __STDCALL cape_aio_socket_cache__on_done (void* ptr, void* userdata)
   // check for auto reconnect system
   if (retry)
   {
+	  int res;
+
     CapeErr err = cape_err_new ();
     
     CapeAioTimer timer = cape_aio_timer_new ();
@@ -1576,7 +2095,7 @@ static void __STDCALL cape_aio_socket_cache__on_done (void* ptr, void* userdata)
     
     cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio_cache set", "start retry timer [%ims]", timeout_in_ms);
     
-    int res = cape_aio_timer_set (timer, timeout_in_ms, self, cape_aio_socket_cache__on_timer, err);   // create timer with 10 seconds
+    res = cape_aio_timer_set (timer, timeout_in_ms, self, cape_aio_socket_cache__on_timer, err);   // create timer with 10 seconds
     if (res)
     {
       cape_log_fmt (CAPE_LL_DEBUG, "CAPE", "aio socket", "can't create reconnect timer: %s", cape_err_text (err));
