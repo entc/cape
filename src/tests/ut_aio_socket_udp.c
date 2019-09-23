@@ -122,7 +122,7 @@ int main (int argc, char *argv[])
   }
   
   {
-    number_t m = 8000000;
+    number_t m = 8000;
     int i = 0;
   
     CapeStopTimer st = cape_stoptimer_new ();
