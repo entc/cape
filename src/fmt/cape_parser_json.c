@@ -466,7 +466,7 @@ void cape_parser_json_item_next (CapeParserJson self, int type, const char* key,
           {
             case 't':
             {
-              if (strcmp("true", val) == 0 && self->onItem)
+              if (cape_str_equal ("true", val) && self->onItem)
               {
                 self->onItem (self->ptr, self->keyElement->obj, CAPE_JPARSER_OBJECT_BOLEAN, (void*)TRUE, key, index);
               }
@@ -476,7 +476,7 @@ void cape_parser_json_item_next (CapeParserJson self, int type, const char* key,
             }
             case 'f':
             {
-              if (strcmp("false", val) == 0 && self->onItem)
+              if (cape_str_equal ("false", val) && self->onItem)
               {
                 self->onItem (self->ptr, self->keyElement->obj, CAPE_JPARSER_OBJECT_BOLEAN, (void*)FALSE, key, index);
               }
@@ -486,15 +486,15 @@ void cape_parser_json_item_next (CapeParserJson self, int type, const char* key,
             }
             case 'n':
             {
-              if (strcmp("null", val) == 0 && self->onItem)
+              if (cape_str_equal ("null", val) && self->onItem)
               {
                 self->onItem (self->ptr, self->keyElement->obj, CAPE_JPARSER_OBJECT_NULL, NULL, key, index);
               }
               
-              if (strcmp("nan", val) == 0 && self->onItem)
+              if (cape_str_equal ("nan", val) && self->onItem)
               {
                 // create a double as NotANumber
-                double h = NAN;
+                double h = CAPE_MATH_NAN;
                 
                 self->onItem (self->ptr, self->keyElement->obj, CAPE_JPARSER_OBJECT_FLOAT, &h, key, index);
               }
@@ -504,10 +504,10 @@ void cape_parser_json_item_next (CapeParserJson self, int type, const char* key,
             }
             case 'i':
             {
-              if (strcmp("inf", val) == 0 && self->onItem)
+              if (cape_str_equal ("inf", val) && self->onItem)
               {
                 // create a double as infinity value
-                double h = INFINITY;
+                double h = CAPE_MATH_INFINITY;
                 
                 self->onItem (self->ptr, self->keyElement->obj, CAPE_JPARSER_OBJECT_FLOAT, &h, key, index);
               }

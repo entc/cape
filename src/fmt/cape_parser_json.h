@@ -5,6 +5,18 @@
 #include "sys/cape_types.h"
 #include "sys/cape_err.h"
 
+#if defined __WINDOWS_OS
+
+#define CAPE_MATH_NAN         0x7fc00000  // only works for x86 try this instead 0.0 / 0.0 ?
+#define CAPE_MATH_INFINITY    0x7F800000  // only works for x86 try this instead 1.0 / 0.0
+
+#else
+
+#define CAPE_MATH_NAN NAN
+#define CAPE_MATH_INFINITY INFINITY
+
+#endif
+
 //=============================================================================
 
 #define CAPE_JPARSER_UNDEFINED       0

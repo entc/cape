@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 2.4)
 
+PROJECT(cape)
+
 SET (CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../cmake)
 
 IF (CMAKE_VERSION VERSION_LESS "3.1")

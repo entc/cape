@@ -283,14 +283,16 @@ static int init_wsa (void)
 
 //-----------------------------------------------------------------------------
 
-void* cape_sock_reader_new (const char* host, long port, CapeErr err)
+void* cape_sock__tcp__clt_new (const char* host, long port, CapeErr err)
 {
   // TODO: needs to be done
+
+  return NULL;
 }
 
 //-----------------------------------------------------------------------------
 
-void* cape_sock_acceptor_new (const char* host, long port, CapeErr err)
+void* cape_sock__tcp__srv_new (const char* host, long port, CapeErr err)
 {
   struct addrinfo hints;
   
@@ -368,6 +370,22 @@ exit_and_cleanup:
     closesocket (sock);
   }
   
+  return NULL;
+}
+
+//-----------------------------------------------------------------------------
+
+void* cape_sock__udp__clt_new (const char* host, long port, CapeErr err)
+{
+
+  return NULL;
+}
+
+//-----------------------------------------------------------------------------
+
+void* cape_sock__udp__srv_new (const char* host, long port, CapeErr err)
+{
+
   return NULL;
 }
 
