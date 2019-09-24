@@ -80,6 +80,7 @@ SET(CAPE_AIO_HEADERS
 #----------------------------------------------------------------------------------
 
 SET(CAPE_FMT_SOURCES
+  fmt/cape_parser_line.c
   fmt/cape_parser_json.c
   fmt/cape_json.c
   fmt/cape_tokenizer.c
@@ -88,6 +89,7 @@ SET(CAPE_FMT_SOURCES
 )
 
 SET(CAPE_FMT_HEADERS
+  fmt/cape_parser_line.h
   fmt/cape_parser_json.h
   fmt/cape_json.h
   fmt/cape_tokenizer.h
