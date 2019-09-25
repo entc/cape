@@ -740,7 +740,7 @@ void cape_aio_context_mod (CapeAioContext self, CapeAioHandle aioh, int hflags, 
 
 //-----------------------------------------------------------------------------
 
-int cape_aio_context_add (CapeAioContext self, CapeAioHandle aioh, number_t option)
+int cape_aio_context_add (CapeAioContext self, CapeAioHandle aioh, void* handle, number_t option)
 {
 #if defined __BSD_OS
 
@@ -766,7 +766,7 @@ int cape_aio_context_add (CapeAioContext self, CapeAioHandle aioh, number_t opti
   
   cape_aio_update_events (&event, aioh->hflags);
   
-  int s = epoll_ctl (self->efd, EPOLL_CTL_ADD, (long)(aioh->hfd), &event);
+  int s = epoll_ctl (self->efd, EPOLL_CTL_ADD, (long)handle), &event);
   if (s < 0)
   {
     int errCode = errno;
@@ -781,7 +781,7 @@ int cape_aio_context_add (CapeAioContext self, CapeAioHandle aioh, number_t opti
       
       cape_err_lastOSError (err);
       
-      printf ("can't add fd [%li] to epoll: %s\n", (long)aioh->hfd, cape_err_text (err));
+      printf ("can't add fd [%li] to epoll: %s\n", (long)handle, cape_err_text (err));
       
       cape_err_del (&err);
     }
@@ -991,9 +991,6 @@ struct CapeAioHandle_s
   // WSA needs an extra handle here
   HANDLE reserved;
 
-  // user defined part
-  HANDLE hfd;
-  
   void* ptr;
   
   int hflags;
@@ -1011,7 +1008,6 @@ CapeAioHandle cape_aio_handle_new (void* handle, int hflags, void* ptr, fct_cape
   
   SecureZeroMemory((PVOID)self, sizeof(struct CapeAioHandle_s));
 
-  self->hfd = handle;
   self->ptr = ptr;
   
   self->on_event = on_event;
@@ -1161,7 +1157,7 @@ int cape_aio_context_next__overlapped (OVERLAPPED* ovl, int repeat, unsigned lon
     {
       printf ("ON EVENT\n");
 
-      hflags_result = hobj->on_event (hobj->ptr, (void*)hobj->hfd, hobj->hflags, 0, ovl, bytes);
+      hflags_result = hobj->on_event (hobj->ptr, NULL, hobj->hflags, 0, ovl, bytes);
     }
   }
   
@@ -1257,10 +1253,10 @@ int cape_aio_context_next (CapeAioContext self, long timeout_in_ms, CapeErr err)
 
 //-----------------------------------------------------------------------------
 
-int cape_aio_context_add (CapeAioContext self, CapeAioHandle aioh, number_t option)
+int cape_aio_context_add (CapeAioContext self, CapeAioHandle aioh, void* handle, number_t option)
 {
   // add the handle to the overlapping completion port
-  HANDLE cportHandle = CreateIoCompletionPort (aioh->hfd, self->port, 0, 0);
+  HANDLE cportHandle = CreateIoCompletionPort (handle, self->port, 0, 0);
   
   // cportHandle must return a value
   if (cportHandle == NULL)
@@ -1269,7 +1265,7 @@ int cape_aio_context_add (CapeAioContext self, CapeAioHandle aioh, number_t opti
     
     cape_err_lastOSError (err);
     
-    printf ("can't add fd [%li] to completion port: %s\n", (long)aioh->hfd, cape_err_text (err));
+    printf ("can't add fd [%li] to completion port: %s\n", (long)handle, cape_err_text (err));
     
     cape_err_del (&err);
 

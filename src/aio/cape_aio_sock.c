@@ -1624,7 +1624,7 @@ void cape_aio_socket__udp__add (CapeAioSocketUdp* p_self, CapeAioContext aioctx,
   self->mode = mode;
   self->aioh = cape_aio_handle_new ((void*)self->handle, mode, self, cape_aio_socket__udp__on_event, cape_aio_socket__udp__on_unref);
   
-  cape_aio_context_add (aioctx, self->aioh, 0);
+  cape_aio_context_add (aioctx, self->aioh, (void*)self->handle, 0);
   
   cape_log_msg (CAPE_LL_TRACE, "CAPE", "aio socket - udp", "handle was added to AIO");
 
@@ -1870,7 +1870,7 @@ void cape_aio_accept_add (CapeAioAccept* p_self, CapeAioContext aio)
   self->aioh = cape_aio_handle_new ((void*)(self->handle), CAPE_AIO_READ, self, cape_aio_accept_onEvent, cape_aio_accept_onUnref);
   
   // add the handle to the AIO subsystem
-  cape_aio_context_add (aio, self->aioh, 0);
+  cape_aio_context_add (aio, self->aioh, (void*)self->handle, 0);
 
   // activate the socket for listening
   cape_aio_accept__activate (self);

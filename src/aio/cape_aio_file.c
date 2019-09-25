@@ -100,7 +100,7 @@ int cape_aio_freader_add (CapeAioFileReader* p_self, CapeAioContext aio)
     
   self->aioh = cape_aio_handle_new (self->handle, CAPE_AIO_READ, self, cape_aio_freader_onEvent, cape_aio_freader_onDestroy);
   
-  return cape_aio_context_add (aio, self->aioh, 0);   
+  return cape_aio_context_add (aio, self->aioh, self->handle, 0);   
 }
 
 //-----------------------------------------------------------------------------

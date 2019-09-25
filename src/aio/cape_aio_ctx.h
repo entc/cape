@@ -53,7 +53,7 @@ __CAPE_LIBEX   int               cape_aio_context_next          (CapeAioContext,
 
 //-----------------------------------------------------------------------------
 
-__CAPE_LIBEX   int               cape_aio_context_add           (CapeAioContext, CapeAioHandle aioh, number_t option);         // add handle to event queue
+__CAPE_LIBEX   int               cape_aio_context_add           (CapeAioContext, CapeAioHandle aioh, void* handle, number_t option);         // add handle to event queue
 
                // modify handle
 __CAPE_LIBEX   void              cape_aio_context_mod           (CapeAioContext, CapeAioHandle aioh, int hflags, number_t option);
