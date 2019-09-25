@@ -196,7 +196,48 @@ int cape_aio_timer_add (CapeAioTimer* p_self, CapeAioContext aio)
 
 //*****************************************************************************
 
+#elif defined __WINDOWS_OS
 
+#include <Windows.h>
+#include <stdio.h>
+
+//-----------------------------------------------------------------------------
+
+struct CapeAioTimer_s
+{
+  // the handle to the device descriptor
+  CapeAioHandle aioh;
+  
+  // *** callback ***
+
+  void* ptr;
+  fct_cape_aio_timer_onEvent onEvent;
+
+
+};
+
+//-----------------------------------------------------------------------------
+
+CapeAioTimer cape_aio_timer_new ()
+{
+
+}
+
+//-----------------------------------------------------------------------------
+
+int cape_aio_timer_add (CapeAioTimer* p_self, CapeAioContext aio)
+{
+
+}
+
+//-----------------------------------------------------------------------------
+
+int cape_aio_timer_set (CapeAioTimer self, long inMs, void* ptr, fct_cape_aio_timer_onEvent on_event, CapeErr err)
+{
+
+}
+
+//-----------------------------------------------------------------------------
 
 #endif
 

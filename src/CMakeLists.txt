@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 2.4)
 
+PROJECT(cape)
+
 SET (CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../cmake)
 
 IF (CMAKE_VERSION VERSION_LESS "3.1")
@@ -80,6 +82,7 @@ SET(CAPE_AIO_HEADERS
 #----------------------------------------------------------------------------------
 
 SET(CAPE_FMT_SOURCES
+  fmt/cape_parser_line.c
   fmt/cape_parser_json.c
   fmt/cape_json.c
   fmt/cape_tokenizer.c
@@ -88,6 +91,7 @@ SET(CAPE_FMT_SOURCES
 )
 
 SET(CAPE_FMT_HEADERS
+  fmt/cape_parser_line.h
   fmt/cape_parser_json.h
   fmt/cape_json.h
   fmt/cape_tokenizer.h
@@ -97,19 +101,16 @@ SET(CAPE_FMT_HEADERS
 
 #----------------------------------------------------------------------------------
 
-SET(CAPE_EXTERN_SOURCES
-
-)
-
-SET(CAPE_EXTERN_HEADERS
-
+SET(CAPE_HPP_HEADERS
+  hpp/cape_stc.hpp
+  hpp/cape_sys.hpp
 )
 
 #----------------------------------------------------------------------------------
 
 INCLUDE_DIRECTORIES(".")
 
-add_library             (cape SHARED ${CAPE_STC_SOURCES} ${CAPE_STC_HEADERS} ${CAPE_SYS_SOURCES} ${CAPE_SYS_HEADERS} ${CAPE_AIO_SOURCES} ${CAPE_AIO_HEADERS} ${CAPE_FMT_SOURCES} ${CAPE_FMT_HEADERS} ${CAPE_EXTERN_SOURCES} ${CAPE_EXTERN_HEADERS})
+add_library             (cape SHARED ${CAPE_STC_SOURCES} ${CAPE_STC_HEADERS} ${CAPE_SYS_SOURCES} ${CAPE_SYS_HEADERS} ${CAPE_AIO_SOURCES} ${CAPE_AIO_HEADERS} ${CAPE_FMT_SOURCES} ${CAPE_FMT_HEADERS} ${CAPE_EXTERN_SOURCES} ${CAPE_EXTERN_HEADERS} ${CAPE_HPP_HEADERS})
 target_link_libraries   (cape ${DLL_LIBRARIES} ${PTHREAD_LIBRARIES} ${MATH_LIBRARIES})
 set_target_properties   (cape PROPERTIES VERSION 1.0.1 SOVERSION 1.0.1)
 

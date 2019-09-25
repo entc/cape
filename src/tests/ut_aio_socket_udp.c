@@ -14,13 +14,15 @@ static void __STDCALL cape_aio_socket__srv__on_sent_ready (void* ptr, CapeAioSoc
 
 static void __STDCALL cape_aio_socket__srv__on_recv_from (void* ptr, CapeAioSocketUdp self, const char* bufdat, number_t buflen, const char* host)
 {
-  //printf ("GOT MESSAGE: %s from %s\n", bufdat, host);
+  printf ("GOT MESSAGE: %s from %s\n", bufdat, host);
 }
 
 //-----------------------------------------------------------------------------
 
 static void __STDCALL cape_aio_socket__clt__on_sent_ready (void* ptr, CapeAioSocketUdp self, void* userdata)
 {
+  printf ("ON SEND READY\n");
+
   if (userdata)
   { 
     CapeString h = userdata;
@@ -86,6 +88,8 @@ int main (int argc, char *argv[])
   // server socket
   
   {
+    CapeAioSocketUdp aio_handle;
+
     void* srv_handle = cape_sock__udp__srv_new ("127.0.0.1", 43340, err);    
     if (srv_handle == NULL)
     {
@@ -93,7 +97,7 @@ int main (int argc, char *argv[])
       return 1;      
     }
     
-    CapeAioSocketUdp aio_handle = cape_aio_socket__udp__new (srv_handle); 
+    aio_handle = cape_aio_socket__udp__new (srv_handle); 
     
     cape_aio_socket__udp__cb (aio_handle, aio, cape_aio_socket__srv__on_sent_ready, cape_aio_socket__srv__on_recv_from, NULL);   
     
@@ -103,6 +107,8 @@ int main (int argc, char *argv[])
   // client socket
   
   {
+    CapeAioSocketUdp aio_handle;
+
     void* clt_handle = cape_sock__udp__clt_new ("127.0.0.1", 43340, err);    
     if (clt_handle == NULL)
     {
@@ -110,7 +116,7 @@ int main (int argc, char *argv[])
       return 1;      
     }
     
-    CapeAioSocketUdp aio_handle = cape_aio_socket__udp__new (clt_handle); 
+    aio_handle = cape_aio_socket__udp__new (clt_handle); 
     
     cape_aio_socket__udp__cb (aio_handle, aio, cape_aio_socket__clt__on_sent_ready, cape_aio_socket__clt__on_recv_from, cape_aio_socket__clt__on_done);   
     
@@ -118,7 +124,7 @@ int main (int argc, char *argv[])
   }
   
   {
-    number_t m = 8000000;
+    number_t m = 8000;
     int i = 0;
   
     CapeStopTimer st = cape_stoptimer_new ();

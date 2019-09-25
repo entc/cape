@@ -983,20 +983,15 @@ int cape_aio_context_set_interupts (CapeAioContext self, int sigint, int term, C
 struct CapeAioHandle_s
 {
   // Windows header for an OVERLAPPED structure
+  DWORD Internal;
+  DWORD InternalHigh;
+  DWORD Offset;
+  DWORD OffsetHigh;
   
-  ULONG_PTR Internal;
-  ULONG_PTR InternalHigh;
-  union {
-    struct {
-      DWORD Offset;
-      DWORD OffsetHigh;
-    };
-    
-    PVOID Pointer;
-  };
-  
+  // WSA needs an extra handle here
+  HANDLE reserved;
+
   // user defined part
-  
   HANDLE hfd;
   
   void* ptr;
@@ -1014,6 +1009,8 @@ CapeAioHandle cape_aio_handle_new (void* handle, int hflags, void* ptr, fct_cape
 {
   CapeAioHandle self = CAPE_NEW (struct CapeAioHandle_s);
   
+  SecureZeroMemory((PVOID)self, sizeof(struct CapeAioHandle_s));
+
   self->hfd = handle;
   self->ptr = ptr;
   
@@ -1037,12 +1034,12 @@ void cape_aio_handle_del (CapeAioHandle* p_self)
 
 //-----------------------------------------------------------------------------
 
-void cape_aio_handle_unref (CapeAioHandle self)
+void cape_aio_handle_unref (CapeAioHandle self, int close)
 {
   if (self->on_unref)
   {
     // call the callback to signal the destruction of the handle
-    self->on_unref (self->ptr, self);
+    self->on_unref (self->ptr, self, close);
   }
 }
 
@@ -1069,7 +1066,7 @@ struct CapeAioContext_s
 
 static void __STDCALL cape_aio_context__events_on_item_del (void* ptr)
 {
-  cape_aio_handle_unref (ptr);
+  cape_aio_handle_unref (ptr, FALSE);
 }
 
 //-----------------------------------------------------------------------------
@@ -1162,6 +1159,8 @@ int cape_aio_context_next__overlapped (OVERLAPPED* ovl, int repeat, unsigned lon
   {
     if (hobj->on_event)
     {
+      printf ("ON EVENT\n");
+
       hflags_result = hobj->on_event (hobj->ptr, (void*)hobj->hfd, hobj->hflags, 0, ovl, bytes);
     }
   }
@@ -1284,6 +1283,14 @@ int cape_aio_context_add (CapeAioContext self, CapeAioHandle aioh, number_t opti
   LeaveCriticalSection (self->mutex);
   
   return TRUE;
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_context_mod (CapeAioContext aio, CapeAioHandle aioh, int hflags, number_t option)
+{
+
+
 }
 
 //-----------------------------------------------------------------------------

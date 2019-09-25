@@ -547,7 +547,7 @@ namespace cape
       cape_udc_add_n (obj, name, value);
     }
     
-    static long as (CapeUdc obj) { return cape_udc_n (obj, 0); }
+    static int as (CapeUdc obj, int dv = 0) { return cape_udc_n (obj, dv); }
   };
   
   //-----------------------------------------------------------------------------------------------------
@@ -574,6 +574,13 @@ namespace cape
     static void add_cp (CapeUdc obj, const char* name, const long& value) { cape_udc_add_n (obj, name, value); }
     static void add_mv (CapeUdc obj, const char* name, number_t& value) { cape_udc_add_n (obj, name, value); }
     static long as (CapeUdc obj, long dv = 0) { return cape_udc_n (obj, dv); }    
+  };
+
+  template <> struct UdcTransType<long long&>
+  {
+    static void add_cp (CapeUdc obj, const char* name, const long long& value) { cape_udc_add_n (obj, name, value); }
+    static void add_mv (CapeUdc obj, const char* name, long long& value) { cape_udc_add_n (obj, name, value); }
+    static long long as (CapeUdc obj, long long dv = 0) { return cape_udc_n (obj, dv); }
   };
 
   template <> struct UdcTransType<double>
@@ -673,8 +680,6 @@ namespace cape
   {
     
   public:
-    
-    //-----------------------------------------------------------------------------
     
     Stream () : m_obj (cape_stream_new ())
     {
