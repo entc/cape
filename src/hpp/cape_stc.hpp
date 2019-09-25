@@ -521,6 +521,13 @@ namespace cape
       return cape_udc_type (m_obj);
     }
     
+    //-----------------------------------------------------------------------------
+    
+    number_t size () const
+    {
+      return cape_udc_size (m_obj);
+    }
+    
   private:
 
     bool m_owned;
@@ -831,8 +838,8 @@ namespace cape
     {
       return m_obj;
     }
-  
-  //-----------------------------------------------------------------------------
+    
+    //-----------------------------------------------------------------------------
 
     template <typename T> void append (T& val)
     {
