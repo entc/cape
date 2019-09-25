@@ -540,7 +540,7 @@ namespace cape
       cape_udc_add_n (obj, name, value);
     }
     
-    static int as (CapeUdc obj) { return cape_udc_n (obj, 0); }
+    static int as (CapeUdc obj, int dv = 0) { return cape_udc_n (obj, dv); }
   };
   
   //-----------------------------------------------------------------------------------------------------
