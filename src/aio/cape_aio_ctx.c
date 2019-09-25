@@ -34,8 +34,6 @@
 
 struct CapeAioHandle_s
 {
-  void* hfd;
-  
   void* ptr;
   
   int hflags;
@@ -43,15 +41,18 @@ struct CapeAioHandle_s
   fct_cape_aio_onUnref on_unref;
   
   fct_cape_aio_onEvent on_event;
+  
+  // needed for epoll
+  void* handle;
 };
 
 //-----------------------------------------------------------------------------
 
-CapeAioHandle cape_aio_handle_new (void* handle, int hflags, void* ptr, fct_cape_aio_onEvent on_event, fct_cape_aio_onUnref on_unref)
+CapeAioHandle cape_aio_handle_new (int hflags, void* ptr, fct_cape_aio_onEvent on_event, fct_cape_aio_onUnref on_unref)
 {
   CapeAioHandle self = CAPE_NEW (struct CapeAioHandle_s);
   
-  self->hfd = handle;
+  self->handle = NULL;   // will be set later
   self->ptr = ptr;
   
   self->on_event = on_event;
@@ -111,7 +112,7 @@ void cape_aio_handle_unref (CapeAioHandle self)
 
 void cape_aio_handle_close (CapeAioHandle self)
 {
-  cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio_ctx rm", "close handle: %p", self->hfd);
+  //cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio_ctx rm", "close handle: %p", self->hfd);
   
   if (self->on_unref)
   {
@@ -610,8 +611,6 @@ int cape_aio_context_next (CapeAioContext self, long timeout_in_ms, CapeErr err)
   
   n = epoll_pwait (self->efd, events, CAPE_AIO_EPOLL_MAXEVENTS, timeout_in_ms, &sigset);
   
-  //printf ("[%p] GOT EVENT %i\n", self, n);
-  
   if (n < 0)
   {
     res = cape_err_lastOSError (err);    
@@ -622,6 +621,8 @@ int cape_aio_context_next (CapeAioContext self, long timeout_in_ms, CapeErr err)
   {
     int i = 0;
     
+    //printf ("[%p] GOT EVENT %i ON %i\n", self, n, events[i].events);
+    
     // retrieve the handle object from the userdata of the epoll event
     CapeAioHandle hobj = events[i].data.ptr;
     if (hobj)
@@ -630,7 +631,7 @@ int cape_aio_context_next (CapeAioContext self, long timeout_in_ms, CapeErr err)
       
       if (hobj->on_event)
       {
-        hflags_result = hobj->on_event (hobj->ptr, (void*)hobj->hfd, hobj->hflags, events[i].events, NULL, 0);
+        hflags_result = hobj->on_event (hobj->ptr, hobj->hflags, events[i].events, NULL, 0);
       }
       else
       {
@@ -639,7 +640,7 @@ int cape_aio_context_next (CapeAioContext self, long timeout_in_ms, CapeErr err)
       
       if (hflags_result & CAPE_AIO_DONE)
       {
-        epoll_ctl (self->efd, EPOLL_CTL_DEL, (long)(hobj->hfd), &(events[i]));
+        epoll_ctl (self->efd, EPOLL_CTL_DEL, (long)hobj->handle, &(events[i]));
         
         // remove the handle from events
         cape_aio_remove_handle (self, hobj);
@@ -660,7 +661,7 @@ int cape_aio_context_next (CapeAioContext self, long timeout_in_ms, CapeErr err)
       {
         cape_aio_update_events (&(events[i]), hobj->hflags);
         
-        epoll_ctl (self->efd, EPOLL_CTL_MOD, (long)(hobj->hfd), &(events[i]));
+        epoll_ctl (self->efd, EPOLL_CTL_MOD, (long)hobj->handle, &(events[i]));
       }
       else
       {
@@ -668,7 +669,7 @@ int cape_aio_context_next (CapeAioContext self, long timeout_in_ms, CapeErr err)
         
         hobj->hflags = hflags_result;
         
-        epoll_ctl (self->efd, EPOLL_CTL_MOD, (long)(hobj->hfd), &(events[i]));
+        epoll_ctl (self->efd, EPOLL_CTL_MOD, (long)hobj->handle, &(events[i]));
       }
     }
   }
@@ -685,7 +686,7 @@ exit:
 
 //-----------------------------------------------------------------------------
 
-void cape_aio_context_mod (CapeAioContext self, CapeAioHandle aioh, int hflags, number_t option)
+void cape_aio_context_mod (CapeAioContext self, CapeAioHandle aioh, void* handle, int hflags, number_t option)
 {
 #if defined __BSD_OS
 
@@ -699,9 +700,12 @@ void cape_aio_context_mod (CapeAioContext self, CapeAioHandle aioh, int hflags, 
   // set the user pointer to the handle
   event.data.ptr = aioh;
   
+  // set the current handle, we need it later
+  aioh->handle = handle;
+  
   if (hflags & CAPE_AIO_DONE)
   {
-    epoll_ctl (self->efd, EPOLL_CTL_DEL, (long)(aioh->hfd), &event);
+    epoll_ctl (self->efd, EPOLL_CTL_DEL, (long)handle, &event);
     
     cape_aio_remove_handle (self, aioh);
   }
@@ -709,7 +713,7 @@ void cape_aio_context_mod (CapeAioContext self, CapeAioHandle aioh, int hflags, 
   {
     cape_aio_update_events (&event, hflags);
     
-    int s = epoll_ctl (self->efd, EPOLL_CTL_MOD, (long)(aioh->hfd), &event);
+    int s = epoll_ctl (self->efd, EPOLL_CTL_MOD, (long)handle, &event);
     if (s < 0)
     {
       int errCode = errno;
@@ -740,7 +744,7 @@ void cape_aio_context_mod (CapeAioContext self, CapeAioHandle aioh, int hflags, 
 
 //-----------------------------------------------------------------------------
 
-int cape_aio_context_add (CapeAioContext self, CapeAioHandle aioh, number_t option)
+int cape_aio_context_add (CapeAioContext self, CapeAioHandle aioh, void* handle, number_t option)
 {
 #if defined __BSD_OS
 
@@ -764,9 +768,12 @@ int cape_aio_context_add (CapeAioContext self, CapeAioHandle aioh, number_t opti
   // set the user pointer to the handle
   event.data.ptr = aioh;
   
+  // set the current handle, we need it later
+  aioh->handle = handle;
+  
   cape_aio_update_events (&event, aioh->hflags);
   
-  int s = epoll_ctl (self->efd, EPOLL_CTL_ADD, (long)(aioh->hfd), &event);
+  int s = epoll_ctl (self->efd, EPOLL_CTL_ADD, (long)handle, &event);
   if (s < 0)
   {
     int errCode = errno;
@@ -781,7 +788,7 @@ int cape_aio_context_add (CapeAioContext self, CapeAioHandle aioh, number_t opti
       
       cape_err_lastOSError (err);
       
-      printf ("can't add fd [%li] to epoll: %s\n", (long)aioh->hfd, cape_err_text (err));
+      printf ("can't add fd [%li] to epoll: %s\n", (long)handle, cape_err_text (err));
       
       cape_err_del (&err);
     }
@@ -818,13 +825,13 @@ int cape_aio_context_signal_map (CapeAioContext self, int signal, int status)
 
 //-----------------------------------------------------------------------------
 
-static int __STDCALL cape_aio_context_signal_onEvent (void* ptr, void* handle, int hflags, unsigned long events, void* overlapped, unsigned long param1)
+static int __STDCALL cape_aio_context_signal_onEvent (void* ptr, int hflags, unsigned long events, void* overlapped, unsigned long param1)
 {
   CapeAioContext self = ptr;
   
   struct signalfd_siginfo info;
   
-  ssize_t bytes = read ((long)handle, &info, sizeof(info));
+  ssize_t bytes = read ((long)self->sfd, &info, sizeof(info));
   
   if (bytes == sizeof(info))
   {
@@ -848,9 +855,11 @@ static int __STDCALL cape_aio_context_signal_onEvent (void* ptr, void* handle, i
 
 static void __STDCALL cape_aio_context_signal_onUnref (void* ptr, CapeAioHandle aioh, int force_close)
 {
+  CapeAioContext self = ptr;
+  
   //printf ("close signalfs\n");
   
-  close ((long)(aioh->hfd));
+  close ((long)(self->sfd));
   
   cape_aio_handle_del (&aioh);
 }
@@ -962,10 +971,10 @@ int cape_aio_context_set_interupts (CapeAioContext self, int sigint, int term, C
   // create the signalfd
   self->sfd = signalfd(-1, &sigset, 0);
   
-  CapeAioHandle aioh = cape_aio_handle_new ((void*)self->sfd, CAPE_AIO_READ, self, cape_aio_context_signal_onEvent, cape_aio_context_signal_onUnref);
+  CapeAioHandle aioh = cape_aio_handle_new (CAPE_AIO_READ, self, cape_aio_context_signal_onEvent, cape_aio_context_signal_onUnref);
   
   // add the signalfd to the event context
-  cape_aio_context_add (self, aioh, 0);
+  cape_aio_context_add (self, aioh, (void*)self->sfd, 0);
   
 #endif
 
