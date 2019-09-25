@@ -569,6 +569,13 @@ namespace cape
     static long as (CapeUdc obj, long dv = 0) { return cape_udc_n (obj, dv); }    
   };
 
+  template <> struct UdcTransType<long long&>
+  {
+    static void add_cp (CapeUdc obj, const char* name, const long long& value) { cape_udc_add_n (obj, name, value); }
+    static void add_mv (CapeUdc obj, const char* name, long long& value) { cape_udc_add_n (obj, name, value); }
+    static long long as (CapeUdc obj, long long dv = 0) { return cape_udc_n (obj, dv); }
+  };
+
   template <> struct UdcTransType<double>
   {
     static void add_cp (CapeUdc obj, const char* name, const double& value) { cape_udc_add_f (obj, name, value); }
@@ -667,20 +674,7 @@ namespace cape
     
   public:
     
-<<<<<<< HEAD
-    CapeString m_obj;
-  };
-
-  //======================================================================
-  
-  struct StreamHolder
-  {
-    StreamHolder () : obj (cape_stream_new ())
-=======
-    //-----------------------------------------------------------------------------
-    
     Stream () : m_obj (cape_stream_new ())
->>>>>>> cb1198b056817e3cedfe4ace838b4054e0d963bf
     {
     }
     
