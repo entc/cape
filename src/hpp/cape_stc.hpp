@@ -242,6 +242,21 @@ namespace cape
     
     //-----------------------------------------------------------------------------
     
+    Udc& operator =(Udc& rhs)
+    {
+      if(this == &rhs)
+      {
+        return *this;
+      }
+      
+      cape_udc_replace_cp (&m_obj, rhs.m_obj);
+      m_owned = true;
+      
+      return *this;
+    }
+    
+    //-----------------------------------------------------------------------------
+    
     Udc& operator =(Udc&& rhs)
     {
       if(this == &rhs)
