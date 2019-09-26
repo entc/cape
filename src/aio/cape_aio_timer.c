@@ -1,6 +1,7 @@
 #include "cape_aio_timer.h"
 
 #include "sys/cape_types.h"
+#include "sys/cape_log.h"
 
 //*****************************************************************************
 
@@ -208,33 +209,99 @@ struct CapeAioTimer_s
   // the handle to the device descriptor
   CapeAioHandle aioh;
   
+  number_t timeout_in_ms;
+
   // *** callback ***
 
   void* ptr;
   fct_cape_aio_timer_onEvent onEvent;
 
-
+  HANDLE htimer;
 };
 
 //-----------------------------------------------------------------------------
 
 CapeAioTimer cape_aio_timer_new ()
 {
+  CapeAioTimer self = CAPE_NEW(struct CapeAioTimer_s);
 
+  self->ptr = NULL;
+  self->onEvent = NULL;
+  
+  self->timeout_in_ms = 0;
+  self->htimer = NULL;
+  
+  return self;
+}
+
+//-----------------------------------------------------------------------------
+
+VOID CALLBACK cape_aio_timer__on_event (LPVOID lpArg, DWORD dwTimerLowValue, DWORD dwTimerHighValue)
+{
+  int res = FALSE;
+
+  CapeAioTimer self = (CapeAioTimer)lpArg;
+
+  if (self->onEvent)
+  {
+    res = self->onEvent (self->ptr);
+  }
+
+  if (res)
+  {
+
+  }
 }
 
 //-----------------------------------------------------------------------------
 
 int cape_aio_timer_add (CapeAioTimer* p_self, CapeAioContext aio)
 {
+  CapeAioTimer self = *p_self;
 
+  // TODO
+
+  return 0;
 }
 
 //-----------------------------------------------------------------------------
 
 int cape_aio_timer_set (CapeAioTimer self, long inMs, void* ptr, fct_cape_aio_timer_onEvent on_event, CapeErr err)
 {
+  BOOL win_success;
+  LARGE_INTEGER liDueTime;
+  __int64 qwDueTime = self->timeout_in_ms;
 
+  self->timeout_in_ms = inMs;
+
+  self->onEvent = on_event;
+  self->ptr = ptr;
+
+  // copy the relative time into a LARGE_INTEGER.
+  liDueTime.LowPart  = (DWORD) (qwDueTime & 0xFFFFFFFF);
+  liDueTime.HighPart = (LONG)  (qwDueTime >> 32);
+
+  self->htimer = CreateWaitableTimer (NULL, FALSE, TEXT("cape_timer")); 
+  if (self->htimer == NULL)
+  {
+    cape_err_lastOSError (err);
+
+    cape_log_fmt (CAPE_LL_ERROR, "CAPE", "timer set", "can't create timer handle: %s", cape_err_text (err));
+
+    return cape_err_code (err);
+  }
+
+  win_success = SetWaitableTimer (self->htimer, &liDueTime, 2000, cape_aio_timer__on_event, self, FALSE);
+  if (!win_success)
+  {
+    cape_err_lastOSError (err);
+
+    cape_log_fmt (CAPE_LL_ERROR, "CAPE", "timer set", "can't set timer: %s", cape_err_text (err));
+
+    return cape_err_code (err);
+  }
+
+  return CAPE_ERR_NONE;
 }
 
 //-----------------------------------------------------------------------------
