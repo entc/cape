@@ -10,7 +10,7 @@
 struct CapeAioHandle_s; typedef struct CapeAioHandle_s* CapeAioHandle;
 
 // returns the mask which should be observed
-typedef int                (__STDCALL *fct_cape_aio_onEvent)   (void* ptr, int hflags, unsigned long events, void* overlapped, unsigned long);
+typedef int                (__STDCALL *fct_cape_aio_onEvent)   (void* ptr, int hflags, unsigned long events, unsigned long);
 typedef void               (__STDCALL *fct_cape_aio_onUnref)   (void* ptr, CapeAioHandle, int close);
 
 //-----------------------------------------------------------------------------

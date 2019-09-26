@@ -8,8 +8,6 @@
 #include <errno.h>
 #include <unistd.h>
 
-
-
 #endif
 
 //-----------------------------------------------------------------------------
@@ -64,7 +62,7 @@ void cape_aio_freader_del (CapeAioFileReader* p_self)
 
 //-----------------------------------------------------------------------------
 
-static int __STDCALL cape_aio_freader_onEvent (void* ptr, int hflags, unsigned long events, void* overlapped, unsigned long param1)
+static int __STDCALL cape_aio_freader_onEvent (void* ptr, int hflags, unsigned long events, unsigned long param1)
 {
   CapeAioFileReader self = ptr;
   

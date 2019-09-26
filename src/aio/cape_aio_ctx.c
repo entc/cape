@@ -1133,7 +1133,7 @@ int cape_aio_context_open (CapeAioContext self, CapeErr err)
 
 //-----------------------------------------------------------------------------
 
-static int __STDCALL cape_aio_context_close__on_event (void* ptr, int hflags, unsigned long events, void* overlapped, unsigned long extra)
+static int __STDCALL cape_aio_context_close__on_event (void* ptr, int hflags, unsigned long events, unsigned long extra)
 {
   return CAPE_AIO_ABORT;
 }
@@ -1175,7 +1175,7 @@ int cape_aio_context_next__overlapped (OVERLAPPED* ovl, int repeat, unsigned lon
   {
     if (hobj->on_event)
     {
-      hflags_result = hobj->on_event (hobj->ptr, hobj->hflags, 0, ovl, bytes);
+      hflags_result = hobj->on_event (hobj->ptr, hobj->hflags, 0, bytes);
     }
   }
   

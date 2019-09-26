@@ -521,7 +521,7 @@ namespace cape
     
     bool valid ()
     {
-      return m_obj;
+      return m_obj != NULL;
     }
     
     //-----------------------------------------------------------------------------
@@ -679,7 +679,7 @@ namespace cape
     
     ~UdcCursorHolder () { cape_udc_cursor_del (&m_obj); }
 
-    bool next () { return cape_udc_cursor_next (m_obj); }
+    bool next () { return TRUE == cape_udc_cursor_next (m_obj); }
     
     CapeUdc item () { return m_obj->item; }
     
@@ -856,7 +856,7 @@ namespace cape
     
     bool valid ()
     {
-      return m_obj;
+      return m_obj != NULL;
     }
     
     //-----------------------------------------------------------------------------
