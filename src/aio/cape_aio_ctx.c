@@ -536,7 +536,7 @@ int cape_aio_context_next (CapeAioContext self, long timeout_in_ms, CapeErr err)
       if (hflags_result & CAPE_AIO_DONE)
       {
         // remove the event from the kqueue
-        cape_aio_delete_event (self, hobj, event.ident);
+        cape_aio_delete_event (self, hobj, (void*)event.ident);
 
         // remove the handle from events
         cape_aio_remove_handle (self, hobj);
@@ -558,7 +558,7 @@ int cape_aio_context_next (CapeAioContext self, long timeout_in_ms, CapeErr err)
           hobj->hflags = hflags_result;
         }
         
-        cape_aio_update_event (self, hobj, event.ident, event.data);
+        cape_aio_update_event (self, hobj, (void*)event.ident, event.data);
       }
     }
     else
