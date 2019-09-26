@@ -197,6 +197,8 @@ void* cape_sock__udp__clt_new (const char* host, long port, CapeErr err)
     }
   }
   
+  cape_log_fmt (CAPE_LL_DEBUG, "CAPE", "socket clt UDP", "open socket on %s:%i", host, port);
+  
   // return the socket
   return (void*)sock;
   
@@ -264,6 +266,8 @@ void* cape_sock__udp__srv_new (const char* host, long port, CapeErr err)
       goto exit_and_cleanup;
     }
   }
+  
+  cape_log_fmt (CAPE_LL_DEBUG, "CAPE", "socket srv UDP", "open socket on %s:%i", host, port);
   
   // return the socket
   return (void*)sock;  
