@@ -569,6 +569,13 @@ namespace cape
     static long as (CapeUdc obj, long dv = 0) { return cape_udc_n (obj, dv); }    
   };
 
+  template <> struct UdcTransType<unsigned int&>
+  {
+    static void add_cp (CapeUdc obj, const char* name, const unsigned int value) { cape_udc_add_n (obj, name, value); }
+    static void add_mv (CapeUdc obj, const char* name, unsigned int value) { cape_udc_add_n (obj, name, value); }
+    static long as (CapeUdc obj, long dv = 0) { return cape_udc_n (obj, dv); }    
+  };
+
   template <> struct UdcTransType<double>
   {
     static void add_cp (CapeUdc obj, const char* name, const double& value) { cape_udc_add_f (obj, name, value); }
