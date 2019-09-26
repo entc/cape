@@ -272,7 +272,7 @@ int cape_parser_line_process (CapeParserLine self, const char* buffer, number_t 
 
 //-----------------------------------------------------------------------------
 
-int cape_parser_json_finalize (CapeParserLine self, CapeErr err)
+int cape_parser_line_finalize (CapeParserLine self, CapeErr err)
 {
   switch (self->state)
   {
