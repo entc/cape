@@ -361,7 +361,7 @@ void cape_aio_socket_write (CapeAioSocket self, long sockfd)
 
 //-----------------------------------------------------------------------------
 
-static int __STDCALL cape_aio_socket_onEvent (void* ptr, int hflags, unsigned long events, void* overlapped, unsigned long param1)
+static int __STDCALL cape_aio_socket_onEvent (void* ptr, int hflags, unsigned long events, unsigned long param1)
 {
   CapeAioSocket self = ptr;
   
@@ -869,7 +869,7 @@ static void cape_aio_socket__udp__send_to (CapeAioSocketUdp self)
 
 //-----------------------------------------------------------------------------
 
-static int __STDCALL cape_aio_socket__udp__on_event (void* ptr, int mode, unsigned long events, void* overlapped, unsigned long param1)
+static int __STDCALL cape_aio_socket__udp__on_event (void* ptr, int mode, unsigned long events, unsigned long param1)
 {
   CapeAioSocketUdp self = ptr;
 
@@ -1058,7 +1058,7 @@ void cape_aio_accept_callback (CapeAioAccept self, void* ptr, fct_cape_aio_accep
 
 //-----------------------------------------------------------------------------
 
-static int __STDCALL cape_aio_accept_onEvent (void* ptr, int hflags, unsigned long events, void* overlapped, unsigned long param1)
+static int __STDCALL cape_aio_accept_onEvent (void* ptr, int hflags, unsigned long events, unsigned long param1)
 {
   CapeAioAccept self = ptr;
   

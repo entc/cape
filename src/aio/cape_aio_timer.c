@@ -121,7 +121,7 @@ int cape_aio_timer_set (CapeAioTimer self, long timeoutInMs, void* ptr, fct_cape
 
 //-----------------------------------------------------------------------------
 
-static int __STDCALL cape_aio_timer_onEvent (void* ptr, int hflags, unsigned long events, void* overlapped, unsigned long param1)
+static int __STDCALL cape_aio_timer_onEvent (void* ptr, int hflags, unsigned long events, unsigned long param1)
 {
   int res = TRUE;
   
