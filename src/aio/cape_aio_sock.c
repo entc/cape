@@ -869,7 +869,7 @@ static void cape_aio_socket__udp__send_to (CapeAioSocketUdp self)
 
 //-----------------------------------------------------------------------------
 
-static int __STDCALL cape_aio_socket__udp__on_event (void* ptr, void* handle, int mode, unsigned long events, void* overlapped, unsigned long param1)
+static int __STDCALL cape_aio_socket__udp__on_event (void* ptr, int mode, unsigned long events, void* overlapped, unsigned long param1)
 {
   CapeAioSocketUdp self = ptr;
 

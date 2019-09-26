@@ -179,9 +179,9 @@ int cape_aio_timer_add (CapeAioTimer* p_self, CapeAioContext aio)
   
 #if defined __BSD_OS
 
-  self->aioh = cape_aio_handle_new (self, CAPE_AIO_TIMER, self, cape_aio_timer_onEvent, cape_aio_timer_onUnref);
+  self->aioh = cape_aio_handle_new (CAPE_AIO_TIMER, self, cape_aio_timer_onEvent, cape_aio_timer_onUnref);
 
-  cape_aio_context_add (aio, self->aioh, self->timeout);
+  cape_aio_context_add (aio, self->aioh, self, self->timeout);
 
 #else
   
