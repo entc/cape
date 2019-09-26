@@ -642,7 +642,7 @@ int cape_aio_context_next (CapeAioContext self, long timeout_in_ms, CapeErr err)
       
       if (hobj->on_event)
       {
-        hflags_result = hobj->on_event (hobj->ptr, hobj->hflags, events[i].events, NULL, 0);
+        hflags_result = hobj->on_event (hobj->ptr, hobj->hflags, events[i].events, 0);
       }
       else
       {
@@ -784,7 +784,7 @@ int cape_aio_context_add (CapeAioContext self, CapeAioHandle aioh, void* handle,
   
   cape_aio_update_events (&event, aioh->hflags);
   
-  int s = epoll_ctl (self->efd, EPOLL_CTL_ADD, (long)handle), &event);
+  int s = epoll_ctl (self->efd, EPOLL_CTL_ADD, (long)handle, &event);
   if (s < 0)
   {
     int errCode = errno;
@@ -836,7 +836,7 @@ int cape_aio_context_signal_map (CapeAioContext self, int signal, int status)
 
 //-----------------------------------------------------------------------------
 
-static int __STDCALL cape_aio_context_signal_onEvent (void* ptr, int hflags, unsigned long events, void* overlapped, unsigned long param1)
+static int __STDCALL cape_aio_context_signal_onEvent (void* ptr, int hflags, unsigned long events, unsigned long param1)
 {
   CapeAioContext self = ptr;
   
