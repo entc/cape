@@ -10,12 +10,12 @@
 struct CapeAioHandle_s; typedef struct CapeAioHandle_s* CapeAioHandle;
 
 // returns the mask which should be observed
-typedef int                (__STDCALL *fct_cape_aio_onEvent)   (void* ptr, void* handle, int hflags, unsigned long events, void* overlapped, unsigned long);
+typedef int                (__STDCALL *fct_cape_aio_onEvent)   (void* ptr, int hflags, unsigned long events, void* overlapped, unsigned long);
 typedef void               (__STDCALL *fct_cape_aio_onUnref)   (void* ptr, CapeAioHandle, int close);
 
 //-----------------------------------------------------------------------------
 
-__CAPE_LIBEX   CapeAioHandle     cape_aio_handle_new            (void* handle, int hflags, void* ptr, fct_cape_aio_onEvent, fct_cape_aio_onUnref);
+__CAPE_LIBEX   CapeAioHandle     cape_aio_handle_new            (int hflags, void* ptr, fct_cape_aio_onEvent, fct_cape_aio_onUnref);
 
 __CAPE_LIBEX   void              cape_aio_handle_del            (CapeAioHandle*);
 
@@ -56,7 +56,7 @@ __CAPE_LIBEX   int               cape_aio_context_next          (CapeAioContext,
 __CAPE_LIBEX   int               cape_aio_context_add           (CapeAioContext, CapeAioHandle aioh, void* handle, number_t option);         // add handle to event queue
 
                // modify handle
-__CAPE_LIBEX   void              cape_aio_context_mod           (CapeAioContext, CapeAioHandle aioh, int hflags, number_t option);
+__CAPE_LIBEX   void              cape_aio_context_mod           (CapeAioContext, CapeAioHandle aioh, void* handle, int hflags, number_t option);
 
 //-----------------------------------------------------------------------------
 

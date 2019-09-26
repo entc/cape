@@ -120,7 +120,7 @@ int cape_aio_timer_set (CapeAioTimer self, long timeoutInMs, void* ptr, fct_cape
 
 //-----------------------------------------------------------------------------
 
-static int __STDCALL cape_aio_timer_onEvent (void* ptr, void* handle, int hflags, unsigned long events, void* overlapped, unsigned long param1)
+static int __STDCALL cape_aio_timer_onEvent (void* ptr, int hflags, unsigned long events, void* overlapped, unsigned long param1)
 {
   int res = TRUE;
   
@@ -185,9 +185,9 @@ int cape_aio_timer_add (CapeAioTimer* p_self, CapeAioContext aio)
 
 #else
   
-  self->aioh = cape_aio_handle_new ((void*)self->handle, CAPE_AIO_READ, self, cape_aio_timer_onEvent, cape_aio_timer_onUnref);
+  self->aioh = cape_aio_handle_new (CAPE_AIO_READ, self, cape_aio_timer_onEvent, cape_aio_timer_onUnref);
   
-  cape_aio_context_add (aio, self->aioh, 0);
+  cape_aio_context_add (aio, self->aioh, (void*)self->handle, 0);
 
 #endif
   

@@ -201,7 +201,7 @@ void cape_aio_socket_close (CapeAioSocket self, CapeAioContext aio)
   {
     if (self->aioh)
     {
-      cape_aio_context_mod (aio, self->aioh, CAPE_AIO_DONE, 0);
+      cape_aio_context_mod (aio, self->aioh, self->handle, CAPE_AIO_DONE, 0);
     }
   }
 }
@@ -361,13 +361,13 @@ void cape_aio_socket_write (CapeAioSocket self, long sockfd)
 
 //-----------------------------------------------------------------------------
 
-static int __STDCALL cape_aio_socket_onEvent (void* ptr, void* handle, int hflags, unsigned long events, void* overlapped, unsigned long param1)
+static int __STDCALL cape_aio_socket_onEvent (void* ptr, int hflags, unsigned long events, void* overlapped, unsigned long param1)
 {
   CapeAioSocket self = ptr;
   
   self->mask = hflags; 
   
-  long sock = (long)handle;
+  long sock = (long)self->handle;
     
   int so_err; socklen_t size = sizeof(int); 
 
@@ -456,7 +456,7 @@ void cape_aio_socket_markSent (CapeAioSocket self, CapeAioContext aio)
   {
     if (self->aioh)
     {
-      cape_aio_context_mod (aio, self->aioh, CAPE_AIO_WRITE | CAPE_AIO_READ, 0);
+      cape_aio_context_mod (aio, self->aioh, self->handle, CAPE_AIO_WRITE | CAPE_AIO_READ, 0);
     }
   }
   else
@@ -505,15 +505,15 @@ void cape_aio_socket_send (CapeAioSocket self, CapeAioContext aio, const char* b
     // correct epoll flags for this filedescriptor
     if (self->aioh)
     {
-      cape_aio_context_mod (aio, self->aioh, CAPE_AIO_WRITE | CAPE_AIO_READ, 0);
+      cape_aio_context_mod (aio, self->aioh, self->handle, CAPE_AIO_WRITE | CAPE_AIO_READ, 0);
     }
     else
     {
       // create a new AIO handle
-      self->aioh = cape_aio_handle_new (self->handle, CAPE_AIO_WRITE, self, cape_aio_socket_onEvent, cape_aio_socket_onUnref);
+      self->aioh = cape_aio_handle_new (CAPE_AIO_WRITE, self, cape_aio_socket_onEvent, cape_aio_socket_onUnref);
       
       // register handle at the AIO system
-      if (!cape_aio_context_add (aio, self->aioh, 0))
+      if (!cape_aio_context_add (aio, self->aioh, self->handle, 0))
       {
         // our object was not added to the AIO subsystem
         // -> try to free it
@@ -547,13 +547,13 @@ void cape_aio_socket_listen (CapeAioSocket* p_self, CapeAioContext aio)
 
   if (self->aioh)
   {
-    cape_aio_context_mod (aio, self->aioh, CAPE_AIO_READ, 0);
+    cape_aio_context_mod (aio, self->aioh, self->handle, CAPE_AIO_READ, 0);
   }
   else
   {
-    self->aioh = cape_aio_handle_new (self->handle, CAPE_AIO_READ, self, cape_aio_socket_onEvent, cape_aio_socket_onUnref);
+    self->aioh = cape_aio_handle_new (CAPE_AIO_READ, self, cape_aio_socket_onEvent, cape_aio_socket_onUnref);
    
-    cape_aio_context_add (aio, self->aioh, 0);
+    cape_aio_context_add (aio, self->aioh, self->handle, 0);
   }
 }
 
@@ -567,13 +567,13 @@ void cape_aio_socket_add (CapeAioSocket* p_self, CapeAioContext aio)
   
   if (self->aioh)
   {
-    cape_aio_context_mod (aio, self->aioh, self->mask, 0);
+    cape_aio_context_mod (aio, self->aioh, self->handle, self->mask, 0);
   }
   else
   {
-    self->aioh = cape_aio_handle_new (self->handle, self->mask, self, cape_aio_socket_onEvent, cape_aio_socket_onUnref);
+    self->aioh = cape_aio_handle_new (self->mask, self, cape_aio_socket_onEvent, cape_aio_socket_onUnref);
     
-    cape_aio_context_add (aio, self->aioh, 0);
+    cape_aio_context_add (aio, self->aioh, self->handle, 0);
   }
 }
 
@@ -618,7 +618,7 @@ void cape_aio_socket_change_w (CapeAioSocket self, CapeAioContext aio)
   
   if (self->aioh)
   {
-    cape_aio_context_mod (aio, self->aioh, self->mask, 0);
+    cape_aio_context_mod (aio, self->aioh, self->handle, self->mask, 0);
   }
 }
 
@@ -630,7 +630,7 @@ void cape_aio_socket_change_r (CapeAioSocket self, CapeAioContext aio)
   
   if (self->aioh)
   {
-    cape_aio_context_mod (aio, self->aioh, self->mask, 0);
+    cape_aio_context_mod (aio, self->aioh, self->handle, self->mask, 0);
   }
 }
 
@@ -912,9 +912,9 @@ void cape_aio_socket__udp__add (CapeAioSocketUdp* p_self, CapeAioContext aioctx,
 {
   CapeAioSocketUdp self = *p_self;
   
-  self->aioh = cape_aio_handle_new (self->handle, mode, self, cape_aio_socket__udp__on_event, cape_aio_socket__udp__on_unref);
+  self->aioh = cape_aio_handle_new (mode, self, cape_aio_socket__udp__on_event, cape_aio_socket__udp__on_unref);
   
-  cape_aio_context_add (aioctx, self->aioh, 0);
+  cape_aio_context_add (aioctx, self->aioh, self->handle, 0);
   
   *p_self = NULL;
 }
@@ -929,7 +929,7 @@ void cape_aio_socket__udp__set (CapeAioSocketUdp self, CapeAioContext aio, int m
     {
       self->mode = mode;
       
-      cape_aio_context_mod (aio, self->aioh, mode, 0);
+      cape_aio_context_mod (aio, self->aioh, self->handle, mode, 0);
     }
   }
 }
@@ -940,7 +940,7 @@ void cape_aio_socket__udp__rm (CapeAioSocketUdp self, CapeAioContext aio)
 {
   if (self->aioh)
   {
-    cape_aio_context_mod (aio, self->aioh, CAPE_AIO_DONE, 0);
+    cape_aio_context_mod (aio, self->aioh, self->handle, CAPE_AIO_DONE, 0);
   }
 }
 
@@ -1058,7 +1058,7 @@ void cape_aio_accept_callback (CapeAioAccept self, void* ptr, fct_cape_aio_accep
 
 //-----------------------------------------------------------------------------
 
-static int __STDCALL cape_aio_accept_onEvent (void* ptr, void* handle, int hflags, unsigned long events, void* overlapped, unsigned long param1)
+static int __STDCALL cape_aio_accept_onEvent (void* ptr, int hflags, unsigned long events, void* overlapped, unsigned long param1)
 {
   CapeAioAccept self = ptr;
   
@@ -1125,9 +1125,9 @@ void cape_aio_accept_add (CapeAioAccept* p_self, CapeAioContext aio)
   
   *p_self = NULL;
   
-  self->aioh = cape_aio_handle_new (self->handle, CAPE_AIO_READ, self, cape_aio_accept_onEvent, cape_aio_accept_onUnref);
+  self->aioh = cape_aio_handle_new (CAPE_AIO_READ, self, cape_aio_accept_onEvent, cape_aio_accept_onUnref);
   
-  cape_aio_context_add (aio, self->aioh, 0);
+  cape_aio_context_add (aio, self->aioh, self->handle, 0);
 }
 
 //-----------------------------------------------------------------------------
@@ -1399,7 +1399,8 @@ struct CapeAioSocketUdp_s
   SOCKET handle;
   
   // the handle to the AIO system
-  CapeAioHandle aioh;
+  CapeAioHandle aioh_send;
+  CapeAioHandle aioh_recv;
   
   int mode;
 
@@ -1440,7 +1441,10 @@ CapeAioSocketUdp cape_aio_socket__udp__new (void* handle)
   CapeAioSocketUdp self = CAPE_NEW (struct CapeAioSocketUdp_s);
   
   self->handle = (SOCKET)handle;
-  self->aioh = NULL;
+
+  self->aioh_send = NULL;
+  self->aioh_recv = NULL;
+
   self->mode = CAPE_AIO_NONE;
   
   self->send_bufdat = NULL;
@@ -1474,7 +1478,8 @@ void cape_aio_socket__upd__del (CapeAioSocketUdp* p_self)
     closesocket ((long)self->handle);
     
     // delete the AIO handle
-    cape_aio_handle_del (&(self->aioh));
+    cape_aio_handle_del (&(self->aioh_recv));
+    cape_aio_handle_del (&(self->aioh_send));
     
     if (self->recv_bufdat)
     {
@@ -1514,7 +1519,7 @@ void cape_aio_socket__udp__recvfrom (CapeAioSocketUdp self)
   dataBuf.buf = self->recv_bufdat;
   dataBuf.len = CAPE_AIO_SOCKET__RECV_BUFLEN;
   
-  res = WSARecvFrom (self->handle, &dataBuf, 1, &dwBytes, &dwFlags, (struct sockaddr*)&(self->recv_addr), &addr_len, (WSAOVERLAPPED*)(self->aioh), NULL);
+  res = WSARecvFrom (self->handle, &dataBuf, 1, &dwBytes, &dwFlags, (struct sockaddr*)&(self->recv_addr), &addr_len, (WSAOVERLAPPED*)(self->aioh_recv), NULL);
   if (res == SOCKET_ERROR)
   {
     DWORD error_code = WSAGetLastError();
@@ -1539,7 +1544,7 @@ void cape_aio_socket__udp__recvfrom (CapeAioSocketUdp self)
   else
   {
     // connection was closed
-    cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio socket - UDP", "recv returned %i bytes", dwBytes);
+    //cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio socket - UDP", "recv returned %i bytes", dwBytes);
 
   }
 }
@@ -1556,7 +1561,7 @@ void cape_aio_socket__udp__sendto (CapeAioSocketUdp self)
   dataBuf.buf = (char*)self->send_bufdat + self->send_bufpos;
   dataBuf.len = self->send_buflen - self->send_bufpos;
   
-  res = WSASendTo (self->handle, &dataBuf, 1, &dwBytes, dwFlags, (struct sockaddr*)&(self->send_addr), sizeof(self->send_addr), (WSAOVERLAPPED*)(self->aioh), NULL);
+  res = WSASendTo (self->handle, &dataBuf, 1, &dwBytes, dwFlags, (struct sockaddr*)&(self->send_addr), sizeof(self->send_addr), (WSAOVERLAPPED*)(self->aioh_send), NULL);
   if (res == SOCKET_ERROR)
   {
     DWORD error_code = WSAGetLastError ();
@@ -1577,7 +1582,7 @@ void cape_aio_socket__udp__sendto (CapeAioSocketUdp self)
   }
   else
   {
-    cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio socket - UDP", "sendto returned %i bytes", dwBytes);
+    //cape_log_fmt (CAPE_LL_TRACE, "CAPE", "aio socket - UDP", "sendto returned %i bytes", dwBytes);
     // everything ok
     // an event will be triggered after the buffer was sent
   }
@@ -1585,7 +1590,7 @@ void cape_aio_socket__udp__sendto (CapeAioSocketUdp self)
 
 //-----------------------------------------------------------------------------
 
-static int __STDCALL cape_aio_socket__udp__on_event (void* ptr, void* handle, int mode, unsigned long events, void* overlapped, unsigned long param1)
+int __STDCALL cape_aio_socket__udp__on_recv (void* ptr, int mode, unsigned long events, void* overlapped, unsigned long param1)
 {
   CapeAioSocketUdp self = ptr;
 
@@ -1608,7 +1613,24 @@ static int __STDCALL cape_aio_socket__udp__on_event (void* ptr, void* handle, in
 
 //-----------------------------------------------------------------------------
 
-static void __STDCALL cape_aio_socket__udp__on_unref (void* ptr, CapeAioHandle aioh, int force_close)
+int __STDCALL cape_aio_socket__udp__on_send (void* ptr, int mode, unsigned long events, void* overlapped, unsigned long param1)
+{
+  CapeAioSocketUdp self = ptr;
+
+  self->send_bufdat = NULL;
+  self->send_buflen = 0;
+
+  if (self->on_ready_for_sending)
+  {
+    self->on_ready_for_sending (self->ptr, self, self->userdata);
+  }
+
+  return self->mode;
+}
+
+//-----------------------------------------------------------------------------
+
+void __STDCALL cape_aio_socket__udp__on_unref (void* ptr, CapeAioHandle aioh, int force_close)
 {
   CapeAioSocketUdp self = ptr;
   
@@ -1622,9 +1644,11 @@ void cape_aio_socket__udp__add (CapeAioSocketUdp* p_self, CapeAioContext aioctx,
   CapeAioSocketUdp self = *p_self;
   
   self->mode = mode;
-  self->aioh = cape_aio_handle_new ((void*)self->handle, mode, self, cape_aio_socket__udp__on_event, cape_aio_socket__udp__on_unref);
+
+  self->aioh_recv = cape_aio_handle_new (mode, self, cape_aio_socket__udp__on_recv, cape_aio_socket__udp__on_unref);
+  self->aioh_send = cape_aio_handle_new (mode, self, cape_aio_socket__udp__on_send, NULL);
   
-  cape_aio_context_add (aioctx, self->aioh, (void*)self->handle, 0);
+  cape_aio_context_add (aioctx, self->aioh_recv, (void*)self->handle, 0);
   
   cape_log_msg (CAPE_LL_TRACE, "CAPE", "aio socket - udp", "handle was added to AIO");
 
@@ -1648,13 +1672,13 @@ void cape_aio_socket__udp__add (CapeAioSocketUdp* p_self, CapeAioContext aioctx,
 
 void cape_aio_socket__udp__set (CapeAioSocketUdp self, CapeAioContext aio, int mode)
 {
-  if (self->aioh)
+ // if (self->aioh)
   {
     if (mode != self->mode)
     {
       self->mode = mode;
       
-      cape_aio_context_mod (aio, self->aioh, mode, 0);
+     // cape_aio_context_mod (aio, self->aioh, (void*)self->handle, mode, 0);
     }
   }
 }
@@ -1663,9 +1687,9 @@ void cape_aio_socket__udp__set (CapeAioSocketUdp self, CapeAioContext aio, int m
 
 void cape_aio_socket__udp__rm (CapeAioSocketUdp self, CapeAioContext aio)
 {
-  if (self->aioh)
+  //if (self->aioh)
   {
-    cape_aio_context_mod (aio, self->aioh, CAPE_AIO_DONE, 0);
+   // cape_aio_context_mod (aio, self->aioh, (void*)self->handle, CAPE_AIO_DONE, 0);
   }
 }
 
@@ -1821,7 +1845,7 @@ void cape_aio_accept__activate (CapeAioAccept self)
 
 //-----------------------------------------------------------------------------
 
-static int __STDCALL cape_aio_accept_onEvent (void* ptr, void* handle, int hflags, unsigned long events, void* overlapped, unsigned long param1)
+static int __STDCALL cape_aio_accept_onEvent (void* ptr, int hflags, unsigned long events, void* overlapped, unsigned long param1)
 {
   CapeAioAccept self = ptr;
 
@@ -1867,7 +1891,7 @@ void cape_aio_accept_add (CapeAioAccept* p_self, CapeAioContext aio)
   CapeAioAccept self = *p_self;
 
   // create a new AIO handle
-  self->aioh = cape_aio_handle_new ((void*)(self->handle), CAPE_AIO_READ, self, cape_aio_accept_onEvent, cape_aio_accept_onUnref);
+  self->aioh = cape_aio_handle_new (CAPE_AIO_READ, self, cape_aio_accept_onEvent, cape_aio_accept_onUnref);
   
   // add the handle to the AIO subsystem
   cape_aio_context_add (aio, self->aioh, (void*)self->handle, 0);

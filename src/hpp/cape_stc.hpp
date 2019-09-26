@@ -242,6 +242,21 @@ namespace cape
     
     //-----------------------------------------------------------------------------
     
+    Udc& operator =(Udc& rhs)
+    {
+      if(this == &rhs)
+      {
+        return *this;
+      }
+      
+      cape_udc_replace_cp (&m_obj, rhs.m_obj);
+      m_owned = true;
+      
+      return *this;
+    }
+    
+    //-----------------------------------------------------------------------------
+    
     Udc& operator =(Udc&& rhs)
     {
       if(this == &rhs)
@@ -519,6 +534,13 @@ namespace cape
       }
       
       return cape_udc_type (m_obj);
+    }
+    
+    //-----------------------------------------------------------------------------
+    
+    number_t size () const
+    {
+      return cape_udc_size (m_obj);
     }
     
   private:
@@ -836,8 +858,8 @@ namespace cape
     {
       return m_obj;
     }
-  
-  //-----------------------------------------------------------------------------
+    
+    //-----------------------------------------------------------------------------
 
     template <typename T> void append (T& val)
     {

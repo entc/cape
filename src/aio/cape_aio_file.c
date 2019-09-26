@@ -64,7 +64,7 @@ void cape_aio_freader_del (CapeAioFileReader* p_self)
 
 //-----------------------------------------------------------------------------
 
-static int __STDCALL cape_aio_freader_onEvent (void* ptr, void* handle, int hflags, unsigned long events, void* overlapped, unsigned long param1)
+static int __STDCALL cape_aio_freader_onEvent (void* ptr, int hflags, unsigned long events, void* overlapped, unsigned long param1)
 {
   CapeAioFileReader self = ptr;
   
@@ -98,7 +98,7 @@ int cape_aio_freader_add (CapeAioFileReader* p_self, CapeAioContext aio)
   
   *p_self = NULL;
     
-  self->aioh = cape_aio_handle_new (self->handle, CAPE_AIO_READ, self, cape_aio_freader_onEvent, cape_aio_freader_onDestroy);
+  self->aioh = cape_aio_handle_new (CAPE_AIO_READ, self, cape_aio_freader_onEvent, cape_aio_freader_onDestroy);
   
   return cape_aio_context_add (aio, self->aioh, self->handle, 0);   
 }

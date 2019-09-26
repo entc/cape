@@ -5,24 +5,22 @@
 
 //-----------------------------------------------------------------------------
 
-static void __STDCALL cape_aio_socket__srv__on_sent_ready (void* ptr, CapeAioSocketUdp self, void* userdata)
+void __STDCALL cape_aio_socket__srv__on_sent_ready (void* ptr, CapeAioSocketUdp self, void* userdata)
 {
   
 }
 
 //-----------------------------------------------------------------------------
 
-static void __STDCALL cape_aio_socket__srv__on_recv_from (void* ptr, CapeAioSocketUdp self, const char* bufdat, number_t buflen, const char* host)
+void __STDCALL cape_aio_socket__srv__on_recv_from (void* ptr, CapeAioSocketUdp self, const char* bufdat, number_t buflen, const char* host)
 {
   printf ("GOT MESSAGE: %s from %s\n", bufdat, host);
 }
 
 //-----------------------------------------------------------------------------
 
-static void __STDCALL cape_aio_socket__clt__on_sent_ready (void* ptr, CapeAioSocketUdp self, void* userdata)
+void __STDCALL cape_aio_socket__clt__on_sent_ready (void* ptr, CapeAioSocketUdp self, void* userdata)
 {
-  printf ("ON SEND READY\n");
-
   if (userdata)
   { 
     CapeString h = userdata;
@@ -40,7 +38,7 @@ static void __STDCALL cape_aio_socket__clt__on_sent_ready (void* ptr, CapeAioSoc
 
 //-----------------------------------------------------------------------------
 
-static void __STDCALL cape_aio_socket__clt__on_recv_from (void* ptr, CapeAioSocketUdp self, const char* bufdat, number_t buflen, const char* host)
+void __STDCALL cape_aio_socket__clt__on_recv_from (void* ptr, CapeAioSocketUdp self, const char* bufdat, number_t buflen, const char* host)
 {
   
   
@@ -48,7 +46,7 @@ static void __STDCALL cape_aio_socket__clt__on_recv_from (void* ptr, CapeAioSock
 
 //-----------------------------------------------------------------------------
 
-static void __STDCALL cape_aio_socket__clt__on_done (void* ptr, void* userdata)
+void __STDCALL cape_aio_socket__clt__on_done (void* ptr, void* userdata)
 {
   if (userdata)
   { 
