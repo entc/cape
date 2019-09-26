@@ -242,6 +242,21 @@ namespace cape
     
     //-----------------------------------------------------------------------------
     
+    Udc& operator =(Udc& rhs)
+    {
+      if(this == &rhs)
+      {
+        return *this;
+      }
+      
+      cape_udc_replace_cp (&m_obj, rhs.m_obj);
+      m_owned = true;
+      
+      return *this;
+    }
+    
+    //-----------------------------------------------------------------------------
+    
     Udc& operator =(Udc&& rhs)
     {
       if(this == &rhs)
@@ -521,6 +536,13 @@ namespace cape
       return cape_udc_type (m_obj);
     }
     
+    //-----------------------------------------------------------------------------
+    
+    number_t size () const
+    {
+      return cape_udc_size (m_obj);
+    }
+    
   private:
 
     bool m_owned;
@@ -540,7 +562,7 @@ namespace cape
       cape_udc_add_n (obj, name, value);
     }
     
-    static long as (CapeUdc obj) { return cape_udc_n (obj, 0); }
+    static int as (CapeUdc obj, int dv = 0) { return cape_udc_n (obj, dv); }
   };
   
   //-----------------------------------------------------------------------------------------------------
@@ -573,7 +595,7 @@ namespace cape
   {
     static void add_cp (CapeUdc obj, const char* name, const unsigned int value) { cape_udc_add_n (obj, name, value); }
     static void add_mv (CapeUdc obj, const char* name, unsigned int value) { cape_udc_add_n (obj, name, value); }
-    static long as (CapeUdc obj, long dv = 0) { return cape_udc_n (obj, dv); }    
+    static long as (CapeUdc obj, long dv = 0) { return cape_udc_n (obj, dv); }
   };
 
   template <> struct UdcTransType<double>
@@ -673,8 +695,6 @@ namespace cape
   {
     
   public:
-    
-    //-----------------------------------------------------------------------------
     
     Stream () : m_obj (cape_stream_new ())
     {
@@ -838,8 +858,8 @@ namespace cape
     {
       return m_obj;
     }
-  
-  //-----------------------------------------------------------------------------
+    
+    //-----------------------------------------------------------------------------
 
     template <typename T> void append (T& val)
     {

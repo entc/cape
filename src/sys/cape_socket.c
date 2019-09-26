@@ -33,7 +33,7 @@ void cape_sock__set_host (struct sockaddr_in* addr, const char* host, long port)
   memset (addr, 0, sizeof(struct sockaddr_in));
   
   addr->sin_family = AF_INET;      // set the network type
-  addr->sin_port = htons(port);    // set the port
+  addr->sin_port = htons((u_short)port);    // set the port
   
   // set the address
   if (host == NULL)
@@ -43,14 +43,19 @@ void cape_sock__set_host (struct sockaddr_in* addr, const char* host, long port)
   else
   {
     const struct hostent* server = gethostbyname(host);
-    
     if(server)
     {
       memcpy (&(addr->sin_addr.s_addr), server->h_addr, server->h_length);
     }
     else
     {
-      addr->sin_addr.s_addr = INADDR_ANY;
+      CapeErr err = cape_err_new ();
+
+      cape_err_lastOSError (err);
+
+      cape_log_fmt (CAPE_LL_ERROR, "CAPE", "socket", "can't resolve hostname: %s", cape_err_text (err));
+
+      cape_err_del (&err);
     }
   }
 }
@@ -449,78 +454,44 @@ exit_and_cleanup:
 
 void* cape_sock__udp__srv_new (const char* host, long port, CapeErr err)
 {
+  SOCKET sock = INVALID_SOCKET;
   struct sockaddr_in addr;
-  long sock = -1;
-  
+
   // in windows the WSA system must be initialized first
   if (!init_wsa ())
   {
     goto exit_and_cleanup;
   }
 
-  cape_sock__set_host (&addr, host, port);
-  
-  // create socket
-  sock = socket (AF_INET, SOCK_DGRAM, 0);
-  if (sock < 0)
+  sock = WSASocket (AF_INET, SOCK_DGRAM, IPPROTO_UDP, NULL, 0, WSA_FLAG_OVERLAPPED);
+  if (sock == INVALID_SOCKET)
   {
     goto exit_and_cleanup;
   }
-  
+
+  cape_sock__set_host (&addr, host, port);
+
   {
     int opt = 1;
-    
-    // set the socket option to reuse the address
-    if (setsockopt (sock, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, sizeof(opt)) < 0)
+    if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, sizeof(opt)) < 0)
     {
       goto exit_and_cleanup;
     }
     
-    // try to bind the socket to an address
-    if (bind (sock, (const struct sockaddr*)&(addr), sizeof(addr)) < 0)
-    {
-      goto exit_and_cleanup;
-    }
-  }
-  
-  // make the socket none-blocking
-  /*
-  {
-    // get current flags
-    int flags = fcntl (sock, F_GETFL, 0);
-    
-    if (flags == -1)
-    {
-      goto exit_and_cleanup;
-    }
-    
-    // add noneblocking flag
-    flags |= O_NONBLOCK;
-
-    // set flags
-    if (fcntl (sock, F_SETFL, flags) != 0)
+    if (bind(sock, (SOCKADDR*)&(addr), sizeof(addr)) != 0)
     {
       goto exit_and_cleanup;
     }
   }
-  */
 
-  {
-    u_long mode = 1;  // 1 to enable non-blocking socket
-    ioctlsocket (sock, FIONBIO, &mode);
-  }
+  return (void*)sock;
 
-  cape_log_fmt (CAPE_LL_TRACE, "CAPE", "socket", "UDP socket srv on %s:%i", host, port);
-  
-  // return the socket
-  return (void*)sock;  
-  
 exit_and_cleanup:
-
+  
   // save the last system error into the error object
   cape_err_lastOSError (err);
   
-  if (sock >= 0)
+  if (sock != INVALID_SOCKET)
   {
     closesocket (sock);    
   }

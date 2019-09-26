@@ -12,5 +12,3 @@ __CAPE_LIBEX   CapeUdc           cape_args_from_args           (int argc, char *
 //-----------------------------------------------------------------------------
 
 #endif
-
-
