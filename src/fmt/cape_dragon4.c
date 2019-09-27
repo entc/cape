@@ -38,11 +38,28 @@
 
 #elif defined __WINDOWS_OS
 
-#include <stdint.h>
+typedef unsigned __int64    cape_uint64;
+typedef unsigned __int32    cape_uint32;
+typedef __int32             cape_int32;
+typedef __int16             cape_uint16;
+typedef unsigned __int8     cape_uint8;
+typedef int                 cape_bool;
+typedef double              cape_float64;
+typedef float               cape_float32;
 
 #define __CAPE_INLINE __inline
 
 #else
+
+// have cape specific declaration
+typedef uint64_t    cape_uint64;
+typedef uint32_t    cape_uint32;
+typedef int32_t     cape_int32;
+typedef uint16_t    cape_uint16;
+typedef uint8_t     cape_uint8;
+typedef int         cape_bool;
+typedef double      cape_float64;
+typedef float       cape_float32;
 
 #define __CAPE_INLINE inline
 
@@ -55,18 +72,6 @@
 #else
 #define DEBUG_ASSERT(stmnt) do {} while(0)
 #endif
-
-//-----------------------------------------------------------------------------------------------------------
-
-// have cape specific declaration
-typedef uint64_t    cape_uint64;
-typedef uint32_t    cape_uint32;
-typedef int32_t     cape_int32;
-typedef uint16_t    cape_uint16;
-typedef uint8_t     cape_uint8;
-typedef int         cape_bool;
-typedef double      cape_float64;
-typedef float       cape_float32;
 
 //-----------------------------------------------------------------------------------------------------------
 
