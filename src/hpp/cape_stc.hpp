@@ -107,6 +107,305 @@ namespace cape
   
   //-----------------------------------------------------------------------------------------------------
 
+  // a traits prototype for UDC types
+  template <typename T> struct StreamTransType { };  
+  
+  //-----------------------------------------------------------------------------------------------------
+
+  class Stream
+  {
+    
+  public:
+    
+    Stream () : m_obj (cape_stream_new ())
+    {
+    }
+    
+    //-----------------------------------------------------------------------------
+    
+    // copy constructor
+    Stream (const Stream& rhs) : m_obj (cape_stream_new ())
+    {
+      cape_stream_append_stream (m_obj, rhs.m_obj);
+    }
+    
+    //-----------------------------------------------------------------------------
+    
+    // move constructor
+    Stream (Stream&& rhs) : m_obj (rhs.release())
+    {
+    }
+    
+    //-----------------------------------------------------------------------------
+    
+    ~Stream ()
+    {
+      cape_stream_del (&m_obj);
+    }
+    
+    //-----------------------------------------------------------------------------
+    
+    CapeStream release ()
+    {
+      if (m_obj == NULL)
+      {
+        throw cape::Exception (CAPE_ERR_NO_OBJECT, "Stream object has no content");
+      }
+      
+      CapeStream ret = m_obj;
+      
+      m_obj = NULL;
+      
+      return ret;
+    }
+    
+    //-----------------------------------------------------------------------------
+    
+    Stream& operator =(const Stream& rhs)
+    {
+      if(this == &rhs)
+      {
+        return *this;
+      }
+      
+      // always create a copy
+      cape_stream_append_stream (m_obj, rhs.m_obj);
+      
+      return *this;
+    }
+    
+    //-----------------------------------------------------------------------------
+    
+    Stream& operator =(Stream&& rhs)
+    {
+      if(this == &rhs)
+      {
+        return *this;
+      }
+
+      // move
+      m_obj = rhs.release();
+      
+      return *this;
+    }
+    
+    //-----------------------------------------------------------------------------
+    
+    const char* data () const
+    {
+      if (m_obj == NULL)
+      {
+        throw cape::Exception (CAPE_ERR_NO_OBJECT, "Stream object has no content");
+      }
+      
+      return cape_stream_data (m_obj);
+    }
+    
+    //-----------------------------------------------------------------------------
+    
+    number_t size ()
+    {
+      if (m_obj == NULL)
+      {
+        throw cape::Exception (CAPE_ERR_NO_OBJECT, "Stream object has no content");
+      }
+      
+      return cape_stream_size (m_obj);
+    }
+ 
+    //-----------------------------------------------------------------------------
+ 
+    friend std::ostream& operator<<(std::ostream& os, const Stream& stream)
+    {
+      if (stream.m_obj == NULL)
+      {
+        throw cape::Exception (CAPE_ERR_NO_OBJECT, "Stream object has no content");
+      }
+      
+      const CapeString h = cape_stream_get (stream.m_obj);
+      
+      return os << h;
+    }
+ 
+    //-----------------------------------------------------------------------------
+    
+    template <typename T> cape::Stream& operator<<(T val)
+    {
+      if (m_obj == NULL)
+      {
+        throw cape::Exception (CAPE_ERR_NO_OBJECT, "Stream object has no content");
+      }
+      
+      cape::StreamTransType<T>::append (m_obj, val);
+      
+      return *this;
+    }
+  
+    //-----------------------------------------------------------------------------
+  
+    cape::Stream& operator<<(const char* val)
+    {
+      if (m_obj == NULL)
+      {
+        throw cape::Exception (CAPE_ERR_NO_OBJECT, "Stream object has no content");
+      }
+      
+      cape_stream_append_str (m_obj, val);
+
+      return *this;
+    }
+    
+    //-----------------------------------------------------------------------------
+    
+    /*
+    cape::Stream& operator<<(std::ostream&(*f)(std::ostream&))
+    {
+      static_assert (false, "ostream is not supported for cape::Stream at the moment -- * if know the black magic please change it in cape_stc.hpp *");
+      
+      return *this;
+    }
+    */
+  
+    //-----------------------------------------------------------------------------
+    
+    bool empty ()
+    {
+      return m_obj == NULL;      
+    }
+    
+    //-----------------------------------------------------------------------------
+    
+    bool valid ()
+    {
+      return m_obj != NULL;
+    }
+    
+    //-----------------------------------------------------------------------------
+
+    void append (const char* text)
+    {
+      if (m_obj == NULL)
+      {
+        throw cape::Exception (CAPE_ERR_NO_OBJECT, "Stream object has no content");
+      }
+
+      cape_stream_append_str (m_obj, text);
+    }
+
+    //-----------------------------------------------------------------------------
+
+    template <typename T> void append (T& val)
+    {
+      if (m_obj == NULL)
+      {
+        throw cape::Exception (CAPE_ERR_NO_OBJECT, "Stream object has no content");
+      }
+      
+      cape::StreamTransType<T>::append (m_obj, val);
+    }
+
+    //-----------------------------------------------------------------------------
+
+    void append (const char* bufdat, number_t buflen)
+    {
+      if (m_obj == NULL)
+      {
+        throw cape::Exception (CAPE_ERR_NO_OBJECT, "Stream object has no content");
+      }
+
+      cape_stream_append_buf (m_obj, bufdat, buflen);
+    }
+
+    //-----------------------------------------------------------------------------
+
+    cape::String to_str ()
+    {
+      return cape::String (cape_stream_to_str (&m_obj));
+    }
+
+    //-----------------------------------------------------------------------------
+
+    CapeString to_cstr () const
+    {
+      return cape_stream_to_s (m_obj);
+    }
+
+    //-----------------------------------------------------------------------------
+
+    CapeString to_cstr ()
+    {
+      return cape_stream_to_str (&m_obj);
+    }
+
+  private:
+
+    CapeStream m_obj;
+    
+  };
+  
+  //-----------------------------------------------------------------------------------------------------  
+  
+  template <> struct StreamTransType<int>
+  {
+    static void append (CapeStream obj, int value)
+    { 
+      cape_stream_append_n (obj, value);
+    }
+  };
+
+  //-----------------------------------------------------------------------------------------------------  
+  
+  template <> struct StreamTransType<number_t>
+  {
+    static void append (CapeStream obj, number_t value)
+    { 
+      cape_stream_append_n (obj, value);
+    }
+  };
+
+  //-----------------------------------------------------------------------------------------------------  
+  
+  template <> struct StreamTransType<double>
+  {
+    static void append (CapeStream obj, double value)
+    { 
+      cape_stream_append_f (obj, value);
+    }
+  };
+
+  //-----------------------------------------------------------------------------------------------------  
+  
+  template <> struct StreamTransType<char>
+  {
+    static void append (CapeStream obj, char value)
+    { 
+      cape_stream_append_c (obj, value);
+    }
+  };
+
+  //-----------------------------------------------------------------------------------------------------  
+  
+  template <> struct StreamTransType<std::string>
+  {
+    static void append (CapeStream obj, std::string& value)
+    { 
+      cape_stream_append_buf (obj, value.c_str(), value.size());
+    }
+  };
+
+  //-----------------------------------------------------------------------------------------------------  
+
+  template <> struct StreamTransType<std::stringstream>
+  {
+    static void append (CapeStream obj, std::stringstream& value)
+    { 
+      // WARNING: old compilers use a static buffer to convert to std::string
+      cape_stream_append_str (obj, value.str().c_str());
+    }
+  };
+    
+  //-----------------------------------------------------------------------------------------------------
+
   class Udc
   {
     
@@ -669,6 +968,23 @@ namespace cape
     }
   };
 
+  template <> struct UdcTransType<cape::Stream&>
+  {
+    static void add_cp (CapeUdc obj, const char* name, const cape::Stream& value)
+    { 
+      CapeString h = value.to_cstr ();
+
+      cape_udc_add_s_mv (obj, name, &h);
+    }
+
+    static void add_mv (CapeUdc obj, const char* name, cape::Stream& value)
+    { 
+      CapeString h = value.to_cstr ();
+
+      cape_udc_add_s_mv (obj, name, &h);
+    }
+  };
+
   //-----------------------------------------------------------------------------------------------------
 
   struct UdcCursorHolder
@@ -686,259 +1002,6 @@ namespace cape
     CapeUdcCursor* m_obj;
   };
   
-  // a traits prototype for UDC types
-  template <typename T> struct StreamTransType { };
-  
-  //-----------------------------------------------------------------------------------------------------
-  
-  class Stream
-  {
-    
-  public:
-    
-    Stream () : m_obj (cape_stream_new ())
-    {
-    }
-    
-    //-----------------------------------------------------------------------------
-    
-    // copy constructor
-    Stream (const Stream& rhs) : m_obj (cape_stream_new ())
-    {
-      cape_stream_append_stream (m_obj, rhs.m_obj);
-    }
-    
-    //-----------------------------------------------------------------------------
-    
-    // move constructor
-    Stream (Stream&& rhs) : m_obj (rhs.release())
-    {
-    }
-    
-    //-----------------------------------------------------------------------------
-    
-    ~Stream ()
-    {
-      cape_stream_del (&m_obj);
-    }
-    
-    //-----------------------------------------------------------------------------
-    
-    CapeStream release ()
-    {
-      if (m_obj == NULL)
-      {
-        throw cape::Exception (CAPE_ERR_NO_OBJECT, "Stream object has no content");
-      }
-      
-      CapeStream ret = m_obj;
-      
-      m_obj = NULL;
-      
-      return ret;
-    }
-    
-    //-----------------------------------------------------------------------------
-    
-    Stream& operator =(const Stream& rhs)
-    {
-      if(this == &rhs)
-      {
-        return *this;
-      }
-      
-      // always create a copy
-      cape_stream_append_stream (m_obj, rhs.m_obj);
-      
-      return *this;
-    }
-    
-    //-----------------------------------------------------------------------------
-    
-    Stream& operator =(Stream&& rhs)
-    {
-      if(this == &rhs)
-      {
-        return *this;
-      }
-
-      // move
-      m_obj = rhs.release();
-      
-      return *this;
-    }
-    
-    //-----------------------------------------------------------------------------
-    
-    const char* data () const
-    {
-      if (m_obj == NULL)
-      {
-        throw cape::Exception (CAPE_ERR_NO_OBJECT, "Stream object has no content");
-      }
-      
-      return cape_stream_data (m_obj);
-    }
-    
-    //-----------------------------------------------------------------------------
-    
-    number_t size ()
-    {
-      if (m_obj == NULL)
-      {
-        throw cape::Exception (CAPE_ERR_NO_OBJECT, "Stream object has no content");
-      }
-      
-      return cape_stream_size (m_obj);
-    }
- 
-    //-----------------------------------------------------------------------------
- 
-    friend std::ostream& operator<<(std::ostream& os, const Stream& stream)
-    {
-      if (stream.m_obj == NULL)
-      {
-        throw cape::Exception (CAPE_ERR_NO_OBJECT, "Stream object has no content");
-      }
-      
-      const CapeString h = cape_stream_get (stream.m_obj);
-      
-      return os << h;
-    }
- 
-    //-----------------------------------------------------------------------------
-    
-    template <typename T> cape::Stream& operator<<(T val)
-    {
-      if (m_obj == NULL)
-      {
-        throw cape::Exception (CAPE_ERR_NO_OBJECT, "Stream object has no content");
-      }
-      
-      cape::StreamTransType<T>::append (m_obj, val);
-      
-      return *this;
-    }
-  
-    //-----------------------------------------------------------------------------
-  
-    cape::Stream& operator<<(const char* val)
-    {
-      if (m_obj == NULL)
-      {
-        throw cape::Exception (CAPE_ERR_NO_OBJECT, "Stream object has no content");
-      }
-      
-      cape_stream_append_str (m_obj, val);
-
-      return *this;
-    }
-    
-    //-----------------------------------------------------------------------------
-    
-    /*
-    cape::Stream& operator<<(std::ostream&(*f)(std::ostream&))
-    {
-      static_assert (false, "ostream is not supported for cape::Stream at the moment -- * if know the black magic please change it in cape_stc.hpp *");
-      
-      return *this;
-    }
-    */
-  
-    //-----------------------------------------------------------------------------
-    
-    bool empty ()
-    {
-      return m_obj == NULL;      
-    }
-    
-    //-----------------------------------------------------------------------------
-    
-    bool valid ()
-    {
-      return m_obj != NULL;
-    }
-    
-    //-----------------------------------------------------------------------------
-
-    template <typename T> void append (T& val)
-    {
-      if (m_obj == NULL)
-      {
-        throw cape::Exception (CAPE_ERR_NO_OBJECT, "Stream object has no content");
-      }
-      
-      cape::StreamTransType<T>::append (m_obj, val);
-    }
-
-  private:
-
-    CapeStream m_obj;
-    
-  };
-  
-  //-----------------------------------------------------------------------------------------------------  
-  
-  template <> struct StreamTransType<int>
-  {
-    static void append (CapeStream obj, int value)
-    { 
-      cape_stream_append_n (obj, value);
-    }
-  };
-
-  //-----------------------------------------------------------------------------------------------------  
-  
-  template <> struct StreamTransType<number_t>
-  {
-    static void append (CapeStream obj, number_t value)
-    { 
-      cape_stream_append_n (obj, value);
-    }
-  };
-
-  //-----------------------------------------------------------------------------------------------------  
-  
-  template <> struct StreamTransType<double>
-  {
-    static void append (CapeStream obj, double value)
-    { 
-      cape_stream_append_f (obj, value);
-    }
-  };
-
-  //-----------------------------------------------------------------------------------------------------  
-  
-  template <> struct StreamTransType<char>
-  {
-    static void append (CapeStream obj, char value)
-    { 
-      cape_stream_append_c (obj, value);
-    }
-  };
-
-  //-----------------------------------------------------------------------------------------------------  
-  
-  template <> struct StreamTransType<std::string>
-  {
-    static void append (CapeStream obj, std::string& value)
-    { 
-      cape_stream_append_buf (obj, value.c_str(), value.size());
-    }
-  };
-
-  //-----------------------------------------------------------------------------------------------------  
-
-  template <> struct StreamTransType<std::stringstream>
-  {
-    static void append (CapeStream obj, std::stringstream& value)
-    { 
-      // WARNING: old compilers use a static buffer to convert to std::string
-      cape_stream_append_str (obj, value.str().c_str());
-    }
-  };
-    
-  //-----------------------------------------------------------------------------------------------------  
 }
 
 #endif
