@@ -29,14 +29,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#if defined __LINUX_OS
-
-#include <sys/types.h>
-#include <stdint.h> 
-
-#define __CAPE_INLINE inline
-
-#elif defined __WINDOWS_OS
+#if defined __WINDOWS_OS
 
 typedef unsigned __int64    cape_uint64;
 typedef unsigned __int32    cape_uint32;
@@ -50,6 +43,9 @@ typedef float               cape_float32;
 #define __CAPE_INLINE __inline
 
 #else
+
+#include <sys/types.h>
+#include <stdint.h> 
 
 // have cape specific declaration
 typedef uint64_t    cape_uint64;

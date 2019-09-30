@@ -18,4 +18,8 @@ __CAPE_LIBEX   void*         cape_sock__udp__srv_new      (const char* host, lon
 
 //-----------------------------------------------------------------------------
 
+__CAPE_LIBEX   void*         cape_sock__icmp__new         (CapeErr err);
+
+//-----------------------------------------------------------------------------
+
 #endif
