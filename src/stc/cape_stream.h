@@ -52,4 +52,12 @@ __CAPE_LIBEX void            cape_stream_append_stream (CapeStream, CapeStream);
 
 //-----------------------------------------------------------------------------
 
+__CAPE_LIBEX void            cape_stream_append_08  (CapeStream, cape_uint8);
+
+__CAPE_LIBEX void            cape_stream_append_16  (CapeStream, cape_uint16, int network_byte_order);
+
+__CAPE_LIBEX void            cape_stream_append_32  (CapeStream, cape_uint32, int network_byte_order);
+
+//-----------------------------------------------------------------------------
+
 #endif

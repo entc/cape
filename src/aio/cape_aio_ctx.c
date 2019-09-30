@@ -440,13 +440,18 @@ void cape_aio_update_events (struct epoll_event* event, int hflags)
   }
   
   if (hflags & CAPE_AIO_WRITE)
-  {
+  {file:///home/alex/Projects/globeon/m_qore/l_3rdp/cape/src/tests/ut_aio_socket_udp.c
     event->events |= EPOLLOUT;
   }
   
   if (hflags & CAPE_AIO_ALIVE)
   {
     event->events |= EPOLLHUP;
+  }
+ 
+  if (hflags & CAPE_AIO_ERROR)
+  {
+    event->events |= EPOLLERR;
   }
 }
 

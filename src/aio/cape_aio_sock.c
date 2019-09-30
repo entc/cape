@@ -10,14 +10,21 @@
 
 #if defined __BSD_OS || defined __LINUX_OS
 
-#include <memory.h>
-#include <sys/socket.h>	// basic socket definitions
+#include <stdio.h>
 #include <sys/types.h>
-#include <arpa/inet.h>	// inet(3) functions
-#include <sys/fcntl.h>
-#include <errno.h>
-#include <unistd.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <netdb.h>
+#include <unistd.h>
+#include <string.h>
+#include <stdlib.h>
+#include <netinet/ip_icmp.h>
+#include <time.h>
+#include <fcntl.h>
+#include <signal.h>
+#include <time.h>
+#include <errno.h>
 
 // includes specific event subsystem
 #if defined __BSD_OS
@@ -997,6 +1004,205 @@ void cape_aio_socket__udp__send (CapeAioSocketUdp self, CapeAioContext aio, cons
   // activate recieving
   self->mode |= CAPE_AIO_WRITE;
   cape_aio_socket__udp__set (self, aio, self->mode);
+}
+
+//-----------------------------------------------------------------------------
+
+struct CapeAioSocketIcmp_s
+{
+  // the handle to the device descriptor
+  void* handle;
+  
+  // the handle to the AIO system
+  CapeAioHandle aioh;
+  
+  int msg_cnt;
+  
+  // *** callback ***
+  
+  void* ptr;
+  
+  fct_cape_aio_socket__on_pong on_pong;
+  fct_cape_aio_socket_onDone on_done;
+};
+
+//-----------------------------------------------------------------------------
+
+CapeAioSocketIcmp cape_aio_socket__icmp__new (void* handle)
+{
+  CapeAioSocketIcmp self = CAPE_NEW (struct CapeAioSocketIcmp_s);
+  
+  self->handle = handle;
+  self->aioh = NULL;
+  
+  self->msg_cnt = 0;
+  
+  self->ptr = NULL;
+  self->on_done = NULL;
+  self->on_pong = NULL;
+  
+  return self;
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket__icmp__del (CapeAioSocketIcmp* p_self)
+{
+  if (*p_self)
+  {
+    CapeAioSocketIcmp self = *p_self;
+    
+    
+   
+    CAPE_DEL(p_self, struct CapeAioSocketIcmp_s);
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+static void __STDCALL cape_aio_socket__icmp__on_unref (void* ptr, CapeAioHandle aioh, int force_close)
+{
+  CapeAioSocketIcmp self = ptr;
+  
+  cape_aio_socket__icmp__del (&self);
+}
+
+//-----------------------------------------------------------------------------
+
+static int __STDCALL cape_aio_socket__icmp__on_event (void* ptr, int mode, unsigned long events, unsigned long param1)
+{
+  CapeAioSocketIcmp self = ptr;
+  
+  
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket__icmp__add (CapeAioSocketIcmp* p_self, CapeAioContext aio)
+{
+  CapeAioSocketIcmp self = *p_self;
+  
+  int ttl_val = 64;
+  
+  // set socket options at ip to TTL and value to 64, 
+  // change to what you want by setting ttl_val 
+  if (setsockopt ((number_t)self->handle, SOL_IP, IP_TTL, &ttl_val, sizeof(ttl_val)) != 0)
+  {
+    
+    return;
+  }
+  
+  self->aioh = cape_aio_handle_new (CAPE_AIO_READ | CAPE_AIO_ERROR, self, cape_aio_socket__icmp__on_event, cape_aio_socket__icmp__on_unref);
+  
+  cape_aio_context_add (aio, self->aioh, self->handle, 0);
+  
+  *p_self = NULL;
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket__icmp__cb (CapeAioSocketIcmp self, void* ptr, fct_cape_aio_socket__on_pong on_pong, fct_cape_aio_socket_onDone on_done)
+{
+  self->ptr = ptr;
+  
+  self->on_done = on_done;
+  self->on_pong = on_pong;
+}
+
+//-----------------------------------------------------------------------------
+
+#define PING_PKT_S 64
+
+// ping packet structure 
+struct ping_pkt 
+{ 
+  struct icmphdr hdr; 
+  char msg[PING_PKT_S - sizeof(struct icmphdr)]; 
+}; 
+
+//-----------------------------------------------------------------------------
+
+unsigned short cape_aio_socket__icmp__checksum (void *b, int len)
+{
+  unsigned short *buf = b; 
+  unsigned int sum = 0; 
+  unsigned short result; 
+  
+  for (sum = 0; len > 1; len -= 2)
+  {
+    sum += *buf++; 
+  }
+  
+  if ( len == 1 )
+  {
+    sum += *(unsigned char*)buf; 
+  }
+  
+  sum = (sum >> 16) + (sum & 0xFFFF); 
+  sum += (sum >> 16); 
+  
+  result = ~sum; 
+  
+  return result; 
+} 
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket__icmp__ping (CapeAioSocketIcmp self, CapeAioContext aio, const char* host, double timeout_in_ms)
+{
+  int flag = 1;
+  int i;
+  struct timeval tv_out; 
+  struct ping_pkt pckt;
+  struct sockaddr_in r_addr;
+  
+  tv_out.tv_sec = timeout_in_ms / 1000;
+  tv_out.tv_usec = timeout_in_ms * 1000;
+  
+  memset (&r_addr, 0, sizeof(struct sockaddr_in));
+  
+  r_addr.sin_family = AF_INET;      // set the network type
+  r_addr.sin_port = 0;    // set the port
+  
+  // set the address
+  if (host == NULL)
+  {
+    return;
+  }
+  
+  const struct hostent* server = gethostbyname (host);
+  
+  if (server)
+  {
+    memcpy (&(r_addr.sin_addr.s_addr), server->h_addr, server->h_length);
+  }
+  
+  // setting timeout of recv setting 
+  setsockopt ((number_t)self->handle, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv_out, sizeof tv_out);
+  
+  // flag is whether packet was sent or not 
+  flag = 1; 
+  
+  //filling packet 
+  memset (&pckt, 0, sizeof(pckt)); 
+  
+  pckt.hdr.type = ICMP_ECHO; 
+  pckt.hdr.un.echo.id = getpid();
+  
+  for (i = 0; i < sizeof(pckt.msg) - 1; i++)
+  {
+    pckt.msg[i] = i + '0';
+  }
+  
+  pckt.msg[i] = 0; 
+  pckt.hdr.un.echo.sequence = (self->msg_cnt)++; 
+  pckt.hdr.checksum = cape_aio_socket__icmp__checksum (&pckt, sizeof(pckt));
+  
+  if (sendto ((number_t)self->handle, &pckt, sizeof(pckt), 0, (struct sockaddr*)&r_addr, sizeof(r_addr)) <= 0) 
+  { 
+    // error
+    flag = 0; 
+  }
 }
 
 //-----------------------------------------------------------------------------

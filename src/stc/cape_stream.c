@@ -8,6 +8,7 @@
 #include <memory.h>
 #include <limits.h>
 #include <stdlib.h>
+#include <netinet/in.h>
 
 //-----------------------------------------------------------------------------
 
@@ -301,6 +302,52 @@ void cape_stream_append_stream (CapeStream self, CapeStream stream)
   
   memcpy (self->pos, stream->buffer, usedBytes);
   self->pos += usedBytes;
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_stream_append_08 (CapeStream self, cape_uint8 val)
+{
+  cape_stream_reserve (self, 1);
+  
+  *(self->pos) = val;
+  self->pos++;
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_stream_append_16 (CapeStream self, cape_uint16 val, int network_byte_order)
+{
+  cape_stream_reserve (self, 2);
+
+  if (network_byte_order)
+  {
+    *((uint16_t*)(self->pos)) = htons (val);
+  }
+  else
+  {
+    *((uint16_t*)(self->pos)) = val;
+  }
+  
+  self->pos+=2;
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_stream_append_32 (CapeStream self, cape_uint32 val, int network_byte_order)
+{
+  cape_stream_reserve (self, 4);
+  
+  if (network_byte_order)
+  {
+    *((uint32_t*)(self->pos)) = htonl (val);
+  }
+  else
+  {
+    *((uint32_t*)(self->pos)) = val;
+  }
+  
+  self->pos+=4;
 }
 
 //-----------------------------------------------------------------------------
