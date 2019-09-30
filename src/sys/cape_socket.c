@@ -311,6 +311,8 @@ exit_and_cleanup:
     close(sock);    
   }
   
+  cape_log_fmt (CAPE_LL_ERROR, "CAPE", "icmp new", "can't create ICMP socket: %s", cape_err_text(err));
+  
   return NULL;  
 }
 
