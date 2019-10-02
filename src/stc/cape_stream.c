@@ -329,7 +329,7 @@ void cape_stream_append_16 (CapeStream self, cape_uint16 val, int network_byte_o
     *((uint16_t*)(self->pos)) = val;
   }
   
-  self->pos+=2;
+  self->pos += 2;
 }
 
 //-----------------------------------------------------------------------------
@@ -347,7 +347,47 @@ void cape_stream_append_32 (CapeStream self, cape_uint32 val, int network_byte_o
     *((uint32_t*)(self->pos)) = val;
   }
   
-  self->pos+=4;
+  self->pos += 4;
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_stream_append_64 (CapeStream self, cape_uint64 val, int network_byte_order)
+{
+  cape_stream_reserve (self, 8);
+  
+  if (network_byte_order)
+  {
+    *((cape_uint64*)(self->pos)) = htonll (val);
+  }
+  else
+  {
+    *((cape_uint64*)(self->pos)) = val;
+  }
+  
+  self->pos += 8;
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_stream_append_bd (CapeStream self, double val, int network_byte_order)
+{
+  cape_stream_reserve (self, 8);
+  
+  cape_uint64 h;
+  
+  memcpy (&h, &val, 8);
+  
+  if (network_byte_order)
+  {
+    *((cape_uint64*)(self->pos)) = htonll (h);
+  }
+  else
+  {
+    *((cape_uint64*)(self->pos)) = h;
+  }
+  
+  self->pos += 8;
 }
 
 //-----------------------------------------------------------------------------

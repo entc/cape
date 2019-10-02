@@ -24,6 +24,7 @@ SET(CAPE_STC_SOURCES
   stc/cape_map.c
   stc/cape_udc.c
   stc/cape_stream.c
+  stc/cape_cursor.c
 )
 
 SET(CAPE_STC_HEADERS
@@ -32,6 +33,7 @@ SET(CAPE_STC_HEADERS
   stc/cape_map.h
   stc/cape_udc.h
   stc/cape_stream.h
+  stc/cape_cursor.h
 )
 
 #----------------------------------------------------------------------------------
