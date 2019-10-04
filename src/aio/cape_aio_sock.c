@@ -881,7 +881,7 @@ static int __STDCALL cape_aio_socket__udp__on_event (void* ptr, int mode, unsign
   CapeAioSocketUdp self = ptr;
 
   // sync the mode
-  self->mode = mode;
+  //self->mode = mode;
   
 #ifdef __BSD_OS
   if (events & EVFILT_READ)
@@ -922,6 +922,10 @@ void cape_aio_socket__udp__add (CapeAioSocketUdp* p_self, CapeAioContext aioctx,
   self->aioh = cape_aio_handle_new (mode, self, cape_aio_socket__udp__on_event, cape_aio_socket__udp__on_unref);
   
   cape_aio_context_add (aioctx, self->aioh, self->handle, 0);
+  
+  cape_log_msg (CAPE_LL_TRACE, "CAPE", "aio socket - udp", "handle was added to AIO");
+  
+  self->mode = mode;
   
   *p_self = NULL;
 }
@@ -989,6 +993,9 @@ void cape_aio_socket__udp__send (CapeAioSocketUdp self, CapeAioContext aio, cons
   
   const struct hostent* server = gethostbyname (host);
   
+  printf ("SET SEND %i -> %s\n", server->h_length, host);
+  
+  
   if (server)
   {
     memcpy (&(self->send_addr.sin_addr.s_addr), server->h_addr, server->h_length);
@@ -1002,8 +1009,7 @@ void cape_aio_socket__udp__send (CapeAioSocketUdp self, CapeAioContext aio, cons
   self->userdata = userdata;
   
   // activate recieving
-  self->mode |= CAPE_AIO_WRITE;
-  cape_aio_socket__udp__set (self, aio, self->mode);
+  cape_aio_socket__udp__set (self, aio, self->mode | CAPE_AIO_WRITE);  
 }
 
 //-----------------------------------------------------------------------------

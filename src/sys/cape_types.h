@@ -69,13 +69,22 @@ static void cape_free (void* ptr)
 
 //-----------------------------------------------------------------------------
 
-#define CAPE_NEW( type ) (type*)cape_alloc(sizeof(type))
-#define CAPE_DEL( ptr, type ) { memset(*ptr, 0, sizeof(type)); free(*ptr); *ptr = 0; }
+#define CAPE_NEW(type) (type*)cape_alloc(sizeof(type))
+#define CAPE_DEL(ptr, type) { memset(*ptr, 0, sizeof(type)); free(*ptr); *ptr = 0; }
 
 //-----------------------------------------------------------------------------
 
 #define CAPE_DIRECTION_FORW 0x0001
 #define CAPE_DIRECTION_PREV 0x0002
+
+//-----------------------------------------------------------------------------
+
+#define CAPE_BIT_SET(arg, pos) ((arg) | (1L << (pos)))
+#define CAPE_BIT_GET(arg, pos) int((arg) & (1L << (pos)))
+#define CAPE_BIT_CLR(arg, pos) ((arg) & ~(1L << (pos)))
+#define CAPE_BIT_FLP(arg, pos) ((arg) ^ (1L << (pos)))
+
+//-----------------------------------------------------------------------------
 
 #if defined __WINDOWS_OS
 

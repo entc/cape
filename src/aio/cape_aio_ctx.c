@@ -436,21 +436,25 @@ void cape_aio_update_events (struct epoll_event* event, int hflags)
   
   if (hflags & CAPE_AIO_READ)
   {
+    //cape_log_msg (CAPE_LL_TRACE, "CAPE", "update events", "set READ");
     event->events |= EPOLLIN;
   }
   
   if (hflags & CAPE_AIO_WRITE)
-  {file:///home/alex/Projects/globeon/m_qore/l_3rdp/cape/src/tests/ut_aio_socket_udp.c
+  {
+    //cape_log_msg (CAPE_LL_TRACE, "CAPE", "update events", "set WRITE");
     event->events |= EPOLLOUT;
   }
   
   if (hflags & CAPE_AIO_ALIVE)
   {
+    //cape_log_msg (CAPE_LL_TRACE, "CAPE", "update events", "set ALIVE");
     event->events |= EPOLLHUP;
   }
  
   if (hflags & CAPE_AIO_ERROR)
   {
+    //cape_log_msg (CAPE_LL_TRACE, "CAPE", "update events", "set ERROR");
     event->events |= EPOLLERR;
   }
 }
@@ -651,7 +655,8 @@ int cape_aio_context_next (CapeAioContext self, long timeout_in_ms, CapeErr err)
       }
       else
       {
-        hflags_result = 0;
+        cape_log_msg (CAPE_LL_WARN, "CAPE", "aio next", "no 'on_event' method was set in the aio handle");
+        hflags_result = CAPE_AIO_NONE;
       }
       
       if (hflags_result & CAPE_AIO_DONE)
@@ -1288,7 +1293,7 @@ int cape_aio_context_add (CapeAioContext self, CapeAioHandle aioh, void* handle,
     
     cape_err_lastOSError (err);
     
-    printf ("can't add fd [%li] to completion port: %s\n", (long)handle, cape_err_text (err));
+    cape_log_fmt (CAPE_LL_ERROR, "CAPE", "aio add", "can't add fd [%li] to completion port: %s", (long)handle, cape_err_text (err));
     
     cape_err_del (&err);
 
