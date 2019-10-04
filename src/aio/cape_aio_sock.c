@@ -19,7 +19,6 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
-#include <netinet/ip_icmp.h>
 #include <time.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -34,6 +33,7 @@
 
 #elif defined __LINUX_OS
 
+#include <netinet/ip_icmp.h>
 #include <sys/epoll.h>
 #define CAPE_NO_SIGNALS MSG_NOSIGNAL
 
@@ -1090,6 +1090,8 @@ void cape_aio_socket__icmp__add (CapeAioSocketIcmp* p_self, CapeAioContext aio)
   
   int ttl_val = 64;
   
+#if defined __LINUX_OS
+
   // set socket options at ip to TTL and value to 64, 
   // change to what you want by setting ttl_val 
   if (setsockopt ((number_t)self->handle, SOL_IP, IP_TTL, &ttl_val, sizeof(ttl_val)) != 0)
@@ -1097,6 +1099,8 @@ void cape_aio_socket__icmp__add (CapeAioSocketIcmp* p_self, CapeAioContext aio)
     
     return;
   }
+
+#endif
   
   self->aioh = cape_aio_handle_new (CAPE_AIO_READ | CAPE_AIO_ERROR, self, cape_aio_socket__icmp__on_event, cape_aio_socket__icmp__on_unref);
   
@@ -1116,6 +1120,8 @@ void cape_aio_socket__icmp__cb (CapeAioSocketIcmp self, void* ptr, fct_cape_aio_
 }
 
 //-----------------------------------------------------------------------------
+
+#if defined __LINUX_OS
 
 #define PING_PKT_S 64
 
@@ -1152,10 +1158,15 @@ unsigned short cape_aio_socket__icmp__checksum (void *b, int len)
   return result; 
 } 
 
+#endif
+
 //-----------------------------------------------------------------------------
 
 void cape_aio_socket__icmp__ping (CapeAioSocketIcmp self, CapeAioContext aio, const char* host, double timeout_in_ms)
 {
+  
+#if defined __LINUX_OS
+
   int flag = 1;
   int i;
   struct timeval tv_out; 
@@ -1209,6 +1220,9 @@ void cape_aio_socket__icmp__ping (CapeAioSocketIcmp self, CapeAioContext aio, co
     // error
     flag = 0; 
   }
+  
+#endif
+  
 }
 
 //-----------------------------------------------------------------------------
