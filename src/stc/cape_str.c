@@ -589,7 +589,7 @@ CapeString cape_str_trim_utf8 (const CapeString source)
   
   while (*c)
   {
-    number_t clen = cape_str_char__len (c);
+    number_t clen = cape_str_char__len (*c);
     
     if ((clen == 1) && (*c <= 32))
     {
