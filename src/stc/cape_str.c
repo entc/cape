@@ -4,6 +4,7 @@
 #endif
 
 #include "cape_str.h"
+#include "cape_stream.h"
 
 // cape includes
 #include "sys/cape_err.h"
@@ -571,6 +572,94 @@ CapeString cape_str_catenate_c (const CapeString s1, char c, const CapeString s2
 
 //-----------------------------------------------------------------------------
 
+CapeString cape_str_trim_utf8 (const CapeString source)
+{
+  const unsigned char* c = (const unsigned char*)source;
+  
+  const unsigned char* pos_s = c;
+  const unsigned char* pos_e = c;
+  
+  int trim = TRUE;
+  
+  // special case
+  if (source == NULL)
+  {
+    return NULL;
+  }
+  
+  while (*c)
+  {
+    number_t clen = cape_str_char__len (*c);
+    
+    if ((clen == 1) && (*c <= 32))
+    {
+      if (trim)
+      {
+        pos_s += clen;
+      }
+    }
+    else
+    {
+      pos_e = c + clen;
+      trim = FALSE;
+    }
+    
+    c += clen;
+  }
+  
+  int diff = pos_e - pos_s;
+  if (diff > 0)
+  {
+    return cape_str_sub ((const char*)pos_s, pos_e - pos_s);
+  }
+  else
+  {
+    return cape_str_cp ("");
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+CapeString cape_str_cp_replaced (const CapeString source, const CapeString seek, const CapeString replace_with)
+{
+  CapeStream s;
+  
+  const char* fpos;
+  const char* lpos;
+  
+  if (source == NULL)
+  {
+    return NULL;
+  }
+  
+  if (seek == NULL)
+  {
+    return cape_str_cp (source);
+  }
+  
+  s = cape_stream_new ();
+  
+  lpos = source;
+  
+  for (fpos = strstr (lpos, seek); fpos; fpos = strstr (lpos, seek))
+  {
+    cape_stream_append_buf (s, lpos, fpos - lpos);
+    
+    if (replace_with)
+    {
+      cape_stream_append_str (s, replace_with);
+    }
+    
+    lpos = fpos + strlen (seek);
+  }
+  
+  cape_stream_append_str (s, lpos);
+  
+  return cape_stream_to_str (&s);
+}
+
+//-----------------------------------------------------------------------------
+
 void cape_str_replace_cp (CapeString* p_self, const CapeString source)
 {
   // create a new copy
@@ -595,6 +684,20 @@ void cape_str_replace_mv (CapeString* p_self, CapeString* p_source)
 
   // release ownership
   *p_source = NULL;
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_str_replace (CapeString* p_self, const CapeString seek, const CapeString replace_with)
+{
+  if (*p_self)
+  {
+    CapeString h = cape_str_cp_replaced (*p_self, seek, replace_with);
+    
+    cape_str_del (p_self);
+    
+    *p_self = h;
+  }
 }
 
 //-----------------------------------------------------------------------------
@@ -634,4 +737,3 @@ void cape_str_to_lower (CapeString self)
 }
 
 //-----------------------------------------------------------------------------
-
