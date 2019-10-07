@@ -10,6 +10,10 @@
 #include <stdlib.h>
 #include <netinet/in.h>
 
+#ifndef htonll
+#define htonll(x) ((1==htonl(1)) ? (x) : (((uint64_t)htonl((x) & 0xFFFFFFFFUL)) << 32) | htonl((uint32_t)((x) >> 32)))
+#endif
+
 //-----------------------------------------------------------------------------
 
 struct CapeStream_s
@@ -379,7 +383,7 @@ void cape_stream_append_bd (CapeStream self, double val, int network_byte_order)
   memcpy (&h, &val, 8);
   
   if (network_byte_order)
-  {
+  {    
     *((cape_uint64*)(self->pos)) = htonll (h);
   }
   else

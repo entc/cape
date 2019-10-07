@@ -4,6 +4,10 @@
 #include <stdio.h>
 #include <netinet/in.h>
 
+#ifndef ntohll
+#define ntohll(x) ((1==ntohl(1)) ? (x) : (((uint64_t)ntohl((x) & 0xFFFFFFFFUL)) << 32) | ntohl((uint32_t)((x) >> 32)))
+#endif
+
 //-----------------------------------------------------------------------------
 
 struct CapeCursor_s
@@ -171,7 +175,7 @@ cape_uint64 cape_cursor_scan_64 (CapeCursor self, int network_byte_order)
   if (cape_cursor__has_data (self, 8))
   {
     if (network_byte_order)
-    {
+    {  
       ret = ntohll (*((cape_uint64*)(self->pos)));
     }
     else

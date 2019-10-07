@@ -79,7 +79,7 @@ static void cape_free (void* ptr)
 
 //-----------------------------------------------------------------------------
 
-#define CAPE_BIT_SET(arg, pos) ((arg) | (1L << (pos)))
+#define CAPE_BIT_SET(arg, pos) ((arg) |= (1L << (pos)))
 #define CAPE_BIT_GET(arg, pos) int((arg) & (1L << (pos)))
 #define CAPE_BIT_CLR(arg, pos) ((arg) & ~(1L << (pos)))
 #define CAPE_BIT_FLP(arg, pos) ((arg) ^ (1L << (pos)))
