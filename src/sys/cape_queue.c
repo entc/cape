@@ -9,9 +9,13 @@
 #include "sys/cape_thread.h"
 #include "stc/cape_list.h"
 
+#if defined __LINUX_OS
+
 // linux includes
 #include <sys/eventfd.h>
 #include <unistd.h>
+
+#endif
 
 //-----------------------------------------------------------------------------
 
@@ -19,8 +23,12 @@ struct CapeQueue_s
 {
   CapeMutex mutex;
   
+#if defined __LINUX_OS
+
   int fdevent;
-  
+
+#endif
+
   CapeList threads;
   
   CapeList queue;
@@ -43,7 +51,11 @@ void __STDCALL cape_queue__threads__on_del (void* ptr)
 {
   CapeThreadItem self = ptr;
 
+#if defined __LINUX_OS
+
   write (self->queue->fdevent, &(uint64_t){20}, sizeof(uint64_t));
+
+#endif
 
   cape_thread_join (self->thread);
   
@@ -83,7 +95,12 @@ CapeQueue cape_queue_new (void)
   CapeQueue self = CAPE_NEW (struct CapeQueue_s);
   
   self->mutex = cape_mutex_new ();
+  
+#if defined __LINUX_OS
+
   self->fdevent = eventfd (0, 0);
+
+#endif
   
   self->threads = cape_list_new (cape_queue__threads__on_del);
   
@@ -109,7 +126,11 @@ void cape_queue_del (CapeQueue* p_self)
     
     cape_mutex_del (&(self->mutex));
 
+#if defined __LINUX_OS
+    
     close (self->fdevent);
+
+#endif
     
     CAPE_DEL (p_self, struct CapeQueue_s);
   }
@@ -167,7 +188,11 @@ void cape_queue_add (CapeQueue self, cape_queue_cb_fct on_event, cape_queue_cb_f
   
   cape_mutex_unlock (self->mutex);
   
+#if defined __LINUX_OS
+
   write (self->fdevent, &(uint64_t){1}, sizeof(uint64_t));
+  
+#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -177,11 +202,15 @@ int cape_queue_next (CapeQueue self)
   int ret = TRUE;
   CapeQueueItem item = NULL;
 
+#if defined __LINUX_OS
+  
   uint64_t v;
   
   read (self->fdevent, &v, sizeof(v));
   
   printf ("%li\n", v);
+
+#endif
   
   cape_mutex_lock (self->mutex);
   
