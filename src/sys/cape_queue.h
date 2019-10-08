@@ -3,6 +3,7 @@
 
 #include "sys/cape_export.h"
 #include "sys/cape_err.h"
+#include "sys/cape_types.h"
 
 //-----------------------------------------------------------------------------
 
@@ -24,7 +25,7 @@ __CAPE_LIBEX   void        cape_sync_wait          (CapeSync);
 
 struct CapeQueue_s; typedef struct CapeQueue_s* CapeQueue;
 
-typedef void (__STDCALL *cape_queue_cb_fct)(void* ptr);
+typedef void (__STDCALL *cape_queue_cb_fct)(void* ptr, number_t pos);
 
 //-----------------------------------------------------------------------------
 
@@ -46,7 +47,7 @@ __CAPE_LIBEX   int         cape_queue_next         (CapeQueue);
                            /*
                             * adds a new task
                             */
-__CAPE_LIBEX   void        cape_queue_add          (CapeQueue, CapeSync, cape_queue_cb_fct on_event, cape_queue_cb_fct on_done, void* ptr);
+__CAPE_LIBEX   void        cape_queue_add          (CapeQueue, CapeSync, cape_queue_cb_fct on_event, cape_queue_cb_fct on_done, void* ptr, number_t pos);
 
                            /*
                             * starts the queueing in background

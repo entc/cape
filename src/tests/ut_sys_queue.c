@@ -2,19 +2,15 @@
 #include "sys/cape_log.h"
 #include "sys/cape_thread.h"
 
-static int cnt = 0;
-
 //-----------------------------------------------------------------------------
 
-static void __STDCALL cape_queue01_callback (void* ptr)
+static void __STDCALL cape_queue01_callback (void* ptr, number_t pos)
 {
-  int h = ++cnt;
-  
   //cape_log_fmt (CAPE_LL_DEBUG, "CAPE", "UT :: queue", "[%i] callback start", h);
 
-  cape_thread_sleep (10);
+  cape_thread_sleep (4000);
   
-  cape_log_fmt (CAPE_LL_DEBUG, "CAPE", "UT :: queue", "[%i] callback done", h);
+  cape_log_fmt (CAPE_LL_DEBUG, "CAPE", "UT :: queue", "[%i] callback done", pos);
 }
 
 //-----------------------------------------------------------------------------
@@ -39,7 +35,7 @@ int main (int argc, char *argv[])
     
     for (i = 0; i < 10; i++)
     {
-      cape_queue_add (queue01, sync01, cape_queue01_callback, NULL, NULL);      
+      cape_queue_add (queue01, sync01, cape_queue01_callback, NULL, NULL, i);
     }
   }
 

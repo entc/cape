@@ -11,13 +11,21 @@
 
 #if defined __WINDOWS_OS
 
-#else
+#include <windows.h>
 
-// linux includes
+#elif defined __BSD_OS
+
 #include <unistd.h>
-#include <semaphore.h>
 #include <sys/ipc.h>
 #include <sys/sem.h>
+#include <dispatch/dispatch.h>
+
+#else
+
+#include <unistd.h>
+#include <sys/ipc.h>
+#include <sys/sem.h>
+#include <semaphore.h>
 
 #endif
 
@@ -159,7 +167,15 @@ struct CapeQueue_s
   
   CapeList queue;
   
+#if defined __BSD_OS
+
+  dispatch_semaphore_t sem;
+  
+#else
+  
   sem_t sem;    // semaphore structure
+
+#endif
   
   int terminated;
 };
@@ -197,6 +213,8 @@ struct CapeQueueItem_s
   
   CapeSync sync;    // reference
   
+  number_t pos;
+  
 }; typedef struct CapeQueueItem_s* CapeQueueItem;
 
 //-----------------------------------------------------------------------------
@@ -207,7 +225,7 @@ void __STDCALL cape_queue__item__on_del (void* ptr)
   
   if (item->on_done)
   {
-    item->on_done (item->ptr);
+    item->on_done (item->ptr, item->pos);
   }
   
   cape_sync_dec (item->sync);
@@ -223,7 +241,26 @@ CapeQueue cape_queue_new (void)
   
   self->mutex = cape_mutex_new ();
 
-  sem_init (&(self->sem), 0, 0);
+#if defined __BSD_OS
+
+  self->sem = dispatch_semaphore_create (0);
+  
+#else
+  
+  int res = sem_init (&(self->sem), 0, 0);
+
+  if (res == -1)
+  {
+    CapeErr err = cape_err_new ();
+    
+    cape_err_lastOSError (err);
+    
+    cape_log_fmt (CAPE_LL_ERROR, "CAPE", "queue new", "can't initialize semaphore: %s", cape_err_text(err));
+    
+    cape_err_del (&err);
+  }
+
+#endif
   
   self->terminated = FALSE;
   
@@ -249,8 +286,11 @@ void cape_queue_del (CapeQueue* p_self)
       
       while (cape_list_cursor_next (cursor))
       {
-        // activate the thread
+#if defined __BSD_OS
+        dispatch_semaphore_signal (self->sem);
+#else
         sem_post (&(self->sem));
+#endif
       }
       
       cape_list_cursor_destroy (&cursor);
@@ -302,7 +342,7 @@ int cape_queue_start  (CapeQueue self, int amount_of_threads, CapeErr err)
 
 //-----------------------------------------------------------------------------
 
-void cape_queue_add (CapeQueue self, CapeSync sync, cape_queue_cb_fct on_event, cape_queue_cb_fct on_done, void* ptr)
+void cape_queue_add (CapeQueue self, CapeSync sync, cape_queue_cb_fct on_event, cape_queue_cb_fct on_done, void* ptr, number_t pos)
 {
   CapeQueueItem item = CAPE_NEW (struct CapeQueueItem_s);
   
@@ -310,6 +350,7 @@ void cape_queue_add (CapeQueue self, CapeSync sync, cape_queue_cb_fct on_event, 
   item->on_event = on_event;
   item->ptr = ptr;
   item->sync = sync;
+  item->pos = pos;
   
   cape_mutex_lock (self->mutex);
   
@@ -319,7 +360,15 @@ void cape_queue_add (CapeQueue self, CapeSync sync, cape_queue_cb_fct on_event, 
 
   cape_sync_inc (sync);
   
+#if defined __BSD_OS
+
+  dispatch_semaphore_signal (self->sem);
+  
+#else
+  
   sem_post (&(self->sem));
+  
+#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -329,8 +378,27 @@ int cape_queue_next (CapeQueue self)
   int ret = TRUE;
   CapeQueueItem item = NULL;
  
-  sem_wait (&(self->sem));
+#if defined __BSD_OS
+  
+  dispatch_semaphore_wait (self->sem, DISPATCH_TIME_FOREVER);
+  
+#else
+  
+  int res = sem_wait (&(self->sem));
+  
+  if (res == -1)
+  {
+    CapeErr err = cape_err_new ();
     
+    cape_err_lastOSError (err);
+    
+    cape_log_fmt (CAPE_LL_ERROR, "CAPE", "queue next", "can't permforme sem_wait: %s", cape_err_text(err));
+    
+    cape_err_del (&err);
+  }
+
+#endif
+  
   cape_mutex_lock (self->mutex);
   
   ret = !self->terminated;
@@ -346,7 +414,7 @@ int cape_queue_next (CapeQueue self)
   {
     if (item->on_event)
     {
-      item->on_event (item->ptr);
+      item->on_event (item->ptr, item->pos);
     }
     
     cape_queue__item__on_del (item);
