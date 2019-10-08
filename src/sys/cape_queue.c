@@ -9,13 +9,145 @@
 #include "sys/cape_thread.h"
 #include "stc/cape_list.h"
 
-#if defined __LINUX_OS
+#if defined __WINDOWS_OS
+
+#else
 
 // linux includes
-#include <sys/eventfd.h>
 #include <unistd.h>
+#include <semaphore.h>
+#include <sys/ipc.h>
+#include <sys/sem.h>
 
 #endif
+
+//-----------------------------------------------------------------------------
+
+struct CapeSync_s
+{
+  int semid;
+};
+
+//-----------------------------------------------------------------------------
+
+CapeSync cape_sync_new (void)
+{
+  CapeSync self = CAPE_NEW (struct CapeSync_s);
+  
+  self->semid = semget (IPC_PRIVATE, 1, IPC_CREAT  | IPC_EXCL | 0666);
+  
+  if (self->semid == -1)
+  {
+    CapeErr err = cape_err_new ();
+    
+    cape_err_lastOSError (err);
+    
+    cape_log_fmt (CAPE_LL_ERROR, "CAPE", "sync del", "can't permforme semaphore action: %s", cape_err_text(err));
+    
+    cape_err_del (&err);
+  }
+  
+  semctl (self->semid, 0, SETVAL, 0);
+  
+  return self;
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_sync_del (CapeSync* p_self)
+{
+  if (*p_self)
+  {
+    CapeSync self = *p_self;
+
+    cape_sync_wait (self);
+    
+    close (self->semid);
+
+    CAPE_DEL (p_self, struct CapeSync_s);
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_sync_inc (CapeSync self)
+{
+  if (self)
+  {
+    struct sembuf sops[1];
+
+    sops[0].sem_num = 0;
+    sops[0].sem_op = 1;
+    sops[0].sem_flg = 0;
+
+    int res = semop (self->semid, sops, 1);
+    
+    if (res == -1)
+    {
+      CapeErr err = cape_err_new ();
+      
+      cape_err_lastOSError (err);
+      
+      cape_log_fmt (CAPE_LL_ERROR, "CAPE", "sync del", "can't permforme semaphore action: %s", cape_err_text(err));
+      
+      cape_err_del (&err);
+    }
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_sync_dec (CapeSync self)
+{
+  if (self)
+  {
+    struct sembuf sops[1];
+    
+    sops[0].sem_num = 0;
+    sops[0].sem_op = -1;
+    sops[0].sem_flg = 0;
+    
+    int res = semop (self->semid, sops, 1);    
+
+    if (res == -1)
+    {
+      CapeErr err = cape_err_new ();
+      
+      cape_err_lastOSError (err);
+      
+      cape_log_fmt (CAPE_LL_ERROR, "CAPE", "sync del", "can't permforme semaphore action: %s", cape_err_text(err));
+      
+      cape_err_del (&err);
+    }
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_sync_wait (CapeSync self)
+{
+  if (self)
+  {
+    struct sembuf sops[1];
+    
+    sops[0].sem_op = 0;
+    sops[0].sem_flg = 0;
+    sops[0].sem_num = 0;
+    
+    int res = semop (self->semid, sops, 1);
+    
+    if (res == -1)
+    {
+      CapeErr err = cape_err_new ();
+      
+      cape_err_lastOSError (err);
+      
+      cape_log_fmt (CAPE_LL_ERROR, "CAPE", "sync del", "can't permforme semaphore action: %s", cape_err_text(err));
+      
+      cape_err_del (&err);
+    }
+  }
+}
 
 //-----------------------------------------------------------------------------
 
@@ -23,17 +155,13 @@ struct CapeQueue_s
 {
   CapeMutex mutex;
   
-#if defined __LINUX_OS
-
-  int fdevent;
-
-#endif
-
   CapeList threads;
   
   CapeList queue;
   
-  int locked;
+  sem_t sem;    // semaphore structure
+  
+  int terminated;
 };
 
 //-----------------------------------------------------------------------------
@@ -41,6 +169,7 @@ struct CapeQueue_s
 struct CapeThreadItem_s
 {
   CapeThread thread;
+  
   CapeQueue queue;
   
 }; typedef struct CapeThreadItem_s* CapeThreadItem;
@@ -50,16 +179,10 @@ struct CapeThreadItem_s
 void __STDCALL cape_queue__threads__on_del (void* ptr)
 {
   CapeThreadItem self = ptr;
-
-#if defined __LINUX_OS
-
-  write (self->queue->fdevent, &(uint64_t){20}, sizeof(uint64_t));
-
-#endif
-
+  
   cape_thread_join (self->thread);
   
-  cape_thread_del (&(self->thread));  
+  cape_thread_del (&(self->thread));
 }
 
 //-----------------------------------------------------------------------------
@@ -71,6 +194,8 @@ struct CapeQueueItem_s
   cape_queue_cb_fct on_done;
   
   void* ptr;
+  
+  CapeSync sync;    // reference
   
 }; typedef struct CapeQueueItem_s* CapeQueueItem;
 
@@ -85,6 +210,8 @@ void __STDCALL cape_queue__item__on_del (void* ptr)
     item->on_done (item->ptr);
   }
   
+  cape_sync_dec (item->sync);
+  
   CAPE_DEL (&item, struct CapeQueueItem_s);
 }
 
@@ -95,12 +222,10 @@ CapeQueue cape_queue_new (void)
   CapeQueue self = CAPE_NEW (struct CapeQueue_s);
   
   self->mutex = cape_mutex_new ();
+
+  sem_init (&(self->sem), 0, 0);
   
-#if defined __LINUX_OS
-
-  self->fdevent = eventfd (0, 0);
-
-#endif
+  self->terminated = FALSE;
   
   self->threads = cape_list_new (cape_queue__threads__on_del);
   
@@ -116,21 +241,26 @@ void cape_queue_del (CapeQueue* p_self)
   if (*p_self)
   {
     CapeQueue self = *p_self;
-        
-    // remove all queued items
-    cape_list_clr (self->queue);
+    
+    self->terminated = TRUE;
+    
+    {
+      CapeListCursor* cursor = cape_list_cursor_create (self->threads, CAPE_DIRECTION_FORW);
+      
+      while (cape_list_cursor_next (cursor))
+      {
+        // activate the thread
+        sem_post (&(self->sem));
+      }
+      
+      cape_list_cursor_destroy (&cursor);
+    }
     
     cape_list_del (&(self->threads));
-    
+
     cape_list_del (&(self->queue));
     
     cape_mutex_del (&(self->mutex));
-
-#if defined __LINUX_OS
-    
-    close (self->fdevent);
-
-#endif
     
     CAPE_DEL (p_self, struct CapeQueue_s);
   }
@@ -172,27 +302,24 @@ int cape_queue_start  (CapeQueue self, int amount_of_threads, CapeErr err)
 
 //-----------------------------------------------------------------------------
 
-void cape_queue_add (CapeQueue self, cape_queue_cb_fct on_event, cape_queue_cb_fct on_done, void* ptr)
+void cape_queue_add (CapeQueue self, CapeSync sync, cape_queue_cb_fct on_event, cape_queue_cb_fct on_done, void* ptr)
 {
+  CapeQueueItem item = CAPE_NEW (struct CapeQueueItem_s);
+  
+  item->on_done = on_done;
+  item->on_event = on_event;
+  item->ptr = ptr;
+  item->sync = sync;
+  
   cape_mutex_lock (self->mutex);
   
-  {
-    CapeQueueItem item = CAPE_NEW (struct CapeQueueItem_s);
-    
-    item->on_done = on_done;
-    item->on_event = on_event;
-    item->ptr = ptr;
-    
-    cape_list_push_back (self->queue, item);
-  }
+  cape_list_push_back (self->queue, item);
   
   cape_mutex_unlock (self->mutex);
-  
-#if defined __LINUX_OS
 
-  write (self->fdevent, &(uint64_t){1}, sizeof(uint64_t));
+  cape_sync_inc (sync);
   
-#endif
+  sem_post (&(self->sem));
 }
 
 //-----------------------------------------------------------------------------
@@ -201,62 +328,31 @@ int cape_queue_next (CapeQueue self)
 {
   int ret = TRUE;
   CapeQueueItem item = NULL;
-
-#if defined __LINUX_OS
-  
-  uint64_t v;
-  
-  read (self->fdevent, &v, sizeof(v));
-  
-  printf ("%li\n", v);
-
-#endif
-  
+ 
+  sem_wait (&(self->sem));
+    
   cape_mutex_lock (self->mutex);
   
-  {
-    number_t queue_size = cape_list_size (self->queue);
-    
-    if (queue_size)
-    {
-      item = cape_list_pop_front (self->queue);
-    }
-    else
-    {
-      ret = FALSE;
-    }
-  }
+  ret = !self->terminated;
   
+  if (ret)
   {
-    number_t queue_size = cape_list_size (self->queue);    
+    item = cape_list_pop_front (self->queue);
   }
   
   cape_mutex_unlock (self->mutex);
   
-  if (item)
+  if (item && ret)
   {
     if (item->on_event)
     {
       item->on_event (item->ptr);
     }
     
-    if (item->on_done)
-    {
-      item->on_done (item->ptr);
-    }
-    
-    CAPE_DEL (&item, struct CapeQueueItem_s);
+    cape_queue__item__on_del (item);
   }
   
   return ret;
-}
-
-//-----------------------------------------------------------------------------
-
-void cape_queue_wait (CapeQueue self)
-{
-  
-  
 }
 
 //-----------------------------------------------------------------------------

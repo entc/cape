@@ -6,6 +6,22 @@
 
 //-----------------------------------------------------------------------------
 
+struct CapeSync_s; typedef struct CapeSync_s* CapeSync;
+
+//-----------------------------------------------------------------------------
+
+__CAPE_LIBEX   CapeSync    cape_sync_new           (void);
+
+__CAPE_LIBEX   void        cape_sync_del           (CapeSync*);
+
+__CAPE_LIBEX   void        cape_sync_inc           (CapeSync);
+
+__CAPE_LIBEX   void        cape_sync_dec           (CapeSync);
+
+__CAPE_LIBEX   void        cape_sync_wait          (CapeSync);
+
+//-----------------------------------------------------------------------------
+
 struct CapeQueue_s; typedef struct CapeQueue_s* CapeQueue;
 
 typedef void (__STDCALL *cape_queue_cb_fct)(void* ptr);
@@ -30,7 +46,7 @@ __CAPE_LIBEX   int         cape_queue_next         (CapeQueue);
                            /*
                             * adds a new task
                             */
-__CAPE_LIBEX   void        cape_queue_add          (CapeQueue, cape_queue_cb_fct on_event, cape_queue_cb_fct on_done, void* ptr);
+__CAPE_LIBEX   void        cape_queue_add          (CapeQueue, CapeSync, cape_queue_cb_fct on_event, cape_queue_cb_fct on_done, void* ptr);
 
                            /*
                             * starts the queueing in background
@@ -38,11 +54,6 @@ __CAPE_LIBEX   void        cape_queue_add          (CapeQueue, cape_queue_cb_fct
                             * -> amount of threads defines the worker threads waiting for events
                             */
 __CAPE_LIBEX   int         cape_queue_start        (CapeQueue, int amount_of_threads, CapeErr err);
-
-                           /*
-                            * waits until the queue is empty
-                            */
-__CAPE_LIBEX   void        cape_queue_wait         (CapeQueue);
 
 //-----------------------------------------------------------------------------
 
