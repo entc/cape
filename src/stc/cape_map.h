@@ -29,6 +29,11 @@ typedef void  (__STDCALL *fct_cape_map_destroy)  (void* key, void* val);
 
 //-----------------------------------------------------------------------------
 
+int __STDCALL cape_map__compare__s (const void* a, const void* b, void* ptr);
+int __STDCALL cape_map__compare__n (const void* a, const void* b, void* ptr);
+
+//-----------------------------------------------------------------------------
+
 __CAPE_LIBEX   CapeMap           cape_map_new               (fct_cape_map_cmp, fct_cape_map_destroy, void* ptr_cmp);
 
 __CAPE_LIBEX   void              cape_map_del               (CapeMap*);
