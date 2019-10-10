@@ -58,6 +58,10 @@ __CAPE_LIBEX void            cape_stream_append_16  (CapeStream, cape_uint16, in
 
 __CAPE_LIBEX void            cape_stream_append_32  (CapeStream, cape_uint32, int network_byte_order);
 
+__CAPE_LIBEX void            cape_stream_append_64  (CapeStream, cape_uint64, int network_byte_order);
+
+__CAPE_LIBEX void            cape_stream_append_bd  (CapeStream, double, int network_byte_order);
+
 //-----------------------------------------------------------------------------
 
 #endif

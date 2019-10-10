@@ -26,3 +26,6 @@ target_link_libraries   (ut_aio_socket_icmp cape)
 
 add_executable          (ut_sys_time ut_sys_time.c)
 target_link_libraries   (ut_sys_time cape)
+
+add_executable          (ut_sys_queue ut_sys_queue.c)
+target_link_libraries   (ut_sys_queue cape)

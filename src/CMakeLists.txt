@@ -24,6 +24,7 @@ SET(CAPE_STC_SOURCES
   stc/cape_map.c
   stc/cape_udc.c
   stc/cape_stream.c
+  stc/cape_cursor.c
 )
 
 SET(CAPE_STC_HEADERS
@@ -32,6 +33,7 @@ SET(CAPE_STC_HEADERS
   stc/cape_map.h
   stc/cape_udc.h
   stc/cape_stream.h
+  stc/cape_cursor.h
 )
 
 #----------------------------------------------------------------------------------
@@ -48,6 +50,7 @@ SET(CAPE_SYS_SOURCES
   sys/cape_pipe.c
   sys/cape_exec.c
   sys/cape_time.c
+  sys/cape_queue.c
 )
 
 SET(CAPE_SYS_HEADERS
@@ -61,6 +64,7 @@ SET(CAPE_SYS_HEADERS
   sys/cape_pipe.h
   sys/cape_exec.h
   sys/cape_time.h
+  sys/cape_queue.h
 )
 
 #----------------------------------------------------------------------------------
@@ -88,6 +92,7 @@ SET(CAPE_FMT_SOURCES
   fmt/cape_tokenizer.c
   fmt/cape_args.c
   fmt/cape_dragon4.c
+  fmt/cape_template.c
 )
 
 SET(CAPE_FMT_HEADERS
@@ -97,6 +102,7 @@ SET(CAPE_FMT_HEADERS
   fmt/cape_tokenizer.h
   fmt/cape_args.h
   fmt/cape_dragon4.h
+  fmt/cape_template.h
 )
 
 #----------------------------------------------------------------------------------

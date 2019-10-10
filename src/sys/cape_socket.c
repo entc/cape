@@ -174,7 +174,12 @@ void* cape_sock__udp__clt_new (const char* host, long port, CapeErr err)
   cape_sock__set_host (&addr, host, port);
   
   // create socket as datagram
+#if defined __LINUX_OS
   sock = socket (AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, IPPROTO_UDP);
+#else
+  sock = socket (AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+#endif
+  
   if (sock < 0)
   {
     goto exit_and_cleanup;
@@ -225,7 +230,12 @@ void* cape_sock__udp__srv_new (const char* host, long port, CapeErr err)
   cape_sock__set_host (&addr, host, port);
   
   // create socket
+#if defined __LINUX_OS
   sock = socket (AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, IPPROTO_UDP);
+#else
+  sock = socket (AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+#endif
+
   if (sock < 0)
   {
     goto exit_and_cleanup;
@@ -292,7 +302,12 @@ void* cape_sock__icmp__new (CapeErr err)
   long sock = -1;
   
   // create socket
+#if defined __LINUX_OS
   sock = socket (AF_INET, SOCK_RAW | SOCK_NONBLOCK, IPPROTO_ICMP);
+#else
+  sock = socket (AF_INET, SOCK_RAW, IPPROTO_ICMP);
+#endif
+  
   if (sock < 0)
   {
     goto exit_and_cleanup;
