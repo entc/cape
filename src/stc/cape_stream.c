@@ -17,7 +17,7 @@
 #endif
 
 #ifndef htonll
-#define htonll(x) ((1==htonl(1)) ? (x) : (((uint64_t)htonl((x) & 0xFFFFFFFFUL)) << 32) | htonl((uint32_t)((x) >> 32)))
+#define htonll(x) ((1==htonl(1)) ? (x) : (((cape_uint64)htonl((x) & 0xFFFFFFFFUL)) << 32) | htonl((cape_uint32)((x) >> 32)))
 #endif
 
 //-----------------------------------------------------------------------------
@@ -382,10 +382,10 @@ void cape_stream_append_64 (CapeStream self, cape_uint64 val, int network_byte_o
 
 void cape_stream_append_bd (CapeStream self, double val, int network_byte_order)
 {
-  cape_stream_reserve (self, 8);
-  
   cape_uint64 h;
-  
+
+  cape_stream_reserve (self, 8);
+    
   memcpy (&h, &val, 8);
   
   if (network_byte_order)

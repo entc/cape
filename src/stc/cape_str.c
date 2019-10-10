@@ -579,6 +579,7 @@ CapeString cape_str_trim_utf8 (const CapeString source)
   const unsigned char* pos_s = c;
   const unsigned char* pos_e = c;
   
+  int diff;
   int trim = TRUE;
   
   // special case
@@ -607,7 +608,7 @@ CapeString cape_str_trim_utf8 (const CapeString source)
     c += clen;
   }
   
-  int diff = pos_e - pos_s;
+  diff = pos_e - pos_s;
   if (diff > 0)
   {
     return cape_str_sub ((const char*)pos_s, pos_e - pos_s);

@@ -384,8 +384,6 @@ int cape_template_part_apply (CapeTemplatePart self, CapeUdc data, void* ptr, fc
               }
               case CAPE_UDC_STRING:
               {
-                printf ("APPLY S: %s\n", name);
-                
                 int res = cape_template_part_eval_str (part, data, item, ptr, onText, onFile, err);
                 if (res)
                 {

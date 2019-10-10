@@ -42,6 +42,10 @@ CapeSync cape_sync_new (void)
 {
   CapeSync self = CAPE_NEW (struct CapeSync_s);
   
+#if defined __WINDOWS_OS
+
+#else
+
   self->semid = semget (IPC_PRIVATE, 1, IPC_CREAT  | IPC_EXCL | 0666);
   
   if (self->semid == -1)
@@ -56,7 +60,9 @@ CapeSync cape_sync_new (void)
   }
   
   semctl (self->semid, 0, SETVAL, 0);
-  
+
+#endif
+
   return self;
 }
 
@@ -70,7 +76,13 @@ void cape_sync_del (CapeSync* p_self)
 
     cape_sync_wait (self);
     
+#if defined __WINDOWS_OS
+
+#else
+
     close (self->semid);
+
+#endif
 
     CAPE_DEL (p_self, struct CapeSync_s);
   }
@@ -82,6 +94,10 @@ void cape_sync_inc (CapeSync self)
 {
   if (self)
   {
+#if defined __WINDOWS_OS
+
+#else
+
     struct sembuf sops[1];
 
     sops[0].sem_num = 0;
@@ -100,6 +116,7 @@ void cape_sync_inc (CapeSync self)
       
       cape_err_del (&err);
     }
+#endif
   }
 }
 
@@ -109,6 +126,10 @@ void cape_sync_dec (CapeSync self)
 {
   if (self)
   {
+#if defined __WINDOWS_OS
+
+#else
+
     struct sembuf sops[1];
     
     sops[0].sem_num = 0;
@@ -127,6 +148,7 @@ void cape_sync_dec (CapeSync self)
       
       cape_err_del (&err);
     }
+#endif
   }
 }
 
@@ -136,6 +158,10 @@ void cape_sync_wait (CapeSync self)
 {
   if (self)
   {
+#if defined __WINDOWS_OS
+
+#else
+
     struct sembuf sops[1];
     
     sops[0].sem_op = 0;
@@ -154,6 +180,7 @@ void cape_sync_wait (CapeSync self)
       
       cape_err_del (&err);
     }
+#endif
   }
 }
 
@@ -167,7 +194,9 @@ struct CapeQueue_s
   
   CapeList queue;
   
-#if defined __BSD_OS
+#if defined __WINDOWS_OS
+
+#elif defined __BSD_OS
 
   dispatch_semaphore_t sem;
   
@@ -241,7 +270,9 @@ CapeQueue cape_queue_new (void)
   
   self->mutex = cape_mutex_new ();
 
-#if defined __BSD_OS
+#if defined __WINDOWS_OS
+
+#elif defined __BSD_OS
 
   self->sem = dispatch_semaphore_create (0);
   
@@ -286,7 +317,9 @@ void cape_queue_del (CapeQueue* p_self)
       
       while (cape_list_cursor_next (cursor))
       {
-#if defined __BSD_OS
+#if defined __WINDOWS_OS
+
+#elif defined __BSD_OS
         dispatch_semaphore_signal (self->sem);
 #else
         sem_post (&(self->sem));
@@ -360,7 +393,9 @@ void cape_queue_add (CapeQueue self, CapeSync sync, cape_queue_cb_fct on_event, 
 
   cape_sync_inc (sync);
   
-#if defined __BSD_OS
+#if defined __WINDOWS_OS
+
+#elif defined __BSD_OS
 
   dispatch_semaphore_signal (self->sem);
   
@@ -378,7 +413,9 @@ int cape_queue_next (CapeQueue self)
   int ret = TRUE;
   CapeQueueItem item = NULL;
  
-#if defined __BSD_OS
+#if defined __WINDOWS_OS
+
+#elif defined __BSD_OS
   
   dispatch_semaphore_wait (self->sem, DISPATCH_TIME_FOREVER);
   
