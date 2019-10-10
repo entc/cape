@@ -1,5 +1,6 @@
 #include "cape_stream.h"
 #include "fmt/cape_dragon4.h"
+#include "sys/cape_types.h"
 
 // c includes
 #include <stdio.h>
@@ -8,7 +9,12 @@
 #include <memory.h>
 #include <limits.h>
 #include <stdlib.h>
+
+#if defined __WINDOWS_OS
+#include <winsock.h>
+#else
 #include <netinet/in.h>
+#endif
 
 //-----------------------------------------------------------------------------
 
@@ -322,11 +328,11 @@ void cape_stream_append_16 (CapeStream self, cape_uint16 val, int network_byte_o
 
   if (network_byte_order)
   {
-    *((uint16_t*)(self->pos)) = htons (val);
+    *((cape_uint16*)(self->pos)) = htons (val);
   }
   else
   {
-    *((uint16_t*)(self->pos)) = val;
+    *((cape_uint16*)(self->pos)) = val;
   }
   
   self->pos+=2;
@@ -340,11 +346,11 @@ void cape_stream_append_32 (CapeStream self, cape_uint32 val, int network_byte_o
   
   if (network_byte_order)
   {
-    *((uint32_t*)(self->pos)) = htonl (val);
+    *((cape_uint32*)(self->pos)) = htonl (val);
   }
   else
   {
-    *((uint32_t*)(self->pos)) = val;
+    *((cape_uint32*)(self->pos)) = val;
   }
   
   self->pos+=4;
