@@ -33,7 +33,17 @@
 
 struct CapeSync_s
 {
+#if defined __WINDOWS_OS
+
+  LONG refcnt;
+
+  HANDLE revent;
+
+#else
+
   int semid;
+
+#endif
 };
 
 //-----------------------------------------------------------------------------
@@ -43,6 +53,9 @@ CapeSync cape_sync_new (void)
   CapeSync self = CAPE_NEW (struct CapeSync_s);
   
 #if defined __WINDOWS_OS
+
+  self->refcnt = 0;
+  self->revent = CreateEvent (NULL, FALSE, TRUE, NULL);
 
 #else
 
@@ -78,6 +91,8 @@ void cape_sync_del (CapeSync* p_self)
     
 #if defined __WINDOWS_OS
 
+    CloseHandle (self->revent);
+
 #else
 
     close (self->semid);
@@ -95,6 +110,10 @@ void cape_sync_inc (CapeSync self)
   if (self)
   {
 #if defined __WINDOWS_OS
+
+    InterlockedIncrement (&(self->refcnt));
+
+    ResetEvent (self->revent);
 
 #else
 
@@ -128,6 +147,12 @@ void cape_sync_dec (CapeSync self)
   {
 #if defined __WINDOWS_OS
 
+    int var = InterlockedDecrement (&(self->refcnt));
+    if (var == 0)
+    {
+      SetEvent (self->revent);
+    }
+
 #else
 
     struct sembuf sops[1];
@@ -159,6 +184,23 @@ void cape_sync_wait (CapeSync self)
   if (self)
   {
 #if defined __WINDOWS_OS
+
+    DWORD res = WaitForSingleObject (self->revent, INFINITE);
+
+    if (res == WAIT_OBJECT_0)
+    {
+      printf ("SYNC WAIT DONE\n");
+    }
+    else
+    {
+      CapeErr err = cape_err_new ();
+    
+      cape_err_lastOSError (err);
+    
+      cape_log_fmt (CAPE_LL_ERROR, "CAPE", "queue next", "can't permforme queue next: %s", cape_err_text(err));
+    
+      cape_err_del (&err);
+    }
 
 #else
 
@@ -195,6 +237,8 @@ struct CapeQueue_s
   CapeList queue;
   
 #if defined __WINDOWS_OS
+
+  HANDLE semaphore;
 
 #elif defined __BSD_OS
 
@@ -272,6 +316,8 @@ CapeQueue cape_queue_new (void)
 
 #if defined __WINDOWS_OS
 
+  self->semaphore = CreateSemaphore (NULL, 0, 1000, NULL);
+
 #elif defined __BSD_OS
 
   self->sem = dispatch_semaphore_create (0);
@@ -318,6 +364,18 @@ void cape_queue_del (CapeQueue* p_self)
       while (cape_list_cursor_next (cursor))
       {
 #if defined __WINDOWS_OS
+
+        // increase the count
+        if (ReleaseSemaphore (self->semaphore, 1, NULL) == 0)
+        {
+          CapeErr err = cape_err_new ();
+    
+          cape_err_lastOSError (err);
+    
+          cape_log_fmt (CAPE_LL_ERROR, "CAPE", "queue next", "can't permforme queue next: %s", cape_err_text(err));
+    
+          cape_err_del (&err);
+        }
 
 #elif defined __BSD_OS
         dispatch_semaphore_signal (self->sem);
@@ -395,6 +453,18 @@ void cape_queue_add (CapeQueue self, CapeSync sync, cape_queue_cb_fct on_event, 
   
 #if defined __WINDOWS_OS
 
+  // increase the count
+  if (ReleaseSemaphore (self->semaphore, 1, NULL) == 0)
+  {
+    CapeErr err = cape_err_new ();
+    
+    cape_err_lastOSError (err);
+    
+    cape_log_fmt (CAPE_LL_ERROR, "CAPE", "queue next", "can't permforme queue next: %s", cape_err_text(err));
+    
+    cape_err_del (&err);
+  }
+
 #elif defined __BSD_OS
 
   dispatch_semaphore_signal (self->sem);
@@ -414,6 +484,25 @@ int cape_queue_next (CapeQueue self)
   CapeQueueItem item = NULL;
  
 #if defined __WINDOWS_OS
+
+  DWORD res = WaitForSingleObject (self->semaphore, INFINITE);
+
+  if (res == WAIT_OBJECT_0)
+  {
+    printf ("QUEUE WAIT DONE\n");
+
+  }
+  else
+  {
+    CapeErr err = cape_err_new ();
+    
+    cape_err_lastOSError (err);
+    
+    cape_log_fmt (CAPE_LL_ERROR, "CAPE", "queue next", "can't permforme queue next: %s", cape_err_text(err));
+    
+    cape_err_del (&err);
+  }
+
 
 #elif defined __BSD_OS
   
