@@ -601,21 +601,90 @@ CapeString cape_str_trim_utf8 (const CapeString source)
     return NULL;
   }
   
+  number_t clen = 0;
+  
   while (*c)
   {
-    number_t clen = cape_str_char__len (*c);
+    clen = cape_str_char__len (*c);
     
-    if ((clen == 1) && (*c <= 32))
+    if (clen > 1)
     {
-      if (trim)
+      int i;
+      // test if the char is stil in the string
+      
+      for (i = 1; i < clen; i++)
       {
-        pos_s += clen;
+        if (*(c + i) == 0)
+        {
+          break;
+        }        
+      }
+      
+      if (i == clen)
+      {
+        break;
+      }
+      else
+      {
+        clen = i - 1;
+        pos_s += clen;        
       }
     }
     else
     {
-      pos_e = c + clen;
-      trim = FALSE;
+      if (*c <= 32)
+      {
+        pos_s += clen;
+      }
+      else
+      {
+        // normal character
+        break;
+      }    
+    }
+    
+    c += clen;
+  }
+
+  pos_e = c + clen;
+  c += clen;
+
+  while (*c)
+  {
+    clen = cape_str_char__len (*c);
+
+    if (clen > 1)
+    {
+      int i;
+      // test if the char is stil in the string
+      
+      for (i = 1; i < clen; i++)
+      {
+        if (*(c + i) == 0)
+        {
+          break;
+        }
+      }
+
+      if (i == clen)
+      {
+        pos_e = c + clen;      
+      }
+      else
+      {
+        clen = i - 1;
+      }
+    }
+    else
+    {
+      if (*c <= 32)
+      {
+        
+      }
+      else
+      {
+        pos_e = c + clen;      
+      }    
     }
     
     c += clen;
