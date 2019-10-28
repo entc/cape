@@ -67,7 +67,12 @@ CapeUdc cape_udc_new (u_t type, const CapeString name)
     }
     case CAPE_UDC_FLOAT:
     {
-      self->data = CAPE_NEW(double);
+      self->data = CAPE_NEW (double);
+      break;
+    }
+    case CAPE_UDC_DATETIME:
+    {
+      self->data = CAPE_NEW (CapeDatetime);
       break;
     }
   }
@@ -107,7 +112,12 @@ void cape_udc_del (CapeUdc* p_self)
     }
     case CAPE_UDC_FLOAT:
     {
-      CAPE_DEL(&(self->data), double);
+      CAPE_DEL (&(self->data), double);
+      break;
+    }
+    case CAPE_UDC_DATETIME:
+    {
+      CAPE_DEL (&(self->data), CapeDatetime);
       break;
     }
   }
@@ -182,10 +192,19 @@ CapeUdc cape_udc_cp (const CapeUdc self)
       case CAPE_UDC_FLOAT:
       {
         // allocate memory
-        clone->data = CAPE_NEW(double);
+        clone->data = CAPE_NEW (double);
         
         // copy the value
         *(double*)(clone->data) = *(double*)(self->data);
+        break;
+      }
+      case CAPE_UDC_DATETIME:
+      {
+        // allocate memory
+        clone->data = CAPE_NEW (CapeDatetime);
+        
+        // copy the value
+        memcpy (clone->data, self->data, sizeof(CapeDatetime));        
         break;
       }
     }
@@ -413,6 +432,10 @@ void* cape_udc_data (const CapeUdc self)
     case CAPE_UDC_BOOL:
     {
       return &(self->data);
+    }
+    case CAPE_UDC_DATETIME:
+    {
+      return self->data;
     }
   }
   
@@ -650,6 +673,21 @@ void cape_udc_set_b (CapeUdc self, int val)
     case CAPE_UDC_BOOL:
     {
       self->data = val ? (void*)1 : NULL;
+      break;
+    }
+  }  
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_udc_set_d (CapeUdc self, const CapeDatetime* val)
+{
+  switch (self->type)
+  {
+    case CAPE_UDC_DATETIME:
+    {
+      memcpy (self->data, val, sizeof(CapeDatetime));
+      break;
     }
   }  
 }
@@ -770,6 +808,23 @@ int cape_udc_b (CapeUdc self, int alt)
 
 //-----------------------------------------------------------------------------
 
+const CapeDatetime* cape_udc_d (CapeUdc self, const CapeDatetime* alt)
+{
+  switch (self->type)
+  {
+    case CAPE_UDC_DATETIME:
+    {
+      return self->data;
+    }
+    default:
+    {
+      return alt;
+    }
+  }  
+}
+
+//-----------------------------------------------------------------------------
+
 CapeUdc cape_udc_add_s_cp (CapeUdc self, const CapeString name, const CapeString val)
 {
   CapeUdc h = cape_udc_new (CAPE_UDC_STRING, name);
@@ -819,6 +874,17 @@ CapeUdc cape_udc_add_b (CapeUdc self, const CapeString name, int val)
   CapeUdc h = cape_udc_new (CAPE_UDC_BOOL, name);
   
   cape_udc_set_b (h, val);
+  
+  return cape_udc_add (self, &h);
+}
+
+//-----------------------------------------------------------------------------
+
+CapeUdc cape_udc_add_d (CapeUdc self, const CapeString name, const CapeDatetime* val)
+{
+  CapeUdc h = cape_udc_new (CAPE_UDC_DATETIME, name);
+  
+  cape_udc_set_d (h, val);
   
   return cape_udc_add (self, &h);
 }
@@ -901,6 +967,20 @@ int cape_udc_get_b (CapeUdc self, const CapeString name, int alt)
   if (h)
   {
     return cape_udc_b (h, alt);
+  }
+  
+  return alt; 
+}
+
+//-----------------------------------------------------------------------------
+
+const CapeDatetime* cape_udc_get_d (CapeUdc self, const CapeString name, const CapeDatetime* alt)
+{
+  CapeUdc h = cape_udc_get (self, name);
+  
+  if (h)
+  {
+    return cape_udc_d (h, alt);
   }
   
   return alt; 
