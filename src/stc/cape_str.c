@@ -374,6 +374,36 @@ CapeString cape_str_uuid (void)
           rand() & 0xffff, rand() & 0xffff, rand() & 0xffff);        // Generates a 96-bit Hex number
   
   return self;
+  
+  /*
+  CapeString self = CAPE_ALLOC(38);
+  int t = 0;
+  
+  char *szTemp = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx";
+  char *szHex = "0123456789ABCDEF-";
+  int nLen = 36;
+  unsigned char* pos = (unsigned char*)self;
+  
+  srand (clock());
+  
+  for (t = 0; t < nLen + 1; t++, pos++)
+  {
+    int r = rand () % 16;
+    char c = ' ';   
+    
+    switch (szTemp[t])
+    {
+      case 'x' : { c = szHex [r]; } break;
+      case 'y' : { c = szHex [(r & 0x03) | 0x08]; } break;
+      case '-' : { c = '-'; } break;
+      case '4' : { c = '4'; } break;
+    }
+    
+    *pos = ( t < nLen ) ? c : 0x00;
+  }
+  
+  return self;
+  */
 }
 
 //-----------------------------------------------------------------------------

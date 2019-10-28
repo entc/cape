@@ -124,9 +124,14 @@ namespace cape
     //-----------------------------------------------------------------------------
     
     // copy constructor
-    Stream (const Stream& rhs) : m_obj (cape_stream_new ())
+    Stream (const Stream& rhs) : m_obj (NULL)
     {
-      cape_stream_append_stream (m_obj, rhs.m_obj);
+      if (rhs.m_obj)
+      {
+        m_obj = cape_stream_new ();
+        
+        cape_stream_append_stream (m_obj, rhs.m_obj);
+      }
     }
     
     //-----------------------------------------------------------------------------
