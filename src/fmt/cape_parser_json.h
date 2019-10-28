@@ -27,6 +27,7 @@
 #define CAPE_JPARSER_OBJECT_FLOAT    5
 #define CAPE_JPARSER_OBJECT_BOLEAN   6
 #define CAPE_JPARSER_OBJECT_NULL     7
+#define CAPE_JPARSER_OBJECT_DATETIME 8
 
 //-----------------------------------------------------------------------------
 

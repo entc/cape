@@ -63,10 +63,19 @@ static void __STDCALL cape_json_onItem (void* ptr, void* obj, int type, void* va
       cape_udc_add (obj, &h);
       break;
     }
+    case CAPE_JPARSER_OBJECT_DATETIME:
+    {
+      CapeUdc h = cape_udc_new (CAPE_UDC_DATETIME, key);
+
+      cape_udc_set_d (h, val);
+      
+      cape_udc_add (obj, &h);
+      break;
+    }
     case CAPE_JPARSER_OBJECT_NULL:
     {
       break;
-    }      
+    }
   }
 }
 
@@ -505,6 +514,14 @@ void cape_json_fill (CapeStream stream, const CapeUdc node)
     case CAPE_UDC_FLOAT:
     {
       cape_stream_append_f (stream, cape_udc_f (node, 0));
+      break;
+    }
+    case CAPE_UDC_DATETIME:
+    {
+      cape_stream_append_c (stream, '"');
+      cape_stream_append_d (stream, cape_udc_d (node, NULL));
+      cape_stream_append_c (stream, '"');
+
       break;
     }
   }

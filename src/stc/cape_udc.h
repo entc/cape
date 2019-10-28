@@ -87,7 +87,7 @@ __CAPE_LIBEX   double               cape_udc_f                (CapeUdc, double a
 
 __CAPE_LIBEX   int                  cape_udc_b                (CapeUdc, int alt);
 
-__CAPE_LIBEX   CapeDatetime*        cape_udc_d                (CapeUdc, const CapeDatetime* alt);
+__CAPE_LIBEX   const CapeDatetime*  cape_udc_d                (CapeUdc, const CapeDatetime* alt);
 
 //-----------------------------------------------------------------------------
 

@@ -304,6 +304,20 @@ void cape_stream_append_f (CapeStream self, double val)
 
 //-----------------------------------------------------------------------------
 
+void cape_stream_append_d (CapeStream self, const CapeDatetime* val)
+{
+  if (val)
+  {
+    CapeString h = cape_datetime_s__std (val);
+    
+    cape_stream_append_buf (self, h, cape_str_size (h));
+    
+    cape_str_del (&h);
+  }
+}
+
+//-----------------------------------------------------------------------------
+
 void cape_stream_append_stream (CapeStream self, CapeStream stream)
 {
   unsigned long usedBytes = stream->pos - stream->buffer;
