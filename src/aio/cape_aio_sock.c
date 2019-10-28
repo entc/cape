@@ -2130,6 +2130,49 @@ void cape_aio_socket__udp__send (CapeAioSocketUdp self, CapeAioContext aio, cons
 
 //-----------------------------------------------------------------------------
 
+struct CapeAioSocketIcmp_s
+{
+  int dummy;
+
+};
+
+//-----------------------------------------------------------------------------
+
+ CapeAioSocketIcmp cape_aio_socket__icmp__new (void* handle)
+ {
+     
+ }
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket__icmp__del(CapeAioSocketIcmp* p_self)
+{
+
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket__icmp__add (CapeAioSocketIcmp* p_self, CapeAioContext aio)
+{
+
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket__icmp__cb (CapeAioSocketIcmp self, void* ptr, fct_cape_aio_socket__on_pong on_pong, fct_cape_aio_socket_onDone on_done)
+{
+
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_aio_socket__icmp__ping (CapeAioSocketIcmp self, CapeAioContext aio, const char* host, double timeout_in_ms)
+{
+
+}
+
+//-----------------------------------------------------------------------------
+
 struct CapeAioAccept_s
 {
   SOCKET handle;

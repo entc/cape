@@ -513,7 +513,7 @@ void* cape_sock__udp__srv_new (const char* host, long port, CapeErr err)
     goto exit_and_cleanup;
   }
 
-  sock = WSASocket (AF_INET, SOCK_DGRAM, IPPROTO_UDP, NULL, 0, WSA_FLAG_OVERLAPPED);
+  sock = WSASocketA (AF_INET, SOCK_DGRAM, IPPROTO_UDP, NULL, 0, WSA_FLAG_OVERLAPPED);
   if (sock == INVALID_SOCKET)
   {
     goto exit_and_cleanup;
@@ -546,6 +546,13 @@ exit_and_cleanup:
     closesocket (sock);    
   }
   
+  return NULL;
+}
+
+//-----------------------------------------------------------------------------
+
+void* cape_sock__icmp__new (CapeErr err)
+{
   return NULL;
 }
 

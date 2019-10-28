@@ -1,5 +1,6 @@
 #include "cape_stream.h"
 #include "fmt/cape_dragon4.h"
+#include "sys/cape_types.h"
 
 // c includes
 #include <stdio.h>
@@ -8,10 +9,15 @@
 #include <memory.h>
 #include <limits.h>
 #include <stdlib.h>
+
+#if defined __WINDOWS_OS
+#include <winsock.h>
+#else
 #include <netinet/in.h>
+#endif
 
 #ifndef htonll
-#define htonll(x) ((1==htonl(1)) ? (x) : (((uint64_t)htonl((x) & 0xFFFFFFFFUL)) << 32) | htonl((uint32_t)((x) >> 32)))
+#define htonll(x) ((1==htonl(1)) ? (x) : (((cape_uint64)htonl((x) & 0xFFFFFFFFUL)) << 32) | htonl((cape_uint32)((x) >> 32)))
 #endif
 
 //-----------------------------------------------------------------------------
@@ -326,11 +332,11 @@ void cape_stream_append_16 (CapeStream self, cape_uint16 val, int network_byte_o
 
   if (network_byte_order)
   {
-    *((uint16_t*)(self->pos)) = htons (val);
+    *((cape_uint16*)(self->pos)) = htons (val);
   }
   else
   {
-    *((uint16_t*)(self->pos)) = val;
+    *((cape_uint16*)(self->pos)) = val;
   }
   
   self->pos += 2;
@@ -344,11 +350,11 @@ void cape_stream_append_32 (CapeStream self, cape_uint32 val, int network_byte_o
   
   if (network_byte_order)
   {
-    *((uint32_t*)(self->pos)) = htonl (val);
+    *((cape_uint32*)(self->pos)) = htonl (val);
   }
   else
   {
-    *((uint32_t*)(self->pos)) = val;
+    *((cape_uint32*)(self->pos)) = val;
   }
   
   self->pos += 4;
@@ -376,10 +382,10 @@ void cape_stream_append_64 (CapeStream self, cape_uint64 val, int network_byte_o
 
 void cape_stream_append_bd (CapeStream self, double val, int network_byte_order)
 {
-  cape_stream_reserve (self, 8);
-  
   cape_uint64 h;
-  
+
+  cape_stream_reserve (self, 8);
+    
   memcpy (&h, &val, 8);
   
   if (network_byte_order)

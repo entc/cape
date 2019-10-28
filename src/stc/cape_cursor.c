@@ -2,10 +2,15 @@
 
 // c includes
 #include <stdio.h>
+
+#if defined __WINDOWS_OS
+#include <winsock.h>
+#else
 #include <netinet/in.h>
+#endif
 
 #ifndef ntohll
-#define ntohll(x) ((1==ntohl(1)) ? (x) : (((uint64_t)ntohl((x) & 0xFFFFFFFFUL)) << 32) | ntohl((uint32_t)((x) >> 32)))
+#define ntohll(x) ((1==ntohl(1)) ? (x) : (((cape_uint64)ntohl((x) & 0xFFFFFFFFUL)) << 32) | ntohl((cape_uint32)((x) >> 32)))
 #endif
 
 //-----------------------------------------------------------------------------
@@ -130,11 +135,11 @@ cape_uint16 cape_cursor_scan_16 (CapeCursor self, int network_byte_order)
   {
     if (network_byte_order)
     {
-      ret = ntohs (*((uint16_t*)(self->pos)));
+      ret = ntohs (*((cape_uint16*)(self->pos)));
     }
     else
     {
-      ret = *((uint16_t*)(self->pos));
+      ret = *((cape_uint16*)(self->pos));
     }
     
     self->pos += 2;

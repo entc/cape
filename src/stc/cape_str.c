@@ -364,15 +364,28 @@ int cape_str_find_utf8 (const CapeString haystack, const CapeString needle, numb
 
 CapeString cape_str_uuid (void)
 {
-  CapeString self = CAPE_ALLOC(38);
+  CapeString self = (CapeString)CAPE_ALLOC(38);
   
-  sprintf(self, "%04X%04X-%04X-%04X-%04X-%04X%04X%04X", 
+#if defined _MSC_VER
+
+  sprintf_s (self, 38, "%04X%04X-%04X-%04X-%04X-%04X%04X%04X", 
           rand() & 0xffff, rand() & 0xffff,                          // Generates a 64-bit Hex number
           rand() & 0xffff,                                           // Generates a 32-bit Hex number
           ((rand() & 0x0fff) | 0x4000),                              // Generates a 32-bit Hex number of the form 4xxx (4 indicates the UUID version)
           rand() % 0x3fff + 0x8000,                                  // Generates a 32-bit Hex number in the range [0x8000, 0xbfff]
           rand() & 0xffff, rand() & 0xffff, rand() & 0xffff);        // Generates a 96-bit Hex number
-  
+
+#else
+
+  sprintf (self, "%04X%04X-%04X-%04X-%04X-%04X%04X%04X", 
+          rand() & 0xffff, rand() & 0xffff,                          // Generates a 64-bit Hex number
+          rand() & 0xffff,                                           // Generates a 32-bit Hex number
+          ((rand() & 0x0fff) | 0x4000),                              // Generates a 32-bit Hex number of the form 4xxx (4 indicates the UUID version)
+          rand() % 0x3fff + 0x8000,                                  // Generates a 32-bit Hex number in the range [0x8000, 0xbfff]
+          rand() & 0xffff, rand() & 0xffff, rand() & 0xffff);        // Generates a 96-bit Hex number
+
+#endif
+
   return self;
   
   /*
@@ -412,17 +425,17 @@ CapeString cape_str_flp (const CapeString format, va_list valist)
 {
   CapeString ret = NULL;
   
-  #ifdef _MSC_VER
+#ifdef _MSC_VER
   
   {
     int len = _vscprintf (format, valist) + 1;
     
-    ret = CAPE_ALLOC (len);
+    ret = (CapeString)CAPE_ALLOC (len);
     
     len = vsprintf_s (ret, len, format, valist);
   }
   
-  #elif __GNUC__
+#elif __GNUC__
   
   {
     char* strp;
@@ -449,7 +462,7 @@ CapeString cape_str_flp (const CapeString format, va_list valist)
     }
   }
   
-  #elif __BORLANDC__
+#elif __BORLANDC__
   
   {
     int len = 1024;
@@ -459,7 +472,7 @@ CapeString cape_str_flp (const CapeString format, va_list valist)
     len = vsnprintf (ret, len, format, valist);    
   }
   
-  #endif
+#endif
   
   return ret;
 }
@@ -609,6 +622,7 @@ CapeString cape_str_trim_utf8 (const CapeString source)
   const unsigned char* pos_s = c;
   const unsigned char* pos_e = c;
   
+  int diff;
   int trim = TRUE;
   
   // special case
@@ -617,27 +631,96 @@ CapeString cape_str_trim_utf8 (const CapeString source)
     return NULL;
   }
   
+  number_t clen = 0;
+  
   while (*c)
   {
-    number_t clen = cape_str_char__len (*c);
+    clen = cape_str_char__len (*c);
     
-    if ((clen == 1) && (*c <= 32))
+    if (clen > 1)
     {
-      if (trim)
+      int i;
+      // test if the char is stil in the string
+      
+      for (i = 1; i < clen; i++)
       {
-        pos_s += clen;
+        if (*(c + i) == 0)
+        {
+          break;
+        }        
+      }
+      
+      if (i == clen)
+      {
+        break;
+      }
+      else
+      {
+        clen = i - 1;
+        pos_s += clen;        
       }
     }
     else
     {
-      pos_e = c + clen;
-      trim = FALSE;
+      if (*c <= 32)
+      {
+        pos_s += clen;
+      }
+      else
+      {
+        // normal character
+        break;
+      }    
+    }
+    
+    c += clen;
+  }
+
+  pos_e = c + clen;
+  c += clen;
+
+  while (*c)
+  {
+    clen = cape_str_char__len (*c);
+
+    if (clen > 1)
+    {
+      int i;
+      // test if the char is stil in the string
+      
+      for (i = 1; i < clen; i++)
+      {
+        if (*(c + i) == 0)
+        {
+          break;
+        }
+      }
+
+      if (i == clen)
+      {
+        pos_e = c + clen;      
+      }
+      else
+      {
+        clen = i - 1;
+      }
+    }
+    else
+    {
+      if (*c <= 32)
+      {
+        
+      }
+      else
+      {
+        pos_e = c + clen;      
+      }    
     }
     
     c += clen;
   }
   
-  int diff = pos_e - pos_s;
+  diff = pos_e - pos_s;
   if (diff > 0)
   {
     return cape_str_sub ((const char*)pos_s, pos_e - pos_s);
@@ -735,8 +818,16 @@ void cape_str_replace (CapeString* p_self, const CapeString seek, const CapeStri
 void cape_str_fill (CapeString self, number_t len, const CapeString source)
 {
   // assume that the source will fit into the self object
-  strncpy (self, source, len);
+#if defined _MSC_VER
+
+  strncpy_s (self, len + 1, source, len);
   
+#else
+
+  strncpy (self, source, len);
+
+#endif
+
   self[len] = '\0';
 }
 
