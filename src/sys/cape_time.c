@@ -302,7 +302,7 @@ int cape_datetime__std (CapeDatetime* dt, const CapeString datetime_in_text)
 
 int cape_datetime__str (CapeDatetime* dt, const CapeString datetime_in_text)
 {
-  return sscanf (datetime_in_text, "%u-%u-%u %u:%u:%u", &(dt->year), &(dt->month), &(dt->day), &(dt->hour), &(dt->minute), &(dt->sec)) == 6;
+  return sscanf (datetime_in_text, "%u-%u-%u %u:%u:%u.%u", &(dt->year), &(dt->month), &(dt->day), &(dt->hour), &(dt->minute), &(dt->sec), &(dt->msec)) == 7;
 }
 
 //-----------------------------------------------------------------------------

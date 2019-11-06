@@ -38,6 +38,18 @@ __CAPE_LIBEX   void            cape_datetime_del          (CapeDatetime**);
 
 __CAPE_LIBEX   CapeDatetime*   cape_datetime_cp           (const CapeDatetime*);
 
+// example:
+/*
+ * CapeDatetime* dt = cape_datetime_new ();
+ * 
+ * -> dt will be filled with a new object
+ * 
+ * cape_datetime_del (&dt);
+ * 
+ * -> dt will be set to NULL and all memeory will be freed
+ * 
+ */
+
 //-----------------------------------------------------------------------------
 
 __CAPE_LIBEX   void            cape_datetime_utc          (CapeDatetime*);
@@ -98,7 +110,3 @@ __CAPE_LIBEX   double          cape_stoptimer_get         (CapeStopTimer);      
 //-----------------------------------------------------------------------------
 
 #endif
-
-
-
-
