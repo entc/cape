@@ -519,7 +519,6 @@ CapeDirCursor cape_dc_new (const CapeString path, CapeErr err)
   if (self->tree == NULL)
   {
     cape_err_lastOSError (err);
-    
     cape_dc_del (&self);
   }
   
@@ -536,7 +535,10 @@ void cape_dc_del (CapeDirCursor* p_self)
     
     cape_str_del (&(self->fts_path[0]));
     
-    fts_close (self->tree);
+    if (self->tree)
+    {
+      fts_close (self->tree);
+    }
     
     CAPE_DEL(p_self, struct CapeDirCursor_s);
   }
