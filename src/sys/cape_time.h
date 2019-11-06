@@ -32,6 +32,14 @@ typedef struct
 
 //-----------------------------------------------------------------------------
 
+__CAPE_LIBEX   CapeDatetime*   cape_datetime_new          (void);
+
+__CAPE_LIBEX   void            cape_datetime_del          (CapeDatetime**);
+
+__CAPE_LIBEX   CapeDatetime*   cape_datetime_cp           (const CapeDatetime*);
+
+//-----------------------------------------------------------------------------
+
 __CAPE_LIBEX   void            cape_datetime_utc          (CapeDatetime*);
 
 __CAPE_LIBEX   void            cape_datetime_local        (CapeDatetime*);
@@ -68,6 +76,8 @@ __CAPE_LIBEX   time_t          cape_datetime_n__unix      (const CapeDatetime*);
 //-----------------------------------------------------------------------------
 
 __CAPE_LIBEX   int             cape_datetime__std         (CapeDatetime*, const CapeString datetime_in_text);
+
+__CAPE_LIBEX   int             cape_datetime__str         (CapeDatetime*, const CapeString datetime_in_text);
 
 //-----------------------------------------------------------------------------
 

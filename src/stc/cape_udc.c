@@ -2,7 +2,6 @@
 
 // cape includes
 #include "sys/cape_types.h"
-#include "stc/cape_list.h"
 #include "stc/cape_map.h"
 
 //-----------------------------------------------------------------------------
@@ -117,10 +116,7 @@ void cape_udc_del (CapeUdc* p_self)
     }
     case CAPE_UDC_DATETIME:
     {
-      if (self->data)
-      {
-        CAPE_DEL (&(self->data), CapeDatetime);
-      }
+      cape_datetime_del ((CapeDatetime**)&(self->data));
       break;
     }
   }
@@ -204,10 +200,7 @@ CapeUdc cape_udc_cp (const CapeUdc self)
       case CAPE_UDC_DATETIME:
       {
         // allocate memory
-        clone->data = CAPE_NEW (CapeDatetime);
-        
-        // copy the value
-        memcpy (clone->data, self->data, sizeof(CapeDatetime));        
+        clone->data = cape_datetime_cp (self->data);
         break;
       }
     }
@@ -693,19 +686,14 @@ void cape_udc_set_d (CapeUdc self, const CapeDatetime* val)
       {
         if (self->data == NULL)
         {
-          self->data = CAPE_NEW (CapeDatetime);
+          self->data = cape_datetime_new ();
         }
         
         memcpy (self->data, val, sizeof(CapeDatetime));
       }
       else
       {
-        if (self->data)
-        {
-          CAPE_DEL (&(self->data), CapeDatetime);
-        }
-        
-        self->data = NULL;
+        cape_datetime_del ((CapeDatetime**)&(self->data));
       }
       
       break;
@@ -842,6 +830,49 @@ const CapeDatetime* cape_udc_d (CapeUdc self, const CapeDatetime* alt)
       return alt;
     }
   }  
+}
+
+//-----------------------------------------------------------------------------
+
+CapeDatetime* cape_udc_d_mv (CapeUdc self, const CapeDatetime* alt)
+{
+  switch (self->type)
+  {
+    case CAPE_UDC_DATETIME:
+    {
+      CapeDatetime* h = self->data;
+      
+      self->data = NULL;
+      
+      return h;
+    }
+    default:
+    {
+      return cape_datetime_cp (alt);
+    }
+  }
+}
+
+//-----------------------------------------------------------------------------
+
+CapeList cape_udc_list_mv (CapeUdc self)
+{
+  switch (self->type)
+  {
+    case CAPE_UDC_LIST:
+    {
+      CapeList h = self->data;
+      
+      // create an empty list
+      self->data = cape_list_new (cape_udc_list_onDel);
+      
+      return h;
+    }
+    default:
+    {
+      return NULL;
+    }
+  }
 }
 
 //-----------------------------------------------------------------------------

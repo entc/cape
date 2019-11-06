@@ -4,6 +4,7 @@
 #include "sys/cape_export.h"
 #include "sys/cape_time.h"
 #include "stc/cape_str.h"
+#include "stc/cape_list.h"
 
 //-----------------------------------------------------------------------------
 
@@ -89,6 +90,10 @@ __CAPE_LIBEX   int                  cape_udc_b                (CapeUdc, int alt)
 
 __CAPE_LIBEX   const CapeDatetime*  cape_udc_d                (CapeUdc, const CapeDatetime* alt);
 
+__CAPE_LIBEX   CapeDatetime*        cape_udc_d_mv             (CapeUdc, const CapeDatetime* alt);
+
+__CAPE_LIBEX   CapeList             cape_udc_list_mv          (CapeUdc);
+
 //-----------------------------------------------------------------------------
 
 __CAPE_LIBEX   CapeUdc              cape_udc_add_s_cp         (CapeUdc, const CapeString name, const CapeString val);
@@ -119,7 +124,7 @@ __CAPE_LIBEX   double               cape_udc_get_f            (CapeUdc, const Ca
 
 __CAPE_LIBEX   int                  cape_udc_get_b            (CapeUdc, const CapeString name, int alt);
 
-__CAPE_LIBEX   const CapeDatetime*  cape_udc_get_d          (CapeUdc, const CapeString name, const CapeDatetime* alt);
+__CAPE_LIBEX   const CapeDatetime*  cape_udc_get_d            (CapeUdc, const CapeString name, const CapeDatetime* alt);
 
 __CAPE_LIBEX   CapeUdc              cape_udc_get_node         (CapeUdc, const CapeString name);
 
