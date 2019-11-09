@@ -71,7 +71,7 @@ CapeUdc cape_udc_new (u_t type, const CapeString name)
     }
     case CAPE_UDC_DATETIME:
     {
-      self->data = cape_datetime_new ();
+      self->data = NULL;
       break;
     }
   }
@@ -682,7 +682,20 @@ void cape_udc_set_d (CapeUdc self, const CapeDatetime* val)
   {
     case CAPE_UDC_DATETIME:
     {
-      memcpy (self->data, val, sizeof(CapeDatetime));
+      if (val)
+      {
+        if (self->data == NULL)
+        {
+          self->data = cape_datetime_new ();
+        }
+        
+        memcpy (self->data, val, sizeof(CapeDatetime));
+      }
+      else
+      {
+        cape_datetime_del ((CapeDatetime**)&(self->data));
+      }
+      
       break;
     }
   }  
@@ -1428,6 +1441,14 @@ void cape_udc_print (const CapeUdc self)
   {
     case CAPE_UDC_NODE:
     {
+      CapeUdcCursor* cursor = cape_udc_cursor_new (self, CAPE_DIRECTION_FORW);
+
+      while (cape_udc_cursor_next (cursor))
+      {        
+        cape_udc_print (cursor->item);
+      }
+      
+      cape_udc_cursor_del (&cursor);
       
       break;
     }
@@ -1439,7 +1460,14 @@ void cape_udc_print (const CapeUdc self)
     }
     case CAPE_UDC_STRING:
     {
-      printf ("UDC [string] : %s\n", (char*)self->data);
+      if (self->data)
+      {
+        printf ("UDC [string] : %s\n", (char*)self->data);
+      }
+      else
+      {
+        printf ("UDC [string] : NULL\n");        
+      }
       
       break;
     }
@@ -1447,6 +1475,23 @@ void cape_udc_print (const CapeUdc self)
     {
       printf ("UDC [number] : %ld\n", (number_t)(self->data));
             
+      break;
+    }
+    case CAPE_UDC_DATETIME:
+    {
+      if (self->data)
+      {
+        CapeString h = cape_datetime_s__std (self->data);
+        
+        printf ("UDC [datetime]: %s\n", h);
+        
+        cape_str_del (&h);
+      }
+      else
+      {
+        printf ("UDC [datetime]: NULL\n");
+      }
+      
       break;
     }
   }

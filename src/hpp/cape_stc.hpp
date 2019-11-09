@@ -67,12 +67,18 @@ namespace cape
     
     Exception (number_t err_code, const char* err_text) : m_err_text (cape_str_cp (err_text)), m_err_code (err_code), m_udc (NULL)
     {
-      cape_log_fmt (CAPE_LL_ERROR, "CAPE", "EXCEPTION", "THROW: %s", err_text);
+      if (err_text)
+      {
+        cape_log_fmt (CAPE_LL_ERROR, "CAPE", "EXCEPTION", "THROW: %s", err_text);
+      }
     }
     
     Exception (number_t err_code, const char* err_text, CapeUdc obj) : m_err_text (cape_str_cp (err_text)), m_err_code (err_code), m_udc (obj)
     {
-      cape_log_fmt (CAPE_LL_ERROR, "CAPE", "EXCEPTION", "THROW: %s", err_text);
+      if (err_text)
+      {
+        cape_log_fmt (CAPE_LL_ERROR, "CAPE", "EXCEPTION", "THROW: %s", err_text);
+      }
     }
     
     ~Exception () throw()
