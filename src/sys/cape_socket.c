@@ -333,6 +333,32 @@ exit_and_cleanup:
 
 //-----------------------------------------------------------------------------
 
+CapeString cape_sock__resolve (const CapeString host, CapeErr err)
+{
+  struct addrinfo hints, *res;
+  
+  memset (&hints, 0, sizeof (hints));
+  hints.ai_family = PF_UNSPEC;
+  hints.ai_socktype = SOCK_STREAM;
+  hints.ai_flags |= AI_CANONNAME;
+  
+  if (getaddrinfo (host, NULL, &hints, &res) == 0)
+  {
+    CapeString h = cape_str_cp (res->ai_canonname);
+    
+    freeaddrinfo (res);
+    
+    return h;
+  }
+  else
+  {
+    cape_err_lastOSError (err);
+    return NULL;
+  }
+}
+
+//-----------------------------------------------------------------------------
+
 #elif defined _WIN64 || defined _WIN32
 
 //-----------------------------------------------------------------------------
