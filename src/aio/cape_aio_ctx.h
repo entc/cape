@@ -50,6 +50,7 @@ __CAPE_LIBEX   int               cape_aio_context_next          (CapeAioContext,
 #define CAPE_AIO_READ     0x0008
 #define CAPE_AIO_ALIVE    0x0010
 #define CAPE_AIO_TIMER    0x0020
+#define CAPE_AIO_ERROR    0x0040
 
 //-----------------------------------------------------------------------------
 

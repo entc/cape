@@ -4,6 +4,7 @@
 // cape includes
 #include "sys/cape_export.h"
 #include "sys/cape_types.h"
+#include "sys/cape_time.h"
 #include "stc/cape_str.h"
 
 //=============================================================================
@@ -48,7 +49,21 @@ __CAPE_LIBEX void            cape_stream_append_n (CapeStream, number_t);
 
 __CAPE_LIBEX void            cape_stream_append_f (CapeStream, double);
 
+__CAPE_LIBEX void            cape_stream_append_d (CapeStream, const CapeDatetime*);
+
 __CAPE_LIBEX void            cape_stream_append_stream (CapeStream, CapeStream);
+
+//-----------------------------------------------------------------------------
+
+__CAPE_LIBEX void            cape_stream_append_08  (CapeStream, cape_uint8);
+
+__CAPE_LIBEX void            cape_stream_append_16  (CapeStream, cape_uint16, int network_byte_order);
+
+__CAPE_LIBEX void            cape_stream_append_32  (CapeStream, cape_uint32, int network_byte_order);
+
+__CAPE_LIBEX void            cape_stream_append_64  (CapeStream, cape_uint64, int network_byte_order);
+
+__CAPE_LIBEX void            cape_stream_append_bd  (CapeStream, double, int network_byte_order);
 
 //-----------------------------------------------------------------------------
 

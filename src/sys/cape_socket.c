@@ -174,7 +174,12 @@ void* cape_sock__udp__clt_new (const char* host, long port, CapeErr err)
   cape_sock__set_host (&addr, host, port);
   
   // create socket as datagram
-  sock = socket (AF_INET, SOCK_DGRAM, 0);
+#if defined __LINUX_OS
+  sock = socket (AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, IPPROTO_UDP);
+#else
+  sock = socket (AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+#endif
+  
   if (sock < 0)
   {
     goto exit_and_cleanup;
@@ -225,7 +230,12 @@ void* cape_sock__udp__srv_new (const char* host, long port, CapeErr err)
   cape_sock__set_host (&addr, host, port);
   
   // create socket
-  sock = socket (AF_INET, SOCK_DGRAM, 0);
+#if defined __LINUX_OS
+  sock = socket (AF_INET, SOCK_DGRAM | SOCK_NONBLOCK, IPPROTO_UDP);
+#else
+  sock = socket (AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+#endif
+
   if (sock < 0)
   {
     goto exit_and_cleanup;
@@ -283,6 +293,68 @@ exit_and_cleanup:
   }
   
   return NULL;  
+}
+
+//-----------------------------------------------------------------------------
+
+void* cape_sock__icmp__new (CapeErr err)
+{
+  long sock = -1;
+  
+  // create socket
+#if defined __LINUX_OS
+  sock = socket (AF_INET, SOCK_RAW | SOCK_NONBLOCK, IPPROTO_ICMP);
+#else
+  sock = socket (AF_INET, SOCK_RAW, IPPROTO_ICMP);
+#endif
+  
+  if (sock < 0)
+  {
+    goto exit_and_cleanup;
+  }
+  
+  // return the socket
+  return (void*)sock;
+    
+exit_and_cleanup:
+  
+  // save the last system error into the error object
+  cape_err_lastOSError (err);
+  
+  if (sock >= 0)
+  {
+    close(sock);    
+  }
+  
+  cape_log_fmt (CAPE_LL_ERROR, "CAPE", "icmp new", "can't create ICMP socket: %s", cape_err_text(err));
+  
+  return NULL;  
+}
+
+//-----------------------------------------------------------------------------
+
+CapeString cape_sock__resolve (const CapeString host, CapeErr err)
+{
+  struct addrinfo hints, *res;
+  
+  memset (&hints, 0, sizeof (hints));
+  hints.ai_family = PF_UNSPEC;
+  hints.ai_socktype = SOCK_STREAM;
+  hints.ai_flags |= AI_CANONNAME;
+  
+  if (getaddrinfo (host, NULL, &hints, &res) == 0)
+  {
+    CapeString h = cape_str_cp (res->ai_canonname);
+    
+    freeaddrinfo (res);
+    
+    return h;
+  }
+  else
+  {
+    cape_err_lastOSError (err);
+    return NULL;
+  }
 }
 
 //-----------------------------------------------------------------------------
@@ -467,7 +539,7 @@ void* cape_sock__udp__srv_new (const char* host, long port, CapeErr err)
     goto exit_and_cleanup;
   }
 
-  sock = WSASocket (AF_INET, SOCK_DGRAM, IPPROTO_UDP, NULL, 0, WSA_FLAG_OVERLAPPED);
+  sock = WSASocketA (AF_INET, SOCK_DGRAM, IPPROTO_UDP, NULL, 0, WSA_FLAG_OVERLAPPED);
   if (sock == INVALID_SOCKET)
   {
     goto exit_and_cleanup;
@@ -500,6 +572,13 @@ exit_and_cleanup:
     closesocket (sock);    
   }
   
+  return NULL;
+}
+
+//-----------------------------------------------------------------------------
+
+void* cape_sock__icmp__new (CapeErr err)
+{
   return NULL;
 }
 

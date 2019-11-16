@@ -1,5 +1,6 @@
 #include "cape_stream.h"
 #include "fmt/cape_dragon4.h"
+#include "sys/cape_types.h"
 
 // c includes
 #include <stdio.h>
@@ -8,6 +9,16 @@
 #include <memory.h>
 #include <limits.h>
 #include <stdlib.h>
+
+#if defined __WINDOWS_OS
+#include <winsock.h>
+#else
+#include <netinet/in.h>
+#endif
+
+#ifndef htonll
+#define htonll(x) ((1==htonl(1)) ? (x) : (((cape_uint64)htonl((x) & 0xFFFFFFFFUL)) << 32) | htonl((cape_uint32)((x) >> 32)))
+#endif
 
 //-----------------------------------------------------------------------------
 
@@ -293,6 +304,20 @@ void cape_stream_append_f (CapeStream self, double val)
 
 //-----------------------------------------------------------------------------
 
+void cape_stream_append_d (CapeStream self, const CapeDatetime* val)
+{
+  if (val)
+  {
+    CapeString h = cape_datetime_s__std (val);
+    
+    cape_stream_append_buf (self, h, cape_str_size (h));
+    
+    cape_str_del (&h);
+  }
+}
+
+//-----------------------------------------------------------------------------
+
 void cape_stream_append_stream (CapeStream self, CapeStream stream)
 {
   unsigned long usedBytes = stream->pos - stream->buffer;
@@ -301,6 +326,92 @@ void cape_stream_append_stream (CapeStream self, CapeStream stream)
   
   memcpy (self->pos, stream->buffer, usedBytes);
   self->pos += usedBytes;
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_stream_append_08 (CapeStream self, cape_uint8 val)
+{
+  cape_stream_reserve (self, 1);
+  
+  *(self->pos) = val;
+  self->pos++;
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_stream_append_16 (CapeStream self, cape_uint16 val, int network_byte_order)
+{
+  cape_stream_reserve (self, 2);
+
+  if (network_byte_order)
+  {
+    *((cape_uint16*)(self->pos)) = htons (val);
+  }
+  else
+  {
+    *((cape_uint16*)(self->pos)) = val;
+  }
+  
+  self->pos += 2;
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_stream_append_32 (CapeStream self, cape_uint32 val, int network_byte_order)
+{
+  cape_stream_reserve (self, 4);
+  
+  if (network_byte_order)
+  {
+    *((cape_uint32*)(self->pos)) = htonl (val);
+  }
+  else
+  {
+    *((cape_uint32*)(self->pos)) = val;
+  }
+  
+  self->pos += 4;
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_stream_append_64 (CapeStream self, cape_uint64 val, int network_byte_order)
+{
+  cape_stream_reserve (self, 8);
+  
+  if (network_byte_order)
+  {
+    *((cape_uint64*)(self->pos)) = htonll (val);
+  }
+  else
+  {
+    *((cape_uint64*)(self->pos)) = val;
+  }
+  
+  self->pos += 8;
+}
+
+//-----------------------------------------------------------------------------
+
+void cape_stream_append_bd (CapeStream self, double val, int network_byte_order)
+{
+  cape_uint64 h;
+
+  cape_stream_reserve (self, 8);
+    
+  memcpy (&h, &val, 8);
+  
+  if (network_byte_order)
+  {    
+    *((cape_uint64*)(self->pos)) = htonll (h);
+  }
+  else
+  {
+    *((cape_uint64*)(self->pos)) = h;
+  }
+  
+  self->pos += 8;
 }
 
 //-----------------------------------------------------------------------------

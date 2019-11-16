@@ -63,10 +63,19 @@ static void __STDCALL cape_json_onItem (void* ptr, void* obj, int type, void* va
       cape_udc_add (obj, &h);
       break;
     }
+    case CAPE_JPARSER_OBJECT_DATETIME:
+    {
+      CapeUdc h = cape_udc_new (CAPE_UDC_DATETIME, key);
+
+      cape_udc_set_d (h, val);
+      
+      cape_udc_add (obj, &h);
+      break;
+    }
     case CAPE_JPARSER_OBJECT_NULL:
     {
       break;
-    }      
+    }
   }
 }
 
@@ -247,96 +256,168 @@ void cape_json_escape (CapeStream stream, const CapeString source)
           }
           else if ((*c & 0xF0) == 0xE0) 
           {
-            char* buf = CAPE_ALLOC(10);
-            wchar_t wc;
+            int i;
             
-            wc = (c[0] & 0xF) << 12;
-            wc |= (c[1] & 0x3F) << 6;
-            wc |= (c[2] & 0x3F);
+            for (i = 1; i < 2; i++)
+            {
+              if (*(c + i) == 0)
+              {
+                break;
+              }
+            }
             
-            c += 2;
-            
-#if defined _WIN64 || defined _WIN32
-            sprintf_s (buf, 8, "\\u%.4x", wc);
-#else
-            // TODO: there might be a better way to do it
-            sprintf (buf, "\\u%.4x", wc);
-#endif
-            cape_stream_append_buf (stream, buf, 6);
-            
-            CAPE_FREE(buf);
+            if (i == 2)
+            {
+              char* buf = CAPE_ALLOC(10);
+              wchar_t wc;
+              
+              wc = (c[0] & 0xF) << 12;
+              wc |= (c[1] & 0x3F) << 6;
+              wc |= (c[2] & 0x3F);
+              
+              c += 2;
+              
+              #if defined _WIN64 || defined _WIN32
+              sprintf_s (buf, 8, "\\u%.4x", wc);
+              #else
+              // TODO: there might be a better way to do it
+              sprintf (buf, "\\u%.4x", wc);
+              #endif
+              cape_stream_append_buf (stream, buf, 6);
+              
+              CAPE_FREE(buf);
+            }
+            else
+            {
+              c += 1;
+              cape_stream_append_c (stream, '?');
+            }            
           }
           else if ( (*c & 0xF8) == 0xF0 )
           {
-            char* buf = CAPE_ALLOC(10);
-            wchar_t wc;
+            int i;
             
-            wc = (c[0] & 0x7) << 18;
-            wc |= (c[1] & 0x3F) << 12;
-            wc |= (c[2] & 0x3F) << 6;
-            wc |= (c[3] & 0x3F);
+            for (i = 1; i < 3; i++)
+            {
+              if (*(c + i) == 0)
+              {
+                break;
+              }
+            }
             
-            c += 3;
-            
-#if defined _WIN64 || defined _WIN32
-            sprintf_s (buf, 8, "\\u%.4x", wc);
-#else
-            // TODO: there might be a better way to do it
-            sprintf (buf, "\\u%.4x", wc);
-#endif
-            
-            cape_stream_append_buf (stream, buf, 6);
-            
-            CAPE_FREE(buf);
+            if (i == 3)
+            {
+              char* buf = CAPE_ALLOC(10);
+              wchar_t wc;
+              
+              wc = (c[0] & 0x7) << 18;
+              wc |= (c[1] & 0x3F) << 12;
+              wc |= (c[2] & 0x3F) << 6;
+              wc |= (c[3] & 0x3F);
+              
+              c += 3;
+              
+              #if defined _WIN64 || defined _WIN32
+              sprintf_s (buf, 8, "\\u%.4x", wc);
+              #else
+              // TODO: there might be a better way to do it
+              sprintf (buf, "\\u%.4x", wc);
+              #endif
+              
+              cape_stream_append_buf (stream, buf, 6);
+              
+              CAPE_FREE(buf);
+            }
+            else
+            {
+              c += 1;
+              cape_stream_append_c (stream, '?');
+            }
           }
           else if ( (*c & 0xFC) == 0xF8 )
           {
-            char* buf = CAPE_ALLOC(10);
-            wchar_t wc;
+            int i;
             
-            wc = (c[0] & 0x3) << 24;
-            wc |= (c[1] & 0x3F) << 18;
-            wc |= (c[2] & 0x3F) << 12;
-            wc |= (c[3] & 0x3F) << 6;
-            wc |= (c[4] & 0x3F);
+            for (i = 1; i < 4; i++)
+            {
+              if (*(c + i) == 0)
+              {
+                break;
+              }
+            }
             
-            c += 4;
-            
-#if defined _WIN64 || defined _WIN32
-            sprintf_s (buf, 8, "\\u%.4x", wc);
-#else
-            // TODO: there might be a better way to do it
-            sprintf (buf, "\\u%.4x", wc);
-#endif
-            
-            cape_stream_append_buf (stream, buf, 6);
-            
-            CAPE_FREE(buf);
+            if (i == 4)
+            {
+              char* buf = CAPE_ALLOC(10);
+              wchar_t wc;
+              
+              wc = (c[0] & 0x3) << 24;
+              wc |= (c[1] & 0x3F) << 18;
+              wc |= (c[2] & 0x3F) << 12;
+              wc |= (c[3] & 0x3F) << 6;
+              wc |= (c[4] & 0x3F);
+              
+              c += 4;
+              
+              #if defined _WIN64 || defined _WIN32
+              sprintf_s (buf, 8, "\\u%.4x", wc);
+              #else
+              // TODO: there might be a better way to do it
+              sprintf (buf, "\\u%.4x", wc);
+              #endif
+              
+              cape_stream_append_buf (stream, buf, 6);
+              
+              CAPE_FREE(buf);
+            }
+            else
+            {
+              c += 1;
+              cape_stream_append_c (stream, '?');
+            }
           }
           else if ( (*c & 0xFE) == 0xFC )
           {
-            char* buf = CAPE_ALLOC(10);
-            wchar_t wc;
+            int i;
             
-            wc = (c[0] & 0x1) << 30;
-            wc |= (c[1] & 0x3F) << 24;
-            wc |= (c[2] & 0x3F) << 18;
-            wc |= (c[3] & 0x3F) << 12;
-            wc |= (c[4] & 0x3F) << 6;
-            wc |= (c[5] & 0x3F);
+            for (i = 1; i < 5; i++)
+            {
+              if (*(c + i) == 0)
+              {
+                break;
+              }
+            }
             
-            c += 5;
-            
-#if defined _WIN64 || defined _WIN32
-            sprintf_s (buf, 8, "\\u%.4x", wc);
-#else
-            // TODO: there might be a better way to do it
-            sprintf (buf, "\\u%.4x", wc);
-#endif
-            
-            cape_stream_append_buf (stream, buf, 6);
-            
-            CAPE_FREE(buf);
+            if (i == 5)
+            {
+              char* buf = CAPE_ALLOC(10);
+              wchar_t wc;
+              
+              wc = (c[0] & 0x1) << 30;
+              wc |= (c[1] & 0x3F) << 24;
+              wc |= (c[2] & 0x3F) << 18;
+              wc |= (c[3] & 0x3F) << 12;
+              wc |= (c[4] & 0x3F) << 6;
+              wc |= (c[5] & 0x3F);
+              
+              c += 5;
+              
+              #if defined _WIN64 || defined _WIN32
+              sprintf_s (buf, 8, "\\u%.4x", wc);
+              #else
+              // TODO: there might be a better way to do it
+              sprintf (buf, "\\u%.4x", wc);
+              #endif
+              
+              cape_stream_append_buf (stream, buf, 6);
+              
+              CAPE_FREE(buf);
+            }
+            else
+            {
+              c += 1;
+              cape_stream_append_c (stream, '?');
+            }
           }
           else
           {
@@ -433,6 +514,14 @@ void cape_json_fill (CapeStream stream, const CapeUdc node)
     case CAPE_UDC_FLOAT:
     {
       cape_stream_append_f (stream, cape_udc_f (node, 0));
+      break;
+    }
+    case CAPE_UDC_DATETIME:
+    {
+      cape_stream_append_c (stream, '"');
+      cape_stream_append_d (stream, cape_udc_d (node, NULL));
+      cape_stream_append_c (stream, '"');
+
       break;
     }
   }

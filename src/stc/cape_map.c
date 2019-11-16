@@ -13,6 +13,35 @@
 #define CAPE_MAP_CHILD     0
 #define CAPE_MAP_THREAD    1
 
+//-----------------------------------------------------------------------------
+
+int __STDCALL cape_map__compare__s (const void* a, const void* b, void* ptr)
+{
+  const char* s1 = a;
+  const char* s2 = b;
+  
+  return strcmp(s1, s2);
+}
+
+//-----------------------------------------------------------------------------
+
+int __STDCALL cape_map__compare__n (const void* a, const void* b, void* ptr)
+{
+  number_t ia = (number_t)a;
+  number_t ib = (number_t)b;
+  
+  if (ia > ib)
+  {
+    return 1;
+  }
+  else if (ia < ib)
+  {
+    return -1;
+  }
+  
+  return 0;
+}
+
 //=============================================================================
 
 struct CapeMapNode_s
@@ -134,16 +163,6 @@ struct CapeMap_s
 
 //-----------------------------------------------------------------------------
 
-static int __STDCALL cape_map_node_cmp (const void* a, const void* b, void* ptr)
-{
-  const char* s1 = a;
-  const char* s2 = b;
-  
-  return strcmp(s1, s2);
-}
-
-//-----------------------------------------------------------------------------
-
 CapeMap cape_map_new (fct_cape_map_cmp on_cmp, fct_cape_map_destroy on_del, void* ptr_cmp)
 {
   CapeMap self = CAPE_NEW(struct CapeMap_s);
@@ -151,7 +170,7 @@ CapeMap cape_map_new (fct_cape_map_cmp on_cmp, fct_cape_map_destroy on_del, void
   self->root = NULL;
   self->size = 0;
   
-  self->cmp_fct = on_cmp ? on_cmp : cape_map_node_cmp;
+  self->cmp_fct = on_cmp ? on_cmp : cape_map__compare__s;
   self->cmp_ptr = ptr_cmp;
   
   self->del_fct = on_del;

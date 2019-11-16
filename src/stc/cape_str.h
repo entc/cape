@@ -59,12 +59,18 @@ __CAPE_LIBEX   CapeString         cape_str_catenate_2    (const CapeString, cons
 
 __CAPE_LIBEX   CapeString         cape_str_catenate_3    (const CapeString, const CapeString, const CapeString);
 
+__CAPE_LIBEX   CapeString         cape_str_trim_utf8     (const CapeString);
+
+__CAPE_LIBEX   CapeString         cape_str_cp_replaced   (const CapeString source, const CapeString seek, const CapeString replace_with);
+
 //-----------------------------------------------------------------------------
 
 __CAPE_LIBEX   void               cape_str_replace_cp    (CapeString*, const CapeString source);      // replaces the object with a const string
 
 __CAPE_LIBEX   void               cape_str_replace_mv    (CapeString*, CapeString*);                  // replaces the object with another object
   
+__CAPE_LIBEX   void               cape_str_replace       (CapeString*, const CapeString seek, const CapeString replace_with);
+
 //-----------------------------------------------------------------------------
 
 __CAPE_LIBEX   void               cape_str_fill          (CapeString, number_t len, const CapeString source);       // will cut the content if not enough memory

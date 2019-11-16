@@ -32,6 +32,26 @@ typedef struct
 
 //-----------------------------------------------------------------------------
 
+__CAPE_LIBEX   CapeDatetime*   cape_datetime_new          (void);
+
+__CAPE_LIBEX   void            cape_datetime_del          (CapeDatetime**);
+
+__CAPE_LIBEX   CapeDatetime*   cape_datetime_cp           (const CapeDatetime*);
+
+// example:
+/*
+ * CapeDatetime* dt = cape_datetime_new ();
+ * 
+ * -> dt will be filled with a new object
+ * 
+ * cape_datetime_del (&dt);
+ * 
+ * -> dt will be set to NULL and all memeory will be freed
+ * 
+ */
+
+//-----------------------------------------------------------------------------
+
 __CAPE_LIBEX   void            cape_datetime_utc          (CapeDatetime*);
 
 __CAPE_LIBEX   void            cape_datetime_local        (CapeDatetime*);
@@ -42,6 +62,9 @@ __CAPE_LIBEX   void            cape_datetime_to_local     (CapeDatetime*);
 
                                /* generic method -> use the format for transformation */
 __CAPE_LIBEX   CapeString      cape_datetime_s__fmt       (const CapeDatetime*, const CapeString format);
+
+                               /* 2013-10-21T13:28:06.419Z */
+__CAPE_LIBEX   CapeString      cape_datetime_s__std       (const CapeDatetime*);   // RFC 3339
 
                                /* 2019-09-01 12:08:21 */
 __CAPE_LIBEX   CapeString      cape_datetime_s__str       (const CapeDatetime*);   // ISO format
@@ -64,6 +87,12 @@ __CAPE_LIBEX   time_t          cape_datetime_n__unix      (const CapeDatetime*);
 
 //-----------------------------------------------------------------------------
 
+__CAPE_LIBEX   int             cape_datetime__std         (CapeDatetime*, const CapeString datetime_in_text);
+
+__CAPE_LIBEX   int             cape_datetime__str         (CapeDatetime*, const CapeString datetime_in_text);
+
+//-----------------------------------------------------------------------------
+
 struct CapeStopTimer_s; typedef struct CapeStopTimer_s* CapeStopTimer;
 
 __CAPE_LIBEX   CapeStopTimer   cape_stoptimer_new         ();
@@ -81,7 +110,3 @@ __CAPE_LIBEX   double          cape_stoptimer_get         (CapeStopTimer);      
 //-----------------------------------------------------------------------------
 
 #endif
-
-
-
-
