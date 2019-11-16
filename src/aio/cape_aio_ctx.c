@@ -526,7 +526,7 @@ int cape_aio_context_next (CapeAioContext self, long timeout_in_ms, CapeErr err)
       
       if (hobj->on_event)
       {
-        hflags_result = hobj->on_event (hobj->ptr, hobj->hflags, event.flags, NULL, 0);
+        hflags_result = hobj->on_event (hobj->ptr, hobj->hflags, event.flags, 0);
       }
       else
       {
