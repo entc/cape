@@ -147,7 +147,7 @@ number_t cape_str_len (const CapeString s)
 
 number_t cape_str_size (const CapeString s)
 {
-  return strlen (s);
+  return (number_t)strlen (s);
 }
 
 //-----------------------------------------------------------------------------
@@ -279,7 +279,7 @@ int cape_str_begins (const CapeString s, const CapeString begins_with)
   }
   
   {
-    int len = strlen(begins_with);
+    size_t len = strlen(begins_with);
     
     return strncmp (s, begins_with, len) == 0;
   }
@@ -291,8 +291,8 @@ int cape_str_begins_i (const CapeString s1, const CapeString s2)
 {
   int ret;
   
-  number_t l1 = strlen (s1);
-  number_t l2 = strlen (s2);
+  number_t l1 = (number_t)strlen (s1);
+  number_t l2 = (number_t)strlen (s2);
 
   if (l2 < l1)
   {
@@ -337,7 +337,7 @@ int cape_str_find_utf8 (const CapeString haystack, const CapeString needle, numb
   {
     const char* spos = haystack;
     number_t cpos = 0;
-    number_t len = strlen (needle);
+    number_t len = (number_t)strlen (needle);
     
     // iterate through all characters
     while (*spos)
@@ -509,8 +509,8 @@ CapeString cape_str_catenate_2 (const CapeString s1, const CapeString s2)
   
   {
     /* variables */
-    int s1_len = strlen(s1);
-    int s2_len = strlen(s2);
+    number_t s1_len = (number_t)strlen(s1);
+	number_t s2_len = (number_t)strlen(s2);
     
     char* ret;
     char* pos;
@@ -539,9 +539,9 @@ CapeString cape_str_catenate_2 (const CapeString s1, const CapeString s2)
 
 CapeString cape_str_catenate_3 (const CapeString s1, const CapeString s2, const CapeString s3)
 {
-  number_t s1_len = strlen(s1);
-  number_t s2_len = strlen(s2);
-  number_t s3_len = strlen(s3);
+  number_t s1_len = (number_t)strlen(s1);
+  number_t s2_len = (number_t)strlen(s2);
+  number_t s3_len = (number_t)strlen(s3);
   
   char* ret = (char*)CAPE_ALLOC( (s1_len + s2_len + s3_len + 1) * sizeof(char) );
   
@@ -622,7 +622,7 @@ CapeString cape_str_trim_utf8 (const CapeString source)
   const unsigned char* pos_s = c;
   const unsigned char* pos_e = c;
   
-  int diff;
+  number_t diff;
   int trim = TRUE;
   
   // special case
@@ -763,7 +763,7 @@ CapeString cape_str_cp_replaced (const CapeString source, const CapeString seek,
       cape_stream_append_str (s, replace_with);
     }
     
-    lpos = fpos + strlen (seek);
+    lpos = fpos + (number_t)strlen (seek);
   }
   
   cape_stream_append_str (s, lpos);

@@ -14,6 +14,7 @@
 
 #define __WINDOWS_OS 1
 #define __CAPE_LIBEX __EXTERN_C __declspec(dllexport)
+#define __CAPE_CLASS __declspec(dllexport)
 #define __CAPE_LOCAL __EXTERN_C
 
 #define __STDCALL __stdcall
