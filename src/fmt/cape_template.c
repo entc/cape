@@ -219,33 +219,27 @@ int cape_template_part_eval_str (CapeTemplatePart self, CapeUdc data, CapeUdc it
       }
       case FORMAT_TYPE_DATE:
       {
-        /*
-        CapeString h;
-        EcBuffer b;
-        
-        EcDate date;
+        CapeDatetime dt;
         
         // convert text into dateformat
-        ectime_fromString (&date, text);
-        
+        cape_datetime__str (&dt, text);
+
         // convert into local time
-        ectime_date_utc_to_localtime (&date);
-        
-        b = ecbuf_create (100);
-        
-        ectime_fmt (b, &date, self->eval);
-        
-        h = ecbuf_str (&b);
-        
-        if (onText)
+        cape_datetime_local (&dt);
+
+        // apply format
         {
-          onText (ptr, h);
+          CapeString h = cape_datetime_s__fmt (&dt, self->eval);
+          
+          if (onText)
+          {
+            onText (ptr, h);
+          }
+          
+          cape_str_del (&h);
         }
         
-        cape_str_del(&h);
-        
         return cape_template_part_apply (self, data, ptr, onText, onFile, err);
-         */
       }
     }
   }
