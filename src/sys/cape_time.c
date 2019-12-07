@@ -266,6 +266,13 @@ CapeString cape_datetime_s__gmt (const CapeDatetime* dt)
 
 //-----------------------------------------------------------------------------
 
+CapeString cape_datetime_s__aph (const CapeDatetime* dt)
+{
+  return cape_datetime_s__fmt (dt, "%a, %e %b %Y %H:%M:%S %z");
+}
+
+//-----------------------------------------------------------------------------
+
 CapeString cape_datetime_s__pre (const CapeDatetime* dt)
 {
   // TODO: use the same method as cape_datetime_s__str

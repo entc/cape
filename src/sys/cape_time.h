@@ -75,6 +75,9 @@ __CAPE_LIBEX   CapeString      cape_datetime_s__log       (const CapeDatetime*);
                                /* Sun, 11 May 2018 17:05:40 GMT */
 __CAPE_LIBEX   CapeString      cape_datetime_s__gmt       (const CapeDatetime*);   // GMT format
 
+                               /* Mon, 18 Nov 2019 18:56:20 +0000 (UTC) */
+__CAPE_LIBEX   CapeString      cape_datetime_s__aph       (const CapeDatetime*);   // Alpha format
+
                                /* 2019_09_01__12_08_21__ */
 __CAPE_LIBEX   CapeString      cape_datetime_s__pre       (const CapeDatetime*);   // prefix format
 
