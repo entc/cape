@@ -58,6 +58,12 @@ __CAPE_LIBEX   void            cape_datetime_local        (CapeDatetime*);
 
 __CAPE_LIBEX   void            cape_datetime_to_local     (CapeDatetime*);
 
+                               // append a certain time period to the current datetime in string format
+                               /* D2, h2, m2, s2, u2 | D2:h2:m2:s2:u2 */
+__CAPE_LIBEX   void            cape_datetime_utc__add_s   (CapeDatetime*, const CapeString delta);
+
+__CAPE_LIBEX   int             cape_datetime_cmp          (const CapeDatetime*, const CapeDatetime*);
+
 //-----------------------------------------------------------------------------
 
                                /* generic method -> use the format for transformation */
