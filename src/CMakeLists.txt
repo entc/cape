@@ -15,6 +15,7 @@ ENDIF ()
 find_package(DLL QUIET)
 find_package(PThread)
 find_package(Math)
+find_package(Fts QUIET)
 
 #----------------------------------------------------------------------------------
 
@@ -117,7 +118,7 @@ SET(CAPE_HPP_HEADERS
 INCLUDE_DIRECTORIES(".")
 
 add_library             (cape SHARED ${CAPE_STC_SOURCES} ${CAPE_STC_HEADERS} ${CAPE_SYS_SOURCES} ${CAPE_SYS_HEADERS} ${CAPE_AIO_SOURCES} ${CAPE_AIO_HEADERS} ${CAPE_FMT_SOURCES} ${CAPE_FMT_HEADERS} ${CAPE_EXTERN_SOURCES} ${CAPE_EXTERN_HEADERS} ${CAPE_HPP_HEADERS})
-target_link_libraries   (cape ${DLL_LIBRARIES} ${PTHREAD_LIBRARIES} ${MATH_LIBRARIES})
+target_link_libraries   (cape ${DLL_LIBRARIES} ${PTHREAD_LIBRARIES} ${MATH_LIBRARIES} ${FTS_LIBRARIES})
 set_target_properties   (cape PROPERTIES VERSION 1.0.1 SOVERSION 1.0.1)
 
 install (TARGETS cape DESTINATION lib)
