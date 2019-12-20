@@ -189,6 +189,45 @@ int cape_template_part_apply (CapeTemplatePart self, CapeUdc data, void* ptr, fc
 
 //-----------------------------------------------------------------------------
 
+int cape_template_part_eval_datetime (CapeTemplatePart self, CapeUdc data, CapeUdc item, void* ptr, fct_cape_template__on_text onText, fct_cape_template__on_file onFile, CapeErr err)
+{
+  const CapeDatetime* dt = cape_udc_d (item, NULL);
+  
+  if (dt)
+  {
+    switch (self->format_type)
+    {
+      case FORMAT_TYPE_DATE:
+      {
+        CapeDatetime* h1 = cape_datetime_cp (dt);
+        
+        // convert into local time
+        cape_datetime_local (h1);
+        
+        // apply format
+        {
+          CapeString h2 = cape_datetime_s__fmt (h1, self->eval);
+          
+          if (onText)
+          {
+            onText (ptr, h2);
+          }
+          
+          cape_str_del (&h2);
+        }
+        
+        cape_datetime_del (&h1);
+        
+        break;
+      }
+    }
+  }
+  
+  return CAPE_ERR_NONE;
+}
+
+//-----------------------------------------------------------------------------
+
 int cape_template_part_eval_str (CapeTemplatePart self, CapeUdc data, CapeUdc item, void* ptr, fct_cape_template__on_text onText, fct_cape_template__on_file onFile, CapeErr err)
 {
   const CapeString text = cape_udc_s (item, NULL);
@@ -439,6 +478,18 @@ int cape_template_part_apply (CapeTemplatePart self, CapeUdc data, void* ptr, fc
               case CAPE_UDC_FLOAT:
               {
                 int res = cape_template_part_eval_double (part, data, item, ptr, onText, onFile, err);
+                if (res)
+                {
+                  return res;
+                }
+                
+                break;
+              }
+              case CAPE_UDC_DATETIME:
+              {
+                printf ("found tag as datetime %s\n", name);
+
+                int res = cape_template_part_eval_datetime (part, data, item, ptr, onText, onFile, err);
                 if (res)
                 {
                   return res;
