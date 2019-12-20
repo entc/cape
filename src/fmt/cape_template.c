@@ -199,6 +199,8 @@ int cape_template_part_eval_str (CapeTemplatePart self, CapeUdc data, CapeUdc it
     {
       case FORMAT_TYPE_NONE:
       {
+        printf ("no format type\n");
+        
         if (self->eval)
         {
           if (cape_str_equal (self->eval, text))
@@ -221,6 +223,8 @@ int cape_template_part_eval_str (CapeTemplatePart self, CapeUdc data, CapeUdc it
       case FORMAT_TYPE_DATE:
       {
         CapeDatetime dt;
+        
+        printf ("no format type date with %s\n", text);
         
         // convert text into dateformat
         if (cape_datetime__str (&dt, text))
@@ -376,6 +380,8 @@ int cape_template_part_apply (CapeTemplatePart self, CapeUdc data, void* ptr, fc
           CapeUdc item = cape_udc_get (data, name);
           if (item)
           {
+            printf ("found tag %s\n", name);
+            
             switch (cape_udc_type (item))
             {
               case CAPE_UDC_LIST:
@@ -407,6 +413,9 @@ int cape_template_part_apply (CapeTemplatePart self, CapeUdc data, void* ptr, fc
               }
               case CAPE_UDC_STRING:
               {
+                printf ("found tag as string %s\n", name);
+                
+                
                 int res = cape_template_part_eval_str (part, data, item, ptr, onText, onFile, err);
                 if (res)
                 {
