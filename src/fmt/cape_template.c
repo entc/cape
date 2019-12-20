@@ -403,6 +403,8 @@ int cape_template_part_apply (CapeTemplatePart self, CapeUdc data, void* ptr, fc
               }
               case CAPE_UDC_NODE:
               {
+                printf ("found tag as node %s\n", name);
+                
                 int res = cape_template_part_apply (part, item, ptr, onText, onFile, err);
                 if (res)
                 {
@@ -446,6 +448,8 @@ int cape_template_part_apply (CapeTemplatePart self, CapeUdc data, void* ptr, fc
               }
               default:
               {
+                printf ("found tag as default %s\n", name);
+                
                 int res = cape_template_part_eval_str (part, data, item, ptr, onText, onFile, err);
                 if (res)
                 {
