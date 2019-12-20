@@ -10,6 +10,7 @@
 #include "sys/cape_time.h"
 #include "sys/cape_file.h"
 #include "fmt/cape_tokenizer.h"
+#include "fmt/cape_json.h"
 
 //-----------------------------------------------------------------------------
 
@@ -333,6 +334,12 @@ int cape_template_part_eval_double (CapeTemplatePart self, CapeUdc data, CapeUdc
 
 int cape_template_part_apply (CapeTemplatePart self, CapeUdc data, void* ptr, fct_cape_template__on_text onText, fct_cape_template__on_file onFile, CapeErr err)
 {
+  {
+    CapeString h = cape_json_to_s (data);
+    
+    printf ("PARAM: %s\n", h);
+  }
+  
   if (self->parts)
   {
     CapeListCursor* cursor = cape_list_cursor_create (self->parts, CAPE_DIRECTION_FORW);
