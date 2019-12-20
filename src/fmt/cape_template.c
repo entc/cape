@@ -256,6 +256,10 @@ int cape_template_part_eval_str (CapeTemplatePart self, CapeUdc data, CapeUdc it
             cape_str_del (&h);
           }
         }
+        else
+        {
+          cape_log_fmt (CAPE_LL_ERROR, "CAPE", "template eval", "can't evaluate '%s' as date", text);
+        }
         
         return cape_template_part_apply (self, data, ptr, onText, onFile, err);
       }
