@@ -69,10 +69,13 @@ __CAPE_LIBEX   int             cape_datetime_cmp          (const CapeDatetime*, 
                                /* generic method -> use the format for transformation */
 __CAPE_LIBEX   CapeString      cape_datetime_s__fmt       (const CapeDatetime*, const CapeString format);
 
-                               /* 2013-10-21T13:28:06.419Z */
+                               /* 2013-10-21T13:28:06Z */
+__CAPE_LIBEX   CapeString      cape_datetime_s__std_s     (const CapeDatetime*);   // RFC 3339
+
+                              /* 2013-10-21T13:28:06.419Z */
 __CAPE_LIBEX   CapeString      cape_datetime_s__std       (const CapeDatetime*);   // RFC 3339
 
-                               /* 2019-09-01 12:08:21 */
+                                /* 2019-09-01 12:08:21 */
 __CAPE_LIBEX   CapeString      cape_datetime_s__str       (const CapeDatetime*);   // ISO format
 
                                /* 20190918-12:07:55.992 */

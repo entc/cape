@@ -222,21 +222,39 @@ int cape_template_part_eval_str (CapeTemplatePart self, CapeUdc data, CapeUdc it
         CapeDatetime dt;
         
         // convert text into dateformat
-        cape_datetime__str (&dt, text);
-
-        // convert into local time
-        cape_datetime_local (&dt);
-
-        // apply format
+        if (cape_datetime__str (&dt, text))
         {
-          CapeString h = cape_datetime_s__fmt (&dt, self->eval);
+          // convert into local time
+          cape_datetime_local (&dt);
           
-          if (onText)
+          // apply format
           {
-            onText (ptr, h);
+            CapeString h = cape_datetime_s__fmt (&dt, self->eval);
+            
+            if (onText)
+            {
+              onText (ptr, h);
+            }
+            
+            cape_str_del (&h);
           }
+        }
+        else if (cape_datetime__std (&dt, text))
+        {
+          // convert into local time
+          cape_datetime_local (&dt);
           
-          cape_str_del (&h);
+          // apply format
+          {
+            CapeString h = cape_datetime_s__fmt (&dt, self->eval);
+            
+            if (onText)
+            {
+              onText (ptr, h);
+            }
+            
+            cape_str_del (&h);
+          }
         }
         
         return cape_template_part_apply (self, data, ptr, onText, onFile, err);
