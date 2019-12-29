@@ -26,6 +26,8 @@ __CAPE_LIBEX   CapeString         cape_fs_path_resolve   (const char* filepath, 
 // returns always absolute paths
 __CAPE_LIBEX   const CapeString   cape_fs_split          (const char* filepath, CapeString* p_path);
 
+__CAPE_LIBEX   const CapeString   cape_fs_extension      (const CapeString);
+
 //-----------------------------------------------------------------------------
 
 __CAPE_LIBEX   int                cape_fs_path_create    (const char* path, CapeErr);

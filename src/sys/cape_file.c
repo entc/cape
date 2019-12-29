@@ -233,6 +233,23 @@ const CapeString cape_fs_split (const char* filepath, CapeString* p_path)
 
 //-----------------------------------------------------------------------------
 
+const CapeString cape_fs_extension (const CapeString source)
+{
+  if (source)
+  {
+    const char* pos = strrchr (source, '.');
+    
+    if (pos)
+    {
+      return pos + 1;
+    }
+  }
+  
+  return NULL;
+}
+
+//-----------------------------------------------------------------------------
+
 int cape_fs_path_create (const char* path, CapeErr err)
 {
 #ifdef __WINDOWS_OS
