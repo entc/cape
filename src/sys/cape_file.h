@@ -36,6 +36,10 @@ __CAPE_LIBEX   off_t              cape_fs_path_size      (const char* path, Cape
 
 //-----------------------------------------------------------------------------
 
+__CAPE_LIBEX   int                cape_fs_file_del       (const char* path, CapeErr);
+
+//-----------------------------------------------------------------------------
+
 typedef int  (__STDCALL *fct_cape_fs_file_load)   (void* ptr, const char* bufdat, number_t buflen, CapeErr err);
 
 __CAPE_LIBEX   int                cape_fs_file_load      (const CapeString path, const CapeString file, void* ptr, fct_cape_fs_file_load, CapeErr);
@@ -57,6 +61,8 @@ __CAPE_LIBEX   void*              cape_fh_fd             (CapeFileHandle);
 __CAPE_LIBEX   number_t           cape_fh_read_buf       (CapeFileHandle, char* bufdat, number_t buflen);
 
 __CAPE_LIBEX   number_t           cape_fh_write_buf      (CapeFileHandle, const char* bufdat, number_t buflen);
+
+__CAPE_LIBEX   const CapeString   cape_fh_file           (CapeFileHandle);
 
 //-----------------------------------------------------------------------------
 

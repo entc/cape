@@ -623,7 +623,6 @@ CapeString cape_str_trim_utf8 (const CapeString source)
   const unsigned char* pos_e = c;
   
   number_t diff;
-  int trim = TRUE;
   
   // special case
   if (source == NULL)
@@ -729,6 +728,63 @@ CapeString cape_str_trim_utf8 (const CapeString source)
   {
     return cape_str_cp ("");
   }
+}
+
+//-----------------------------------------------------------------------------
+
+CapeString cape_str_trim_lr (const CapeString source, char l, char r)
+{
+  CapeString copy;
+  char* pos01;
+  char* pos02;
+  
+  if (NULL == source)
+  {
+    return 0;
+  }
+  
+  copy = cape_str_cp (source);
+  
+  /* source position */
+  pos01 = copy;
+  pos02 = 0;
+  /* trim from begin */
+  while(*pos01)
+  {
+    if (*pos01 != l) break;
+    
+    pos01++;
+  }
+  pos02 = copy;
+  /* copy rest */
+  while(*pos01)
+  {
+    *pos02 = *pos01;
+    
+    pos01++;
+    pos02++;
+  }
+  /* set here 0 not to run in undefined situation */
+  *pos02 = 0;
+  /* trim from the end */
+  while( pos02 != copy )
+  {
+    /* decrease */
+    pos02--;
+    /* check if readable */
+    if (*pos02 != r) break;
+    /* set to zero */
+    *pos02 = 0;
+  }
+  
+  return copy;
+}
+
+//-----------------------------------------------------------------------------
+
+CapeString cape_str_trim_c (const CapeString source, char c)
+{
+  return cape_str_trim_lr (source, c, c);
 }
 
 //-----------------------------------------------------------------------------

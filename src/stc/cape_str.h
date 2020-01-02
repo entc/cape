@@ -61,6 +61,10 @@ __CAPE_LIBEX   CapeString         cape_str_catenate_3    (const CapeString, cons
 
 __CAPE_LIBEX   CapeString         cape_str_trim_utf8     (const CapeString);
 
+__CAPE_LIBEX   CapeString         cape_str_trim_lr       (const CapeString, char l, char r);
+
+__CAPE_LIBEX   CapeString         cape_str_trim_c        (const CapeString, char c);
+
 __CAPE_LIBEX   CapeString         cape_str_cp_replaced   (const CapeString source, const CapeString seek, const CapeString replace_with);
 
 //-----------------------------------------------------------------------------

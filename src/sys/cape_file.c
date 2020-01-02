@@ -351,6 +351,18 @@ number_t cape_fs_path_size__process_path (DIR* dir, CapeList folders, const char
 
 //-----------------------------------------------------------------------------
 
+int cape_fs_file_del (const char* path, CapeErr err)
+{
+  if (-1 == unlink (path))
+  {
+    return cape_err_lastOSError (err);
+  }
+  
+  return CAPE_ERR_NONE;
+}
+
+//-----------------------------------------------------------------------------
+
 int cape_fs_file_load (const CapeString path, const CapeString file, void* ptr, fct_cape_fs_file_load fct, CapeErr err)
 {
   int res;
@@ -467,6 +479,13 @@ void cape_fh_del (CapeFileHandle* p_self)
     
     CAPE_DEL (p_self, struct CapeFileHandle_s);
   }  
+}
+
+//-----------------------------------------------------------------------------
+
+const CapeString cape_fh_file (CapeFileHandle self)
+{
+  return self->file;
 }
 
 //-----------------------------------------------------------------------------
