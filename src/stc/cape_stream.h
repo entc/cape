@@ -26,6 +26,18 @@ __CAPE_LIBEX number_t        cape_stream_size (CapeStream);
 __CAPE_LIBEX const char*     cape_stream_data (CapeStream);
 
 //-----------------------------------------------------------------------------
+// stream manipulators from outside
+
+                             /* sets the available capacity of free bytes */
+__CAPE_LIBEX void            cape_stream_cap (CapeStream, number_t bytes_reserve);
+  
+                             /* increases the used bytes */
+__CAPE_LIBEX void            cape_stream_set (CapeStream, number_t bytes_appended);
+
+                             /* get the current position */
+__CAPE_LIBEX char*           cape_stream_pos (CapeStream);
+
+//-----------------------------------------------------------------------------
 // convert to other types
 
 __CAPE_LIBEX CapeString      cape_stream_to_str (CapeStream*);
