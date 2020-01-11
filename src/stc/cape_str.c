@@ -185,6 +185,26 @@ CapeString cape_str_f (double value)
 
 //-----------------------------------------------------------------------------
 
+CapeString cape_str_n (number_t value)
+{
+  CapeString ret = CAPE_ALLOC (26);  // for very long intergers
+  
+#ifdef _MSC_VER
+    
+  _snprintf_s (ret, 24, _TRUNCATE, "%li", value);
+    
+#else
+    
+  // TODO: use a different %i / %lli if number_t is 64bit etc
+  snprintf (ret, 24, "%li", value);
+    
+#endif
+
+  return ret;
+}
+
+//-----------------------------------------------------------------------------
+
 int cape_str_empty (const CapeString s)
 {
   if (s)
