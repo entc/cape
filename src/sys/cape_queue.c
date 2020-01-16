@@ -272,6 +272,8 @@ void __STDCALL cape_queue__threads__on_del (void* ptr)
   cape_thread_join (self->thread);
   
   cape_thread_del (&(self->thread));
+  
+  CAPE_DEL (&self, struct CapeThreadItem_s);
 }
 
 //-----------------------------------------------------------------------------

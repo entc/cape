@@ -48,7 +48,7 @@ if (NOT PTHREAD_FOUND)
 	  ##____________________________________________________________________________
 	  ## Check for the library
 
-	  find_library (PTHREAD_LIBRARIES
+	  find_library (PTHREAD_LIBRARY_01
 		NAMES pthread
 		HINTS ${CMAKE_INSTALL_PREFIX}
 		PATH_SUFFIXES lib
@@ -57,19 +57,17 @@ if (NOT PTHREAD_FOUND)
 	  ##____________________________________________________________________________
 	  ## Actions taken when all components have been found
 
-	  find_package_handle_standard_args (PTHREAD DEFAULT_MSG PTHREAD_LIBRARIES PTHREAD_INCLUDES)
-		
-	  if (PTHREAD_FOUND)
-		if (NOT PTHREAD_FIND_QUIETLY)
-		  message (STATUS "PTHREAD_INCLUDES  = ${PTHREAD_INCLUDES}")
-		  message (STATUS "PTHREAD_LIBRARIES = ${PTHREAD_LIBRARIES}")
-		endif (NOT PTHREAD_FIND_QUIETLY)
-	  else (PTHREAD_FOUND)
-		if (PTHREAD_FIND_REQUIRED)
-		  message (FATAL_ERROR "Could not find PTHREAD!")
-		endif (PTHREAD_FIND_REQUIRED)
-	  endif (PTHREAD_FOUND)
-
+    # Correct Symlinks
+    if(IS_SYMLINK ${PTHREAD_LIBRARY_01})
+      get_filename_component(TMP ${PTHREAD_LIBRARY_01} REALPATH)
+      list (APPEND PTHREAD_LIBRARIES ${TMP})
+    else()
+      list (APPEND PTHREAD_LIBRARIES ${PTHREAD_LIBRARY_01})
+    endif()
+	  
+    message (STATUS "PTHREAD_INCLUDES  = ${PTHREAD_INCLUDES}")
+	  message (STATUS "PTHREAD_LIBRARIES = ${PTHREAD_LIBRARIES}")
+	  
 	  ##____________________________________________________________________________
 	  ## Mark advanced variables
 
