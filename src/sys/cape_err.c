@@ -143,11 +143,16 @@ int cape_err_formatErrorOS (CapeErr self, unsigned long errCode)
 
 int cape_err_lastOSError (CapeErr self)
 {
-#ifdef __WINDOWS_OS
-  return cape_err_formatErrorOS (self, GetLastError ());
-#else
-  return cape_err_formatErrorOS (self, errno);
-#endif
+  if (self)
+  {
+    #ifdef __WINDOWS_OS
+      return cape_err_formatErrorOS (self, GetLastError ());
+    #else
+      return cape_err_formatErrorOS (self, errno);
+    #endif
+  }
+  
+  return CAPE_ERR_OS;
 }
 
 //-----------------------------------------------------------------------------

@@ -16,7 +16,6 @@
 #elif defined __LINUX_OS
 
 #include <sys/timerfd.h>
-#include <bits/time.h>
 
 #endif
 

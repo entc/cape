@@ -174,6 +174,27 @@ const char* cape_stream_data (CapeStream self)
 
 //-----------------------------------------------------------------------------
 
+void cape_stream_cap (CapeStream self, number_t bytes_reserve)
+{
+  cape_stream_reserve (self, bytes_reserve);
+}
+  
+//-----------------------------------------------------------------------------
+
+void cape_stream_set (CapeStream self, number_t bytes_appended)
+{
+  self->pos += bytes_appended;
+}
+
+//-----------------------------------------------------------------------------
+
+char* cape_stream_pos (CapeStream self)
+{
+  return self->pos;
+}
+
+//-----------------------------------------------------------------------------
+
 void cape_stream_append_str (CapeStream self, const char* s)
 {
   if (s)

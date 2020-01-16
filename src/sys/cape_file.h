@@ -26,11 +26,17 @@ __CAPE_LIBEX   CapeString         cape_fs_path_resolve   (const char* filepath, 
 // returns always absolute paths
 __CAPE_LIBEX   const CapeString   cape_fs_split          (const char* filepath, CapeString* p_path);
 
+__CAPE_LIBEX   const CapeString   cape_fs_extension      (const CapeString);
+
 //-----------------------------------------------------------------------------
 
 __CAPE_LIBEX   int                cape_fs_path_create    (const char* path, CapeErr);
 
 __CAPE_LIBEX   off_t              cape_fs_path_size      (const char* path, CapeErr);
+
+//-----------------------------------------------------------------------------
+
+__CAPE_LIBEX   int                cape_fs_file_del       (const char* path, CapeErr);
 
 //-----------------------------------------------------------------------------
 
@@ -55,6 +61,8 @@ __CAPE_LIBEX   void*              cape_fh_fd             (CapeFileHandle);
 __CAPE_LIBEX   number_t           cape_fh_read_buf       (CapeFileHandle, char* bufdat, number_t buflen);
 
 __CAPE_LIBEX   number_t           cape_fh_write_buf      (CapeFileHandle, const char* bufdat, number_t buflen);
+
+__CAPE_LIBEX   const CapeString   cape_fh_file           (CapeFileHandle);
 
 //-----------------------------------------------------------------------------
 

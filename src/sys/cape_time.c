@@ -1,6 +1,7 @@
 #include "cape_time.h"
 
 #include "sys/cape_types.h"
+#include "fmt/cape_tokenizer.h"
 
 //-----------------------------------------------------------------------------
 
@@ -217,6 +218,197 @@ void cape_datetime_to_local (CapeDatetime* dt)
 
 //-----------------------------------------------------------------------------
 
+void cape_datetime_utc__add_s (CapeDatetime* dt, const CapeString delta)
+{
+#if defined __WINDOWS_OS
+  
+  
+#else
+
+  struct timeval time;
+  struct tm* l01;
+  
+  gettimeofday (&time, NULL);
+
+  CapeList tokens = cape_tokenizer_buf (delta, cape_str_size (delta), ':');
+  
+  {
+    CapeListCursor* cursor = cape_list_cursor_create (tokens, CAPE_DIRECTION_FORW);
+    
+    while (cape_list_cursor_next (cursor))
+    {
+      const CapeString delta_part = cape_list_node_data (cursor->node);
+      
+      switch (delta_part[0])
+      {
+        case 'D':
+        {
+          struct timeval h;
+          
+          h.tv_sec = atol (delta_part + 1) * 3600 * 24;
+          h.tv_usec = 0;
+
+          timeradd (&time, &h, &time);
+          break;
+        }
+        case 'h':
+        {
+          struct timeval h;
+          
+          printf ("append hour\n");
+          
+          h.tv_sec = atol (delta_part + 1) * 3600;
+          h.tv_usec = 0;
+
+          timeradd (&time, &h, &time);
+          break;
+        }
+        case 'm':
+        {
+          struct timeval h;
+          
+          h.tv_sec = atol (delta_part + 1) * 60;
+          h.tv_usec = 0;
+
+          timeradd (&time, &h, &time);
+          break;
+        }
+        case 's':
+        {
+          struct timeval h;
+          
+          h.tv_sec = atol (delta_part + 1);
+          h.tv_usec = 0;
+          
+          timeradd (&time, &h, &time);
+          break;
+        }
+        case 'u':
+        {
+          struct timeval h;
+          
+          h.tv_sec = 0;
+          h.tv_usec = atol (delta_part + 1) * 1000;
+
+          timeradd (&time, &h, &time);
+          break;
+        }
+      }
+    }
+    
+    cape_list_cursor_destroy (&cursor);
+  }
+
+  cape_list_del (&tokens);
+  
+  gettimeofday (&time, NULL);
+  l01 = gmtime (&(time.tv_sec));
+  
+  cape_datetime__convert_timeinfo (dt, l01);
+  
+  dt->msec = time.tv_usec / 1000;
+  dt->usec = time.tv_usec;
+  
+  dt->is_utc = TRUE;
+
+#endif
+}
+
+//-----------------------------------------------------------------------------
+
+int cape_datetime_cmp (const CapeDatetime* dt1, const CapeDatetime* dt2)
+{
+  CapeString h1 = cape_datetime_s__std (dt1);
+  CapeString h2 = cape_datetime_s__std (dt2);
+  
+  printf ("%s <--> %s\n", h1, h2);
+
+  
+  if (dt1->year < dt2->year)
+  {
+    return -1;
+  }
+  
+  if (dt1->year > dt2->year)
+  {
+    return 1;
+  }
+
+  if (dt1->month < dt2->month)
+  {
+    return -1;
+  }
+
+  if (dt1->month > dt2->month)
+  {
+    return 1;
+  }
+
+  if (dt1->day < dt2->day)
+  {
+    return -1;
+  }
+  
+  if (dt1->day > dt2->day)
+  {
+    return 1;
+  }
+
+  if (dt1->hour < dt2->hour)
+  {
+    return -1;
+  }
+  
+  if (dt1->hour > dt2->hour)
+  {
+    return 1;
+  }
+
+  if (dt1->minute < dt2->minute)
+  {
+    return -1;
+  }
+  
+  if (dt1->minute > dt2->minute)
+  {
+    return 1;
+  }
+  
+  if (dt1->sec < dt2->sec)
+  {
+    return -1;
+  }
+  
+  if (dt1->sec > dt2->sec)
+  {
+    return 1;
+  }
+
+  if (dt1->msec < dt2->msec)
+  {
+    return -1;
+  }
+  
+  if (dt1->msec > dt2->msec)
+  {
+    return 1;
+  }
+  
+  if (dt1->usec < dt2->usec)
+  {
+    return -1;
+  }
+  
+  if (dt1->usec > dt2->usec)
+  {
+    return 1;
+  }
+
+  return 0;
+}
+
+//-----------------------------------------------------------------------------
+
 CapeString cape_datetime_s__fmt (const CapeDatetime* dt, const CapeString format)
 {
   CapeString ret = (CapeString)CAPE_ALLOC (100);
@@ -262,6 +454,13 @@ CapeString cape_datetime_s__gmt (const CapeDatetime* dt)
 {
   // TODO: use the same method as cape_datetime_s__str
   return cape_datetime_s__fmt (dt, "%a, %d %b %Y %H:%M:%S GMT");
+}
+
+//-----------------------------------------------------------------------------
+
+CapeString cape_datetime_s__aph (const CapeDatetime* dt)
+{
+  return cape_datetime_s__fmt (dt, "%a, %e %b %Y %H:%M:%S %z");
 }
 
 //-----------------------------------------------------------------------------

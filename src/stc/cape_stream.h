@@ -13,25 +13,46 @@ struct CapeStream_s; typedef struct CapeStream_s* CapeStream;
 
 //-----------------------------------------------------------------------------
 
+                             /* alloc memory and initialization */
 __CAPE_LIBEX CapeStream      cape_stream_new (void);
 
+                             /* free memory */
 __CAPE_LIBEX void            cape_stream_del (CapeStream*);
 
+                             /* resets the position to the start of the buffer */
 __CAPE_LIBEX void            cape_stream_clr (CapeStream);
 
+                             /* converts the stream into a c-string (adds zero termination) */
 __CAPE_LIBEX const char*     cape_stream_get (CapeStream);
 
+                             /* amount of bytes stored in the stream */
 __CAPE_LIBEX number_t        cape_stream_size (CapeStream);
 
+                             /* get a pointer to the raw data buffer */
 __CAPE_LIBEX const char*     cape_stream_data (CapeStream);
+
+//-----------------------------------------------------------------------------
+// stream manipulators from outside
+
+                             /* sets the available capacity of free bytes */
+__CAPE_LIBEX void            cape_stream_cap (CapeStream, number_t bytes_reserve);
+  
+                             /* increases the used bytes */
+__CAPE_LIBEX void            cape_stream_set (CapeStream, number_t bytes_appended);
+
+                             /* get the current position */
+__CAPE_LIBEX char*           cape_stream_pos (CapeStream);
 
 //-----------------------------------------------------------------------------
 // convert to other types
 
+                             /* converts the stream into a string, stream will be deleted */
 __CAPE_LIBEX CapeString      cape_stream_to_str (CapeStream*);
 
+                             /* converts into a number (experimental) */
 __CAPE_LIBEX number_t        cape_stream_to_n (CapeStream);
 
+                             /* copy the stream to a new string */
 __CAPE_LIBEX CapeString      cape_stream_to_s (CapeStream);
 
 //-----------------------------------------------------------------------------

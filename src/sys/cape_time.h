@@ -58,15 +58,24 @@ __CAPE_LIBEX   void            cape_datetime_local        (CapeDatetime*);
 
 __CAPE_LIBEX   void            cape_datetime_to_local     (CapeDatetime*);
 
+                               // append a certain time period to the current datetime in string format
+                               /* D2, h2, m2, s2, u2 | D2:h2:m2:s2:u2 */
+__CAPE_LIBEX   void            cape_datetime_utc__add_s   (CapeDatetime*, const CapeString delta);
+
+__CAPE_LIBEX   int             cape_datetime_cmp          (const CapeDatetime*, const CapeDatetime*);
+
 //-----------------------------------------------------------------------------
 
                                /* generic method -> use the format for transformation */
 __CAPE_LIBEX   CapeString      cape_datetime_s__fmt       (const CapeDatetime*, const CapeString format);
 
-                               /* 2013-10-21T13:28:06.419Z */
+                               /* 2013-10-21T13:28:06Z */
+__CAPE_LIBEX   CapeString      cape_datetime_s__std_s     (const CapeDatetime*);   // RFC 3339
+
+                              /* 2013-10-21T13:28:06.419Z */
 __CAPE_LIBEX   CapeString      cape_datetime_s__std       (const CapeDatetime*);   // RFC 3339
 
-                               /* 2019-09-01 12:08:21 */
+                                /* 2019-09-01 12:08:21 */
 __CAPE_LIBEX   CapeString      cape_datetime_s__str       (const CapeDatetime*);   // ISO format
 
                                /* 20190918-12:07:55.992 */
@@ -74,6 +83,9 @@ __CAPE_LIBEX   CapeString      cape_datetime_s__log       (const CapeDatetime*);
 
                                /* Sun, 11 May 2018 17:05:40 GMT */
 __CAPE_LIBEX   CapeString      cape_datetime_s__gmt       (const CapeDatetime*);   // GMT format
+
+                               /* Mon, 18 Nov 2019 18:56:20 +0000 (UTC) */
+__CAPE_LIBEX   CapeString      cape_datetime_s__aph       (const CapeDatetime*);   // Alpha format
 
                                /* 2019_09_01__12_08_21__ */
 __CAPE_LIBEX   CapeString      cape_datetime_s__pre       (const CapeDatetime*);   // prefix format

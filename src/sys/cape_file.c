@@ -233,6 +233,23 @@ const CapeString cape_fs_split (const char* filepath, CapeString* p_path)
 
 //-----------------------------------------------------------------------------
 
+const CapeString cape_fs_extension (const CapeString source)
+{
+  if (source)
+  {
+    const char* pos = strrchr (source, '.');
+    
+    if (pos)
+    {
+      return pos + 1;
+    }
+  }
+  
+  return NULL;
+}
+
+//-----------------------------------------------------------------------------
+
 int cape_fs_path_create (const char* path, CapeErr err)
 {
 #ifdef __WINDOWS_OS
@@ -331,6 +348,18 @@ number_t cape_fs_path_size__process_path (DIR* dir, CapeList folders, const char
   return total_size;
 }
 */
+
+//-----------------------------------------------------------------------------
+
+int cape_fs_file_del (const char* path, CapeErr err)
+{
+  if (-1 == unlink (path))
+  {
+    return cape_err_lastOSError (err);
+  }
+  
+  return CAPE_ERR_NONE;
+}
 
 //-----------------------------------------------------------------------------
 
@@ -450,6 +479,13 @@ void cape_fh_del (CapeFileHandle* p_self)
     
     CAPE_DEL (p_self, struct CapeFileHandle_s);
   }  
+}
+
+//-----------------------------------------------------------------------------
+
+const CapeString cape_fh_file (CapeFileHandle self)
+{
+  return self->file;
 }
 
 //-----------------------------------------------------------------------------

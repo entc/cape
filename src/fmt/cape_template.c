@@ -10,6 +10,7 @@
 #include "sys/cape_time.h"
 #include "sys/cape_file.h"
 #include "fmt/cape_tokenizer.h"
+#include "fmt/cape_json.h"
 
 //-----------------------------------------------------------------------------
 
@@ -188,6 +189,45 @@ int cape_template_part_apply (CapeTemplatePart self, CapeUdc data, void* ptr, fc
 
 //-----------------------------------------------------------------------------
 
+int cape_template_part_eval_datetime (CapeTemplatePart self, CapeUdc data, CapeUdc item, void* ptr, fct_cape_template__on_text onText, fct_cape_template__on_file onFile, CapeErr err)
+{
+  const CapeDatetime* dt = cape_udc_d (item, NULL);
+  
+  if (dt)
+  {
+    switch (self->format_type)
+    {
+      case FORMAT_TYPE_DATE:
+      {
+        CapeDatetime* h1 = cape_datetime_cp (dt);
+        
+        // convert into local time
+        cape_datetime_local (h1);
+        
+        // apply format
+        {
+          CapeString h2 = cape_datetime_s__fmt (h1, self->eval);
+          
+          if (onText)
+          {
+            onText (ptr, h2);
+          }
+          
+          cape_str_del (&h2);
+        }
+        
+        cape_datetime_del (&h1);
+        
+        break;
+      }
+    }
+  }
+  
+  return CAPE_ERR_NONE;
+}
+
+//-----------------------------------------------------------------------------
+
 int cape_template_part_eval_str (CapeTemplatePart self, CapeUdc data, CapeUdc item, void* ptr, fct_cape_template__on_text onText, fct_cape_template__on_file onFile, CapeErr err)
 {
   const CapeString text = cape_udc_s (item, NULL);
@@ -198,6 +238,8 @@ int cape_template_part_eval_str (CapeTemplatePart self, CapeUdc data, CapeUdc it
     {
       case FORMAT_TYPE_NONE:
       {
+        printf ("no format type\n");
+        
         if (self->eval)
         {
           if (cape_str_equal (self->eval, text))
@@ -219,33 +261,51 @@ int cape_template_part_eval_str (CapeTemplatePart self, CapeUdc data, CapeUdc it
       }
       case FORMAT_TYPE_DATE:
       {
-        /*
-        CapeString h;
-        EcBuffer b;
+        CapeDatetime dt;
         
-        EcDate date;
+        printf ("no format type date with %s\n", text);
         
         // convert text into dateformat
-        ectime_fromString (&date, text);
-        
-        // convert into local time
-        ectime_date_utc_to_localtime (&date);
-        
-        b = ecbuf_create (100);
-        
-        ectime_fmt (b, &date, self->eval);
-        
-        h = ecbuf_str (&b);
-        
-        if (onText)
+        if (cape_datetime__str (&dt, text))
         {
-          onText (ptr, h);
+          // convert into local time
+          cape_datetime_local (&dt);
+          
+          // apply format
+          {
+            CapeString h = cape_datetime_s__fmt (&dt, self->eval);
+            
+            if (onText)
+            {
+              onText (ptr, h);
+            }
+            
+            cape_str_del (&h);
+          }
+        }
+        else if (cape_datetime__std (&dt, text))
+        {
+          // convert into local time
+          cape_datetime_local (&dt);
+          
+          // apply format
+          {
+            CapeString h = cape_datetime_s__fmt (&dt, self->eval);
+            
+            if (onText)
+            {
+              onText (ptr, h);
+            }
+            
+            cape_str_del (&h);
+          }
+        }
+        else
+        {
+          cape_log_fmt (CAPE_LL_ERROR, "CAPE", "template eval", "can't evaluate '%s' as date", text);
         }
         
-        cape_str_del(&h);
-        
         return cape_template_part_apply (self, data, ptr, onText, onFile, err);
-         */
       }
     }
   }
@@ -317,6 +377,12 @@ int cape_template_part_eval_double (CapeTemplatePart self, CapeUdc data, CapeUdc
 
 int cape_template_part_apply (CapeTemplatePart self, CapeUdc data, void* ptr, fct_cape_template__on_text onText, fct_cape_template__on_file onFile, CapeErr err)
 {
+  {
+    CapeString h = cape_json_to_s (data);
+    
+    printf ("PARAM: %s\n", h);
+  }
+  
   if (self->parts)
   {
     CapeListCursor* cursor = cape_list_cursor_create (self->parts, CAPE_DIRECTION_FORW);
@@ -353,6 +419,8 @@ int cape_template_part_apply (CapeTemplatePart self, CapeUdc data, void* ptr, fc
           CapeUdc item = cape_udc_get (data, name);
           if (item)
           {
+            printf ("found tag %s\n", name);
+            
             switch (cape_udc_type (item))
             {
               case CAPE_UDC_LIST:
@@ -374,6 +442,8 @@ int cape_template_part_apply (CapeTemplatePart self, CapeUdc data, void* ptr, fc
               }
               case CAPE_UDC_NODE:
               {
+                printf ("found tag as node %s\n", name);
+                
                 int res = cape_template_part_apply (part, item, ptr, onText, onFile, err);
                 if (res)
                 {
@@ -384,6 +454,9 @@ int cape_template_part_apply (CapeTemplatePart self, CapeUdc data, void* ptr, fc
               }
               case CAPE_UDC_STRING:
               {
+                printf ("found tag as string %s\n", name);
+                
+                
                 int res = cape_template_part_eval_str (part, data, item, ptr, onText, onFile, err);
                 if (res)
                 {
@@ -412,8 +485,22 @@ int cape_template_part_apply (CapeTemplatePart self, CapeUdc data, void* ptr, fc
                 
                 break;
               }
+              case CAPE_UDC_DATETIME:
+              {
+                printf ("found tag as datetime %s\n", name);
+
+                int res = cape_template_part_eval_datetime (part, data, item, ptr, onText, onFile, err);
+                if (res)
+                {
+                  return res;
+                }
+                
+                break;
+              }
               default:
               {
+                printf ("found tag as default %s\n", name);
+                
                 int res = cape_template_part_eval_str (part, data, item, ptr, onText, onFile, err);
                 if (res)
                 {

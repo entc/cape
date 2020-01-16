@@ -147,7 +147,7 @@ number_t cape_str_len (const CapeString s)
 
 number_t cape_str_size (const CapeString s)
 {
-  return strlen (s);
+  return (number_t)strlen (s);
 }
 
 //-----------------------------------------------------------------------------
@@ -179,6 +179,26 @@ CapeString cape_str_f (double value)
   cape_dragon4_del (&dragon4);
   
   cape_err_del (&err);
+
+  return ret;
+}
+
+//-----------------------------------------------------------------------------
+
+CapeString cape_str_n (number_t value)
+{
+  CapeString ret = CAPE_ALLOC (26);  // for very long intergers
+  
+#ifdef _MSC_VER
+    
+  _snprintf_s (ret, 24, _TRUNCATE, "%li", value);
+    
+#else
+    
+  // TODO: use a different %i / %lli if number_t is 64bit etc
+  snprintf (ret, 24, "%li", value);
+    
+#endif
 
   return ret;
 }
@@ -279,7 +299,7 @@ int cape_str_begins (const CapeString s, const CapeString begins_with)
   }
   
   {
-    int len = strlen(begins_with);
+    size_t len = strlen(begins_with);
     
     return strncmp (s, begins_with, len) == 0;
   }
@@ -291,8 +311,8 @@ int cape_str_begins_i (const CapeString s1, const CapeString s2)
 {
   int ret;
   
-  number_t l1 = strlen (s1);
-  number_t l2 = strlen (s2);
+  number_t l1 = (number_t)strlen (s1);
+  number_t l2 = (number_t)strlen (s2);
 
   if (l2 < l1)
   {
@@ -337,7 +357,7 @@ int cape_str_find_utf8 (const CapeString haystack, const CapeString needle, numb
   {
     const char* spos = haystack;
     number_t cpos = 0;
-    number_t len = strlen (needle);
+    number_t len = (number_t)strlen (needle);
     
     // iterate through all characters
     while (*spos)
@@ -417,6 +437,24 @@ CapeString cape_str_uuid (void)
   
   return self;
   */
+}
+
+//-----------------------------------------------------------------------------
+
+CapeString cape_str_random (number_t len)
+{
+  number_t i;
+  CapeString self = CAPE_ALLOC (len + 1);
+  
+  for (i = 0; i < len; i++)
+  {
+    self[i] = (rand() % 26) + 97;
+  }
+  
+  // set termination
+  self[i] = 0;
+  
+  return self;
 }
 
 //-----------------------------------------------------------------------------
@@ -509,8 +547,8 @@ CapeString cape_str_catenate_2 (const CapeString s1, const CapeString s2)
   
   {
     /* variables */
-    int s1_len = strlen(s1);
-    int s2_len = strlen(s2);
+    number_t s1_len = (number_t)strlen(s1);
+	number_t s2_len = (number_t)strlen(s2);
     
     char* ret;
     char* pos;
@@ -539,9 +577,9 @@ CapeString cape_str_catenate_2 (const CapeString s1, const CapeString s2)
 
 CapeString cape_str_catenate_3 (const CapeString s1, const CapeString s2, const CapeString s3)
 {
-  number_t s1_len = strlen(s1);
-  number_t s2_len = strlen(s2);
-  number_t s3_len = strlen(s3);
+  number_t s1_len = (number_t)strlen(s1);
+  number_t s2_len = (number_t)strlen(s2);
+  number_t s3_len = (number_t)strlen(s3);
   
   char* ret = (char*)CAPE_ALLOC( (s1_len + s2_len + s3_len + 1) * sizeof(char) );
   
@@ -622,8 +660,7 @@ CapeString cape_str_trim_utf8 (const CapeString source)
   const unsigned char* pos_s = c;
   const unsigned char* pos_e = c;
   
-  int diff;
-  int trim = TRUE;
+  number_t diff;
   
   // special case
   if (source == NULL)
@@ -733,6 +770,63 @@ CapeString cape_str_trim_utf8 (const CapeString source)
 
 //-----------------------------------------------------------------------------
 
+CapeString cape_str_trim_lr (const CapeString source, char l, char r)
+{
+  CapeString copy;
+  char* pos01;
+  char* pos02;
+  
+  if (NULL == source)
+  {
+    return 0;
+  }
+  
+  copy = cape_str_cp (source);
+  
+  /* source position */
+  pos01 = copy;
+  pos02 = 0;
+  /* trim from begin */
+  while(*pos01)
+  {
+    if (*pos01 != l) break;
+    
+    pos01++;
+  }
+  pos02 = copy;
+  /* copy rest */
+  while(*pos01)
+  {
+    *pos02 = *pos01;
+    
+    pos01++;
+    pos02++;
+  }
+  /* set here 0 not to run in undefined situation */
+  *pos02 = 0;
+  /* trim from the end */
+  while( pos02 != copy )
+  {
+    /* decrease */
+    pos02--;
+    /* check if readable */
+    if (*pos02 != r) break;
+    /* set to zero */
+    *pos02 = 0;
+  }
+  
+  return copy;
+}
+
+//-----------------------------------------------------------------------------
+
+CapeString cape_str_trim_c (const CapeString source, char c)
+{
+  return cape_str_trim_lr (source, c, c);
+}
+
+//-----------------------------------------------------------------------------
+
 CapeString cape_str_cp_replaced (const CapeString source, const CapeString seek, const CapeString replace_with)
 {
   CapeStream s;
@@ -763,7 +857,7 @@ CapeString cape_str_cp_replaced (const CapeString source, const CapeString seek,
       cape_stream_append_str (s, replace_with);
     }
     
-    lpos = fpos + strlen (seek);
+    lpos = fpos + (number_t)strlen (seek);
   }
   
   cape_stream_append_str (s, lpos);
