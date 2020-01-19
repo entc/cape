@@ -60,11 +60,8 @@ CapeString cape_str_sub (const CapeString source, number_t len)
   ret = (char*)CAPE_ALLOC( (2 + len) * sizeof(char) );
   
   /* copy the part */
-#ifdef _WIN32
   memcpy(ret, source, len * sizeof(char));
-#else
-  strncpy(ret, source, len);
-#endif
+  
   /* set the termination */
   ret[len] = 0;
   
