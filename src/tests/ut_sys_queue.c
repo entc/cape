@@ -42,8 +42,6 @@ int main (int argc, char *argv[])
   // wait until all sync items were deleted
   cape_sync_del (&sync01);
   
-exit_and_cleanup:
-
   // this shall stop all threads
   cape_queue_del (&queue01);
   
