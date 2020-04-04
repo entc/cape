@@ -21,7 +21,7 @@ __CAPE_LIBEX   CapeString         cape_str_sub           (const CapeString, numb
 
 __CAPE_LIBEX   CapeString         cape_str_uuid          (void);                                        // create an UUID and copy it into the string
 
-__CAPE_LIBEX   CapeString         cape_str_random        (number_t len);                                        // create an UUID and copy it into the string
+__CAPE_LIBEX   CapeString         cape_str_random        (number_t len);                                // create a randwom string with the length (len)
 
 __CAPE_LIBEX   CapeString         cape_str_fmt           (const CapeString format, ...);                // format to string
 
@@ -32,6 +32,8 @@ __CAPE_LIBEX   number_t           cape_str_len           (const CapeString);    
 __CAPE_LIBEX   number_t           cape_str_size          (const CapeString);                            // string length in bytes
 
 __CAPE_LIBEX   CapeString         cape_str_f             (double);                                      // double to string
+
+__CAPE_LIBEX   CapeString         cape_str_n             (number_t);                                    // number to string
 
 __CAPE_LIBEX   int                cape_str_empty         (const CapeString);                            // string length in bytes
 

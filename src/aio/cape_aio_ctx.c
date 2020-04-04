@@ -356,7 +356,7 @@ int cape_aio_set_kevent (CapeAioContext self, CapeAioHandle aioh, void* handle, 
     int res;
     int i = 0;
     
-    struct kevent* kevs = CAPE_ALLOC(sizeof(struct kevent) * filter_cnt);
+    struct kevent* kevs = CAPE_ALLOC (sizeof(struct kevent) * filter_cnt);
     memset (kevs, 0x0, sizeof(struct kevent) * filter_cnt);
     
     if (hflags & CAPE_AIO_READ)
@@ -383,6 +383,9 @@ int cape_aio_set_kevent (CapeAioContext self, CapeAioHandle aioh, void* handle, 
     }
 
     res = kevent (self->kq, kevs, filter_cnt, NULL, 0, NULL);
+    
+    CAPE_FREE (kevs);
+    
     if (res < 0)
     {
       CapeErr err = cape_err_new ();
@@ -395,8 +398,6 @@ int cape_aio_set_kevent (CapeAioContext self, CapeAioHandle aioh, void* handle, 
       
       return FALSE;
     }
-        
-    CAPE_FREE(kevs);
   }
 
   return TRUE;

@@ -60,11 +60,8 @@ CapeString cape_str_sub (const CapeString source, number_t len)
   ret = (char*)CAPE_ALLOC( (2 + len) * sizeof(char) );
   
   /* copy the part */
-#ifdef _WIN32
   memcpy(ret, source, len * sizeof(char));
-#else
-  strncpy(ret, source, len);
-#endif
+  
   /* set the termination */
   ret[len] = 0;
   
@@ -179,6 +176,26 @@ CapeString cape_str_f (double value)
   cape_dragon4_del (&dragon4);
   
   cape_err_del (&err);
+
+  return ret;
+}
+
+//-----------------------------------------------------------------------------
+
+CapeString cape_str_n (number_t value)
+{
+  CapeString ret = CAPE_ALLOC (26);  // for very long intergers
+  
+#ifdef _MSC_VER
+    
+  _snprintf_s (ret, 24, _TRUNCATE, "%li", value);
+    
+#else
+    
+  // TODO: use a different %i / %lli if number_t is 64bit etc
+  snprintf (ret, 24, "%li", value);
+    
+#endif
 
   return ret;
 }
